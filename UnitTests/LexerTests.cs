@@ -115,6 +115,103 @@ public class LexerTests
     [TestMethod]
     public void Lex_VarContextualKeyword_ReturnsIdentifierToken()
     {
-        var tokens = Lexer.Lex("");
+        var tokens = Lexer.Lex(@"var test = ""Hello world!""");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.Identifier, "var"),
+            (TokenKind.Identifier, "test"),
+            (TokenKind.Equals, "="),
+            (TokenKind.StringLiteral, "\"Hello world!\""),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_SimpleStringLiterals_ReturnsCorrectTokens()
+    {
+        var tokens = Lexer.Lex(@"""Hello world!"" $""Basic interpolated string {value}"" @""Verbatim string literal"" ");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.StringLiteral, @"""Hello world!"""),
+            (TokenKind.InterpolatedStringLiteral, @"$""Basic interpolated string {value}"""),
+            (TokenKind.StringLiteral, @"@""Verbatim string literal"""),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_CommonOperators_ReturnsCorrectTokens()
+    {
+        var tokens = Lexer.Lex("3 += 2f * 5/1 - (1^(2%1))");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.NumericLiteral, "3"),
+            (TokenKind.PlusEquals, "+="),
+            (TokenKind.NumericLiteral, "2f"),
+            (TokenKind.Asterisk, "*"),
+            (TokenKind.NumericLiteral, "5"),
+            (TokenKind.Slash, "/"),
+            (TokenKind.NumericLiteral, "1"),
+            (TokenKind.Minus, "-"),
+            (TokenKind.OpenParen, "("),
+            (TokenKind.NumericLiteral, "1"),
+            (TokenKind.Caret, "^"),
+            (TokenKind.OpenParen, "("),
+            (TokenKind.NumericLiteral, "2"),
+            (TokenKind.Percent, "%"),
+            (TokenKind.NumericLiteral, "1"),
+            (TokenKind.CloseParen, ")"),
+            (TokenKind.CloseParen, ")"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_SimpleClass_ReturnsValidTokens()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                public static void Main()
+                {
+                    Console.WriteLine("Hello world!");
+                }
+            }
+        """);
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.Keyword, "class"),
+            (TokenKind.Identifier, "Example"),
+            (TokenKind.OpenBrace, "{"),
+            (TokenKind.Keyword, "public"),
+            (TokenKind.Keyword, "static"),
+            (TokenKind.Keyword, "void"),
+            (TokenKind.Identifier, "Main"),
+            (TokenKind.OpenParen, "("),
+            (TokenKind.CloseParen, ")"),
+            (TokenKind.OpenBrace, "{"),
+            (TokenKind.Identifier, "Console"),
+            (TokenKind.Dot, "."),
+            (TokenKind.Identifier, "WriteLine"),
+            (TokenKind.OpenParen, "("),
+            (TokenKind.StringLiteral, "\"Hello world!\""),
+            (TokenKind.CloseParen, ")"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.CloseBrace, "}"),
+            (TokenKind.CloseBrace, "}"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
     }
 }
