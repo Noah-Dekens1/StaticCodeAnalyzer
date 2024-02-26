@@ -5,23 +5,40 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 namespace UnitTests;
 
-using TokenList = List<(TokenKind kind, string Lexeme)>;
+using TokenList = List<(TokenKind Kind, string Lexeme)>;
+using TokenListWithValues = List<(TokenKind Kind, string Lexeme, object? Value)>;
 
 [TestClass]
 public class LexerTests
 {
 
-    private void ValidateTokens(List<Token> actualTokens, TokenList expectedTokens)
+    private static void ValidateTokens(TokenList expectedTokens, List<Token> actualTokens)
     {
         Assert.AreEqual(expectedTokens.Count, actualTokens.Count);
 
         for (int i =  0; i < expectedTokens.Count; i++)
         {
-            var expectedToken = expectedTokens[i];
+            var (kind, lexeme) = expectedTokens[i];
             var actualToken = actualTokens[i];
 
-            Assert.AreEqual(expectedToken.kind, actualToken.Kind);
-            Assert.AreEqual(expectedToken.Lexeme, actualToken.Lexeme);
+            Assert.AreEqual(kind, actualToken.Kind);
+            Assert.AreEqual(lexeme, actualToken.Lexeme);
+        }
+    }
+
+    private static void ValidateTokensWithValues(TokenListWithValues expectedTokens, List<Token> actualTokens)
+    {
+        Assert.AreEqual(expectedTokens.Count, actualTokens.Count);
+
+        for (int i = 0; i < expectedTokens.Count; i++)
+        {
+            var (kind, lexeme, value) = expectedTokens[i];
+            var actualToken = actualTokens[i];
+
+            Assert.AreEqual(kind, actualToken.Kind);
+            Assert.AreEqual(lexeme, actualToken.Lexeme);
+            Assert.AreEqual(value?.GetType(), actualToken.Value?.GetType());
+            Assert.AreEqual(value, actualToken.Value);
         }
     }
 
@@ -41,7 +58,7 @@ public class LexerTests
             (TokenKind.EndOfFile, string.Empty)
         };
 
-        ValidateTokens(tokens, expectedTokens);
+        ValidateTokens(expectedTokens, tokens);
     }
 
     [TestMethod]
@@ -67,36 +84,34 @@ public class LexerTests
             (TokenKind.EndOfFile, string.Empty)
         };
 
-        ValidateTokens(tokens, expectedTokens);
+        ValidateTokens(expectedTokens, tokens);
     }
 
     [TestMethod]
     public void Lex_NumericalLiterals_ReturnsValidTokens()
     {
-        var lexer = new Lexer("36 .3 .74f .1f 63 97F 36.3f 3 483.3 0x4F 0xA3B9 0b00100111 22.2uL 3_000.5F");
+        var lexer = new Lexer("0xFFFFFFFFF 36 .3 .74f .1f 63 97F 36.3f 3 483.3 0x4F 0xA3B9 0b00100111 3_000.5F");
         var tokens = lexer.Lex();
 
-        var t = .5;
-
-        var expectedTokens = new TokenList()
+        var expectedTokens = new TokenListWithValues()
         {
-            (TokenKind.NumericLiteral, "36"),
-            (TokenKind.NumericLiteral, ".3"),
-            (TokenKind.NumericLiteral, ".74f"),
-            (TokenKind.NumericLiteral, ".1f"),
-            (TokenKind.NumericLiteral, "63"),
-            (TokenKind.NumericLiteral, "97F"),
-            (TokenKind.NumericLiteral, "36.3f"),
-            (TokenKind.NumericLiteral, "3"),
-            (TokenKind.NumericLiteral, "483.3"),
-            (TokenKind.NumericLiteral, "0x4F"),
-            (TokenKind.NumericLiteral, "0xA3B9"),
-            (TokenKind.NumericLiteral, "0b00100111"),
-            (TokenKind.NumericLiteral, "22.2uL"),
-            (TokenKind.NumericLiteral, "3_000.5F"),
-            (TokenKind.EndOfFile, string.Empty),
+            (TokenKind.NumericLiteral, "0xFFFFFFFFF", 0xFFFFFFFFF),
+            (TokenKind.NumericLiteral, "36", 36),
+            (TokenKind.NumericLiteral, ".3", .3),
+            (TokenKind.NumericLiteral, ".74f", .74f),
+            (TokenKind.NumericLiteral, ".1f", .1f),
+            (TokenKind.NumericLiteral, "63", 63),
+            (TokenKind.NumericLiteral, "97F", 97F),
+            (TokenKind.NumericLiteral, "36.3f", 36.3f),
+            (TokenKind.NumericLiteral, "3", 3),
+            (TokenKind.NumericLiteral, "483.3", 483.3),
+            (TokenKind.NumericLiteral, "0x4F", 0x4F),
+            (TokenKind.NumericLiteral, "0xA3B9", 0xA3B9),
+            (TokenKind.NumericLiteral, "0b00100111", 0b00100111),
+            (TokenKind.NumericLiteral, "3_000.5F", 3_000.5F),
+            (TokenKind.EndOfFile, string.Empty, null),
         };
 
-        ValidateTokens(tokens, expectedTokens);
+        ValidateTokensWithValues(expectedTokens, tokens);
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -75,6 +77,7 @@ public struct Token
     public TokenKind Kind { get; set; }
     public string Lexeme { get; set; }
     public Position Position { get; set; }
+    public object? Value { get; set; } // Mostly for numeric types
 }
 
 public class Lexer(string fileContent)
@@ -234,9 +237,9 @@ public class Lexer(string fileContent)
         return false;
     }
 
-    private void Emit(TokenKind kind, string content)
+    private void Emit(TokenKind kind, string content, object? value=null)
     {
-        _tokens.Add(new Token { Kind = kind, Lexeme = content });
+        _tokens.Add(new Token { Kind = kind, Lexeme = content, Value = value });
         //Console.WriteLine($"{_tokens[^1].Kind} {_tokens[^1].Lexeme}");
     }
 
@@ -270,10 +273,101 @@ public class Lexer(string fileContent)
         }
     }
 
-    private string ReadNumericLiteral()
+    private static object? ParseSmallestNumericTypeForInteger(string number, int fromBase)
+    {
+        // Parse as largest (so the number can fit), then cast downwards
+        var parsed = Convert.ToUInt64(number, fromBase);
+
+        if (parsed < int.MaxValue)
+            return (int)parsed;
+
+        if (parsed < uint.MaxValue)
+            return (uint)parsed;
+
+        if (parsed < long.MaxValue)
+            return(long)parsed;
+
+        return parsed;
+    }
+
+    private static object? ParseNumericLiteral(string numericLiteral)
+    {
+        var cleaned = numericLiteral.ToLower().Replace("_", "");
+        var suffix = "";
+
+        bool isDecimal = numericLiteral.Contains('.');
+        object? result = null;
+
+        bool isHex = cleaned.StartsWith("0x");
+        bool isBinary = cleaned.StartsWith("0b");
+
+        for (int i = cleaned.Length - 1; i >= 0; i--)
+        {
+            var c = cleaned[i];
+
+            if (!isHex && !isBinary && char.IsLetter(c))
+            {
+                suffix += c;
+                cleaned = cleaned.Remove(i);
+            }
+
+            if ((isHex || isBinary) && (c == 'u' || c == 'l'))
+            {
+                suffix += c == 'u' ? 'u' : 'l';
+            }
+        }
+
+        if (cleaned.Length == 0)
+            throw new Exception($"Unable to parse numeric literal of length 0, '{numericLiteral}'");
+
+        if (cleaned[0] == '.')
+            cleaned = "0" + cleaned;
+
+        if (isHex)
+        {
+            var hexStr = cleaned[2..];
+
+            result = ParseSmallestNumericTypeForInteger(hexStr, 16);
+        }
+        else if (isBinary)
+        {
+            var binaryStr = cleaned[2..];
+
+            result = ParseSmallestNumericTypeForInteger(binaryStr, 2);
+        }
+        else
+        {
+            // Convert.To... doesn't deal with decimal points for integer types so we have to check manually
+            if (isDecimal || suffix == "f" || suffix == "m" || suffix == "d")
+            {
+                bool floatLiteral = suffix == "f";
+                bool decimalLiteral = suffix == "m";
+                bool doubleLiteral = suffix == "d" || string.IsNullOrWhiteSpace(suffix);
+
+                if (floatLiteral)
+                    result = float.Parse(cleaned, CultureInfo.InvariantCulture);
+
+                if (decimalLiteral)
+                    result = decimal.Parse(cleaned, CultureInfo.InvariantCulture);
+
+                if (doubleLiteral)
+                    result = double.Parse(cleaned, CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                result = ParseSmallestNumericTypeForInteger(cleaned, 10);
+            }
+        }
+
+        return result;
+    }
+
+    private (string lexeme, object? value) ReadNumericLiteral()
     {
         bool isHexadecimal = false;
         bool isBinary = false;
+
+        bool isFraction = false;
 
         var literalBuilder = new StringBuilder();
 
@@ -290,6 +384,9 @@ public class Lexer(string fileContent)
                 isHexadecimal = maybeHexadecimal;
                 isBinary = maybeBinary;
 
+                literalBuilder.Append(a);
+                literalBuilder.Append(b);
+
                 Consume();
                 Consume();
             }
@@ -301,19 +398,24 @@ public class Lexer(string fileContent)
             char lower = char.ToLower(c);
 
             bool isHexadecimalDigit = (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-            static bool IsTypeSuffic(char chr) => char.ToLower(chr) switch
-            {
-                'u' or 'l' or 'f' or 'd' or 'm' => true,
-                _ => false
-            };
 
-            if (IsTypeSuffic(c))
+            List<char> numericSuffixes = ['f', 'd', 'u', 'l', 'm'];
+
+            if (
+                (numericSuffixes.Contains(lower) && !isHexadecimal && !isBinary) ||
+                lower == 'u' || lower == 'l')
             {
-                while (!IsAtEnd() && IsTypeSuffic(PeekCurrent()))
-                {
-                    literalBuilder.Append(PeekCurrent());
-                    Consume();
-                }
+                string suffix = c.ToString();
+
+                if (lower == 'u' && char.ToLower(Peek(1)) == 'l')
+                    suffix += Peek(1);
+                else if (lower == 'l' && char.ToLower(Peek(1)) == 'u')
+                    suffix += Peek(1); // lu suffix seems to be valid?
+
+
+                literalBuilder.Append(suffix);
+
+                Consume();
 
                 break;
             }
@@ -321,6 +423,11 @@ public class Lexer(string fileContent)
             // Account for .5, 5.5, [5..5] etc In the case of 5..5 we stop reading immediately
             if (c == '.' && CanPeek(1) && char.IsLetterOrDigit(Peek(1)))
             {
+                if (isFraction) // may be issues with parsing ranges if this happens?
+                    throw new Exception("Encountered more than one dot while lexing a numeric literal");
+
+                isFraction = true;
+
                 literalBuilder.Append(c);
                 Consume();
                 continue;
@@ -341,15 +448,9 @@ public class Lexer(string fileContent)
         if (numericLiteral.Last() == '_')
             throw new Exception("Invalid trailing underscore in numeric literal");
 
-        for (int i = 0; i < numericLiteral.Length - 1; i++)
-        {
-            if (char.ToLower(numericLiteral[i]) == 'u')
-            {
-                throw new Exception("Invalid numeric literal, didn't expect 'u'");
-            }
-        }
+        var value = ParseNumericLiteral(numericLiteral);
 
-        return numericLiteral;
+        return (numericLiteral, value);
     }
 
     private char ResolveEscapeSequence()
@@ -578,7 +679,8 @@ public class Lexer(string fileContent)
 
                     if (char.IsDigit(Peek(1)))
                     {
-                        Emit(TokenKind.NumericLiteral, ReadNumericLiteral());
+                        var numericLiteral = ReadNumericLiteral();
+                        Emit(TokenKind.NumericLiteral, numericLiteral.lexeme, numericLiteral.value);
                         continue;
                     }
 
@@ -593,9 +695,16 @@ public class Lexer(string fileContent)
                     ReadIdentifierOrKeyword();
                     break;
                 case (>= '0' and <= '9'):
-                    Emit(TokenKind.NumericLiteral, ReadNumericLiteral());
+                    {
+                        var result = ReadNumericLiteral();
+                        Emit(TokenKind.NumericLiteral, result.lexeme, result.value);
+                    }
                     break;
                 case '"':
+                    if (CanPeek(2) && Peek(1) == '"' && Peek(2) == '"')
+                    {
+                        throw new NotImplementedException("No support for multiline string literals yet!");
+                    }
                     Emit(TokenKind.StringLiteral, ReadStringLiteral(false, false));
                     break;
                 case '+':
