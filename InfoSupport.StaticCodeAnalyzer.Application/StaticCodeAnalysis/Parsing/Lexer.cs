@@ -599,7 +599,7 @@ public class Lexer(string fileContent)
         return;
     }
 
-    public static List<Token> Lex(string file)
+    public static List<Token> Lex(string content)
     {
         var lexer = new Lexer(file);
         return lexer.LexInternal();
