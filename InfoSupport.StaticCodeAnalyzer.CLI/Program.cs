@@ -2,8 +2,8 @@
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 //var lexer = new Lexer(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Parsing\Lexer.cs"));
-var lexer = new Lexer(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.CLI\InterpolationTest.cs"));
-lexer.Lex();
+Lexer.Lex(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.CLI\InterpolationTest.cs"));
+
 
 return;
 
@@ -18,11 +18,10 @@ foreach (string path in paths)
 {
     counter++;
     var file = File.ReadAllText(path);
-    var fileLexer = new Lexer(file);
-    fileLexer.Lex();
+    var tokens = Lexer.Lex(file);
 
     Console.WriteLine($"Successfully lexed {Path.GetFileName(path)} ({counter}/{paths.Length})");
-    tokensLexed += fileLexer.GetTokens().Count;
+    tokensLexed += tokens.Count;
 }
 
 Console.WriteLine($"Successfully lexed all {paths.Length} files in directory consisting of {tokensLexed} tokens!");

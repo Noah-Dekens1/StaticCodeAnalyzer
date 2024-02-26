@@ -45,8 +45,7 @@ public class LexerTests
     [TestMethod]
     public void Lex_Identifiers_ReturnsIdentifierTokens()
     {
-        var lexer = new Lexer("helloWorld55 test_new @class Uppercase T123A");
-        var tokens = lexer.Lex();
+        var tokens = Lexer.Lex("helloWorld55 test_new @class Uppercase T123A");
 
         var expectedTokens = new TokenList()
         {
@@ -64,8 +63,7 @@ public class LexerTests
     [TestMethod]
     public void Lex_NestedGenerics_ReturnsSeparateToken()
     {
-        var lexer = new Lexer("List<List<string>> helloWorld = new()");
-        var tokens = lexer.Lex();
+        var tokens = Lexer.Lex("List<List<string>> helloWorld = new()");
 
         var expectedTokens = new TokenList()
         {
@@ -90,8 +88,7 @@ public class LexerTests
     [TestMethod]
     public void Lex_NumericalLiterals_ReturnsValidTokens()
     {
-        var lexer = new Lexer("0xFFFFFFFFF 36 .3 .74f .1f 63 97F 36.3f 3 483.3 0x4F 0xA3B9 0b00100111 3_000.5F");
-        var tokens = lexer.Lex();
+        var tokens = Lexer.Lex("0xFFFFFFFFF 36 .3 .74f .1f 63 97F 36.3f 3 483.3 0x4F 0xA3B9 0b00100111 3_000.5F");
 
         var expectedTokens = new TokenListWithValues()
         {
@@ -113,5 +110,11 @@ public class LexerTests
         };
 
         ValidateTokensWithValues(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_VarContextualKeyword_ReturnsIdentifierToken()
+    {
+
     }
 }
