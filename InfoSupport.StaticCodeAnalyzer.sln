@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfoSupport.StaticCodeAnaly
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Testing", "Testing", "{52ECA1A5-EEE3-4117-80A6-0DB1900F3542}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{61FA3790-CBC8-49DC-81CD-C64C824FC625}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfoSupport.StaticCodeAnalyzer.UnitTests", "UnitTests\InfoSupport.StaticCodeAnalyzer.UnitTests.csproj", "{61FA3790-CBC8-49DC-81CD-C64C824FC625}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
