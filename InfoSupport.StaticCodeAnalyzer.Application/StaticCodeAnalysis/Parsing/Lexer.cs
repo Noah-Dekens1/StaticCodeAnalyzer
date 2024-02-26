@@ -188,8 +188,11 @@ public class Lexer(string fileContent)
         return _tokens;
     }
 
-    public bool CanRead(int count = 1)
-        => _index + count <= _input.Length;
+    public bool CanPeek(int count = 1)
+        => _index + count < _input.Length;
+
+    public bool IsAtEnd()
+        => _index >= _input.Length;
 
     public char Consume()
     {
@@ -210,19 +213,19 @@ public class Lexer(string fileContent)
         return new string(_input.Skip(start).Take(end - start).ToArray());
     }
 
-    public char PeekNext()
+    public char PeekCurrent()
     {
         return _input[_index];
     }
 
     public char Peek(int count = 1)
     {
-        return CanRead(count) ? _input[_index + count] : '\0';
+        return CanPeek(count) ? _input[_index + count] : '\0';
     }
 
     public bool ConsumeIfMatch(char c)
     {
-        if (PeekNext() == c)
+        if (PeekCurrent() == c)
         {
             Consume();
             return true;
@@ -242,9 +245,9 @@ public class Lexer(string fileContent)
         var nameBuilder = new StringBuilder();
         bool isFirst = true;
 
-        while (CanRead(1))
+        while (!IsAtEnd())
         {
-            char c = PeekNext();
+            char c = PeekCurrent();
 
             if (!char.IsAsciiLetterOrDigit(c) && c != '_' && !(isFirst && c == '@'))
                 break;
@@ -274,7 +277,7 @@ public class Lexer(string fileContent)
 
         var literalBuilder = new StringBuilder();
 
-        if (CanRead(2))
+        if (CanPeek(1))
         {
             var a = Peek(0);
             var b = Peek(1);
@@ -292,13 +295,38 @@ public class Lexer(string fileContent)
             }
         }
 
-        while (CanRead(1))
+        while (!IsAtEnd())
         {
-            char c = PeekNext();
+            char c = PeekCurrent();
+            char lower = char.ToLower(c);
 
             bool isHexadecimalDigit = (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+            static bool IsTypeSuffic(char chr) => char.ToLower(chr) switch
+            {
+                'u' or 'l' or 'f' or 'd' or 'm' => true,
+                _ => false
+            };
 
-            if (!(char.IsDigit(c) || c == '_' || char.ToLower(c) == 'u' || (isHexadecimal && isHexadecimalDigit)))
+            if (IsTypeSuffic(c))
+            {
+                while (!IsAtEnd() && IsTypeSuffic(PeekCurrent()))
+                {
+                    literalBuilder.Append(PeekCurrent());
+                    Consume();
+                }
+
+                break;
+            }
+
+            // Account for .5, 5.5, [5..5] etc In the case of 5..5 we stop reading immediately
+            if (c == '.' && CanPeek(1) && char.IsLetterOrDigit(Peek(1)))
+            {
+                literalBuilder.Append(c);
+                Consume();
+                continue;
+            }
+
+            if (!(char.IsDigit(c) || c == '_' || (isHexadecimal && isHexadecimalDigit)))
                 break;
 
             if (isBinary && !(c == '0' || char.ToLower(c) == 'u' || c == '1' || c == '_'))
@@ -362,7 +390,7 @@ public class Lexer(string fileContent)
             braceCounter = 0;
         }
 
-        while (CanRead(1))
+        while (!IsAtEnd())
         {
             char c = Consume();
 
@@ -406,7 +434,7 @@ public class Lexer(string fileContent)
             // @fixme: so many things are horribly wrong here
             // it currently breaks on the nested brace closing in a string ("a}") because it's not a string literal
             // do we need to recursively lex it or something?
-            if (c == '"' && (isVerbatim || backslashCount % 2 == 0) && scopeCounter == 0 && (!isVerbatim || (verbatimQuoteCounter % 2 != 0 && PeekNext() != '"')))
+            if (c == '"' && (isVerbatim || backslashCount % 2 == 0) && scopeCounter == 0 && (!isVerbatim || (verbatimQuoteCounter % 2 != 0 && PeekCurrent() != '"')))
                 break;
 
 
@@ -440,7 +468,7 @@ public class Lexer(string fileContent)
     private void ReadSingleLineComment()
     {
         var comment = new StringBuilder();
-        while (CanRead(1))
+        while (CanPeek(1))
         {
             char c = Consume();
 
@@ -457,7 +485,7 @@ public class Lexer(string fileContent)
     {
         var comment = new StringBuilder();
 
-        while (CanRead(1))
+        while (!IsAtEnd())
         {
             char c = Consume();
 
@@ -472,9 +500,9 @@ public class Lexer(string fileContent)
 
     public List<Token> Lex()
     {
-        while (CanRead())
+        while (!IsAtEnd())
         {
-            char c = PeekNext();
+            char c = PeekCurrent();
 
             var singleCharMatch = new Dictionary<char, TokenKind>()
             {
@@ -547,7 +575,15 @@ public class Lexer(string fileContent)
                     }
                     break;
                 case '.': // @todo: .. tokens
+
+                    if (char.IsDigit(Peek(1)))
+                    {
+                        Emit(TokenKind.NumericLiteral, ReadNumericLiteral());
+                        continue;
+                    }
+
                     Consume();
+
                     if (ConsumeIfMatch('.'))
                         Emit(TokenKind.DotDot, "..");
                     else
@@ -696,7 +732,7 @@ public class Lexer(string fileContent)
                     {
                         Consume();
                         // @todo: ensure the line starts with #
-                        while (CanRead(1))
+                        while (!IsAtEnd())
                         {
                             if (Consume() == '\n')
                                 break;
@@ -712,7 +748,7 @@ public class Lexer(string fileContent)
                         bool isInterpolated = c == '$';
                         bool isVerbatim = c == '@'; // @fixme: Do we care about verbatim strings as lexer?
 
-                        var second = PeekNext();
+                        var second = PeekCurrent();
                         var isValid = second == '$' || second == '@' || second == '"';
                         isInterpolated |= second == '$';
                         isVerbatim |= second == '@';
