@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -68,6 +69,7 @@ public struct Position
     public ulong Column { get; set; }
 }
 
+[DebuggerDisplay("{Kind} {Lexeme} {Position}")]
 public struct Token
 {
     public TokenKind Kind { get; set; }
@@ -187,7 +189,7 @@ public class Lexer(string fileContent)
     }
 
     public bool CanRead(int count = 1)
-        => _index + count < _input.Length;
+        => _index + count <= _input.Length;
 
     public char Consume()
     {
