@@ -115,6 +115,6 @@ public class LexerTests
     [TestMethod]
     public void Lex_VarContextualKeyword_ReturnsIdentifierToken()
     {
-
+        var tokens = Lexer.Lex("");
     }
 }

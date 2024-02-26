@@ -601,7 +601,7 @@ public class Lexer(string fileContent)
 
     public static List<Token> Lex(string content)
     {
-        var lexer = new Lexer(file);
+        var lexer = new Lexer(content);
         return lexer.LexInternal();
     }
 
