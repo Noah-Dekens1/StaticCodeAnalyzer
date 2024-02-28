@@ -532,26 +532,17 @@ public class Lexer(string fileContent)
 
         while (!IsAtEnd() && stack.Count != 0)
         {
-            char c = PeekCurrent();
-
-            //literalBuilder.Append(c);
-
             var (isCode, str) = stack.Peek();
             var (isInterpolated, isVerbatim) = str ?? default;
 
             if (isCode)
             {
-                var possibleMatchStart = _index;
                 if (MatchString(out var interpolated, out var verbatim, out var regularQuote, false))
                 {
-                    //Console.WriteLine("Pushing as sequence was matched " + GetContextForDbg());
-                    //LogContextForDbgMulti(possibleMatchStart, false);
                     stack.Push((false, (interpolated, verbatim)));
                 }
                 else if (ConsumeIfMatch('}'))
                 {
-                    //Console.WriteLine("Popping interpolation as close brace was found " + GetContextForDbg() + " Next is code? -> " + stack.Peek().IsCode);
-                    //LogContextForDbg(true);
                     Debug.Assert(stack.Peek().IsCode);
                     stack.Pop();
                 }
@@ -579,8 +570,6 @@ public class Lexer(string fileContent)
 
                 if (ConsumeIfMatch('"'))
                 {
-                    //Console.WriteLine("Popping as ending \" was found in regular string " + GetContextForDbg() + " Next is code? -> " + stack.Peek().IsCode);
-                    //LogContextForDbg(true);
                     stack.Pop();
                     continue;
                 }
@@ -595,19 +584,12 @@ public class Lexer(string fileContent)
 
                 if (ConsumeIfMatch('"'))
                 {
-                    if (ConsumeIfMatch('"'))
+                    if (!ConsumeIfMatch('"'))
                     {
-                        // how many do we add to the literal builder?
-                    }
-                    else
-                    {
-                        // Do we enter/exit a string here?
                         bool shouldEnterString = stack.Peek().IsCode;
 
                         if (!shouldEnterString)
                         {
-                            //Console.WriteLine("Popping as singular ending quote was found in verbatim string " + GetContextForDbg() + " Next is code? -> " + stack.Peek().IsCode);
-                            //LogContextForDbg(true);
                             stack.Pop();
                             continue;
                         }
@@ -628,22 +610,9 @@ public class Lexer(string fileContent)
                 {
                     if (!ConsumeIfMatch('{'))
                     {
-                        //Console.WriteLine("Pushing interpolation as open brace was found " + GetContextForDbg());
-                        //LogContextForDbg(false);
                         stack.Push((true, null));
                     }
                 }
-                /*
-                else if (ConsumeIfMatch('}'))
-                {
-                    if (!ConsumeIfMatch('}'))
-                    {
-                        Console.WriteLine("Popping interpolation as close brace was found " + GetContextForDbg());
-                        Debug.Assert(stack.Peek().IsCode);
-                        stack.Pop();
-                    }
-                }
-                */
 
                 else
                 {
@@ -660,8 +629,6 @@ public class Lexer(string fileContent)
         {
             literalBuilder.Append(_input[i]);
         }
-
-        Console.WriteLine(literalBuilder.ToString());
 
         return literalBuilder.ToString();
     }
