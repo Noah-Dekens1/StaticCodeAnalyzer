@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
+using ObservingStringType = (bool IsInterpolated, bool IsVerbatim);
 public enum TokenKind
 {
     Identifier,
@@ -82,6 +83,7 @@ public struct Token
 
 public class Lexer(string fileContent)
 {
+
     private readonly char[] _input = fileContent.ToCharArray();
     private int _index = 0;
 
@@ -226,9 +228,11 @@ public class Lexer(string fileContent)
         return CanPeek(count) ? _input[_index + count] : '\0';
     }
 
-    public bool ConsumeIfMatch(char c)
+    public bool ConsumeIfMatch(char c, bool includeConsumed = false)
     {
-        if (PeekCurrent() == c)
+        int negativeSearch = includeConsumed ? 1 : 0;
+
+        if (Peek(negativeSearch) == c)
         {
             Consume();
             return true;
@@ -377,7 +381,7 @@ public class Lexer(string fileContent)
             var b = Peek(1);
 
             bool maybeHexadecimal = char.ToLower(b) == 'x';
-            bool maybeBinary = b == 'b';
+            bool maybeBinary = char.ToLower(b) == 'b';
 
             if (a == '0' && (maybeHexadecimal || maybeBinary))
             {
@@ -466,86 +470,207 @@ public class Lexer(string fileContent)
         throw new Exception($"Unknown escape sequence \"\\{c}\"");
     }
 
-    // @fixme: multiline strings and \n!!!
-    private string ReadStringLiteral(bool isVerbatim, bool isInterpolated)
+    public bool ConsumeIfMatchSequence(char[] s, bool includeConsumed = false)
+    {
+        int negativeSearch = includeConsumed ? 1 : 0;
+
+        if (!CanPeek(s.Length - 1 - negativeSearch))
+            return false;
+
+        for (int i = 0; i < s.Length; i++)
+            if (s[i] != Peek(i - negativeSearch))
+                return false;
+
+        _index += s.Length - negativeSearch;
+
+        return true;
+    }
+
+    // @todo: clean this up
+    // @fixme: does this work for all cases? needs to be tested
+    private string ReadStringLiteral_New(ObservingStringType stringType)
     {
         var literalBuilder = new StringBuilder();
-        literalBuilder.Append(Consume()); // we already checked for "
+        var stringStart = _index;
 
-        int backslashCount = 0;
-        int scopeCounter = 0;
-        int braceCounter = 0;
-        bool isCountingOpen = false;
-        int verbatimQuoteCounter = 0;
+        Consume();
 
-        void FlushBrace()
+        Stack<(bool IsCode, ObservingStringType?)> stack = [];
+        stack.Push((false, stringType));
+
+        bool MatchString(out bool interpolated, out bool verbatim, out bool regularQuote, bool includeConsumed)
         {
-            if (braceCounter % 2 != 0)
+            interpolated = verbatim = regularQuote = false;
+
+            if (
+                ConsumeIfMatchSequence(['@', '$', '"'], includeConsumed) ||
+                ConsumeIfMatchSequence(['$', '@', '"'], includeConsumed)
+                )
             {
-                // if not even amount of open/close braces we either entered or exited a scope
-                if (isCountingOpen)
-                    scopeCounter++;
-                else
-                    scopeCounter--;
+                interpolated = true;
+                verbatim = true;
+                return true;
             }
-            braceCounter = 0;
+            else if (ConsumeIfMatchSequence(['@', '"'], includeConsumed))
+            {
+                verbatim = true;
+                return true;
+            }
+            else if (ConsumeIfMatchSequence(['$', '"'], includeConsumed))
+            {
+                interpolated = true;
+                return true;
+            }
+            else if (ConsumeIfMatch('"', includeConsumed))
+            {
+                regularQuote = true;
+                return true;
+            }
+
+            return false;
         }
 
-        while (!IsAtEnd())
+        while (!IsAtEnd() && stack.Count != 0)
         {
-            char c = Consume();
+            char c = PeekCurrent();
 
-            /*
-            if (c == '\\')
+            //literalBuilder.Append(c);
+
+            var (isCode, str) = stack.Peek();
+            var (isInterpolated, isVerbatim) = str ?? default;
+
+            if (isCode)
             {
-                c = ResolveEscapeSequence();
-            }
-            */ // Don't resolve escape sequences?
-
-            literalBuilder.Append(c);
-
-            if (isInterpolated && (c == '{' || c == '}'))
-            {
-                if (braceCounter != 0 && ((isCountingOpen && c != '{') || (!isCountingOpen && c != '}')))
+                var possibleMatchStart = _index;
+                if (MatchString(out var interpolated, out var verbatim, out var regularQuote, false))
                 {
-                    // SWITCH
-                    FlushBrace();
+                    //Console.WriteLine("Pushing as sequence was matched " + GetContextForDbg());
+                    //LogContextForDbgMulti(possibleMatchStart, false);
+                    stack.Push((false, (interpolated, verbatim)));
                 }
-                isCountingOpen = c == '{';
-                braceCounter++;
-            }
-            else if (isInterpolated && braceCounter != 0)
-            {
-                // we're no longer seeing a sequence of % 
-                FlushBrace();
-            }
-
-            if (isVerbatim)
-            {
-                if (c == '"')
+                else if (ConsumeIfMatch('}'))
                 {
-                    verbatimQuoteCounter++;
+                    //Console.WriteLine("Popping interpolation as close brace was found " + GetContextForDbg() + " Next is code? -> " + stack.Peek().IsCode);
+                    //LogContextForDbg(true);
+                    Debug.Assert(stack.Peek().IsCode);
+                    stack.Pop();
                 }
                 else
                 {
-                    verbatimQuoteCounter = 0;
+                    Consume();
                 }
+
+                continue;
             }
 
-            // @fixme: so many things are horribly wrong here
-            // it currently breaks on the nested brace closing in a string ("a}") because it's not a string literal
-            // do we need to recursively lex it or something?
-            if (c == '"' && (isVerbatim || backslashCount % 2 == 0) && scopeCounter == 0 && (!isVerbatim || (verbatimQuoteCounter % 2 != 0 && PeekCurrent() != '"')))
-                break;
+            if (!isVerbatim)
+            {
+                if (ConsumeIfMatch('\\'))
+                {
+                    if (ConsumeIfMatch('"'))
+                    {
+                        continue;
+                    }
+                    else if (ConsumeIfMatch('\\'))
+                    {
+                        continue;
+                    }
+                }
 
-
-            if (c == '\\')
-                backslashCount++;
+                if (ConsumeIfMatch('"'))
+                {
+                    //Console.WriteLine("Popping as ending \" was found in regular string " + GetContextForDbg() + " Next is code? -> " + stack.Peek().IsCode);
+                    //LogContextForDbg(true);
+                    stack.Pop();
+                    continue;
+                }
+                else if (!isInterpolated)
+                {
+                    Consume(); // if interpolated we might still consume the character there
+                    continue;
+                }
+            }
             else
-                backslashCount = 0;
+            {
+
+                if (ConsumeIfMatch('"'))
+                {
+                    if (ConsumeIfMatch('"'))
+                    {
+                        // how many do we add to the literal builder?
+                    }
+                    else
+                    {
+                        // Do we enter/exit a string here?
+                        bool shouldEnterString = stack.Peek().IsCode;
+
+                        if (!shouldEnterString)
+                        {
+                            //Console.WriteLine("Popping as singular ending quote was found in verbatim string " + GetContextForDbg() + " Next is code? -> " + stack.Peek().IsCode);
+                            //LogContextForDbg(true);
+                            stack.Pop();
+                            continue;
+                        }
+                        else
+                            throw new NotImplementedException();
+                    }
+                }
+                else if (!isInterpolated) // We've handled it so consume any character
+                {
+                    Consume();
+                    continue;
+                }
+            }
+
+            if (isInterpolated)
+            {
+                if (ConsumeIfMatch('{'))
+                {
+                    if (!ConsumeIfMatch('{'))
+                    {
+                        //Console.WriteLine("Pushing interpolation as open brace was found " + GetContextForDbg());
+                        //LogContextForDbg(false);
+                        stack.Push((true, null));
+                    }
+                }
+                /*
+                else if (ConsumeIfMatch('}'))
+                {
+                    if (!ConsumeIfMatch('}'))
+                    {
+                        Console.WriteLine("Popping interpolation as close brace was found " + GetContextForDbg());
+                        Debug.Assert(stack.Peek().IsCode);
+                        stack.Pop();
+                    }
+                }
+                */
+
+                else
+                {
+                    Consume();
+                }
+            }
         }
+        // This doesn't catch all issues of course (stack could be empty before string completes)
+        // But this way we do prevent *some* overruns
+        Debug.Assert(stack.Count == 0);
+        var stringEnd = _index;
+
+        for (int i = stringStart; i < stringEnd; i++)
+        {
+            literalBuilder.Append(_input[i]);
+        }
+
+        Console.WriteLine(literalBuilder.ToString());
 
         return literalBuilder.ToString();
+    }
+
+    // @fixme: multiline strings and \n!!!
+    // @todo: maybe instead of using plain counters we can use a stack of enums to keep track of what kind of string we're in?
+    private string ReadStringLiteral(bool isVerbatim, bool isInterpolated)
+    {
+        return ReadStringLiteral_New((isInterpolated, isVerbatim)); // caution: order changed
     }
 
     private string ReadCharLiteral()
