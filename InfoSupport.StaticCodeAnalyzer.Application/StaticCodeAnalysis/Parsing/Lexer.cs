@@ -161,18 +161,20 @@ public enum TokenKind
     WhileKeyword
 }
 
+[DebuggerDisplay("Ln: {Line} Col: {Column}")]
 public struct Position
 {
     public ulong Line { get; set; }
     public ulong Column { get; set; }
 }
 
-[DebuggerDisplay("{Kind} {Lexeme} {Position}")]
+[DebuggerDisplay("{Kind} {Lexeme} {Start} {End}")]
 public struct Token
 {
     public TokenKind Kind { get; set; }
     public string Lexeme { get; set; }
-    public Position Position { get; set; }
+    public Position Start { get; set; }
+    public Position End { get; set; }
     public object? Value { get; set; } // Mostly for numeric types, @TODO: refactor to Parser
 }
 
@@ -185,7 +187,9 @@ public class Lexer(string fileContent)
     private readonly List<Token> _tokens = [];
 
     private ulong _line = 1;
-    private ulong _column = 0;
+    private ulong _column = 1;
+
+    private Position _tokenStart = new Position();
 
     private readonly Dictionary<char, char> _escapeSequences = new()
     {
@@ -297,12 +301,21 @@ public class Lexer(string fileContent)
             if (name.EndsWith("Keyword"))
             {
                 var key = name.Substring(0, name.Length - "Keyword".Length);
-                key = char.ToLowerInvariant(key[0]) + key.Substring(1);
+                key = char.ToLowerInvariant(key[0]) + key[1..];
                 keywordMap[key] = value;
             }
         }
 
         return keywordMap;
+    }
+
+    public Position GetCurrentPosition()
+    {
+        return new Position
+        {
+            Line = _line,
+            Column = _column,
+        };
     }
 
     public List<Token> GetTokens()
@@ -320,18 +333,28 @@ public class Lexer(string fileContent)
             => _index;
 
     public void Seek(int pos)
-        => _index = pos;
+    {
+        if (pos == _index) return;
+        var dir = pos - _index >= 0 ? 1 : -1;
+        
+        while (_index != pos)
+        {
+            _column++;
+            if (_input[_index] == '\n')
+            {
+                _line++;
+                _column = 1;
+                Console.WriteLine($"On line {_line}");
+            }
+            _index += dir;
+        }
+    }
 
     public char Consume()
     {
-        _column++;
-
-        if (_input[_index] == '\n')
-        {
-            _line++;
-            _column = 0;
-        }
-        return _input[_index++];
+        var oldIndex = _index;
+        Seek(_index + 1);
+        return _input[oldIndex];
     }
 
     internal string GetContextForDbg(int lookAround=5)
@@ -371,7 +394,7 @@ public class Lexer(string fileContent)
         while (CanPeek(++i) && Peek(i) == c) ;
 
         if (i >= minMatch && i <= maxMatch)
-            _index += i;
+            Seek(_index + i);
         else
             i = -1;
 
@@ -380,7 +403,7 @@ public class Lexer(string fileContent)
 
     private void Emit(TokenKind kind, string content, object? value=null)
     {
-        _tokens.Add(new Token { Kind = kind, Lexeme = content, Value = value });
+        _tokens.Add(new Token { Kind = kind, Lexeme = content, Value = value, Start = _tokenStart, End = GetCurrentPosition() });
         //Console.WriteLine($"{_tokens[^1].Kind} {_tokens[^1].Lexeme}");
     }
 
@@ -621,7 +644,7 @@ public class Lexer(string fileContent)
             if (s[i] != Peek(i - negativeSearch))
                 return false;
 
-        _index += s.Length - negativeSearch;
+        Seek(_index + s.Length - negativeSearch);
 
         return true;
     }
@@ -948,8 +971,10 @@ public class Lexer(string fileContent)
 
     private List<Token> LexInternal()
     {
+
         while (!IsAtEnd())
         {
+            _tokenStart = GetCurrentPosition();
             char c = PeekCurrent();
 
             var singleCharMatch = new Dictionary<char, TokenKind>()

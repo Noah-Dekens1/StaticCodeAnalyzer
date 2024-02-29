@@ -9,6 +9,7 @@ internal class InterpolationTest
 {
     void a()
     {
+        var t = "\n";
         var a = @$"{{ {"hello"} {{}} {$"{"hello" + $"{"a}"}"}"} ""Hello 1""  ";
     }
 }
