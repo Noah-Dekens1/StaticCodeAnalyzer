@@ -873,4 +873,141 @@ public class LexerTests
         ValidateTokens(expectedTokens, tokens);
     }
 
+    [TestMethod]
+    public void Lex_UnaryNegation_ReturnsCorrectToken()
+    {
+        var tokens = Lexer.Lex("bool isNotTrue = !true;");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.BoolKeyword, "bool"),
+            (TokenKind.Identifier, "isNotTrue"),
+            (TokenKind.Equals, "="),
+            (TokenKind.Exclamation, "!"),
+            (TokenKind.TrueKeyword, "true"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_RangeOperator_ReturnsCorrectTokens()
+    {
+        var tokens = Lexer.Lex("var subset = numbers[1..4];");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.Identifier, "var"),
+            (TokenKind.Identifier, "subset"),
+            (TokenKind.Equals, "="),
+            (TokenKind.Identifier, "numbers"),
+            (TokenKind.OpenBracket, "["),
+            (TokenKind.NumericLiteral, "1"),
+            (TokenKind.DotDot, ".."),
+            (TokenKind.NumericLiteral, "4"),
+            (TokenKind.CloseBracket, "]"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_SingleLineComment_IgnoresComment()
+    {
+        var tokens = Lexer.Lex("int x = 1; // This is a comment\nint y = 2;");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.IntKeyword, "int"),
+            (TokenKind.Identifier, "x"),
+            (TokenKind.Equals, "="),
+            (TokenKind.NumericLiteral, "1"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.IntKeyword, "int"),
+            (TokenKind.Identifier, "y"),
+            (TokenKind.Equals, "="),
+            (TokenKind.NumericLiteral, "2"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_MultiLineComment_IgnoresComment()
+    {
+        var tokens = Lexer.Lex("int x = 1; /* This is a\nmulti-line comment */int y = 2;");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.IntKeyword, "int"),
+            (TokenKind.Identifier, "x"),
+            (TokenKind.Equals, "="),
+            (TokenKind.NumericLiteral, "1"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.IntKeyword, "int"),
+            (TokenKind.Identifier, "y"),
+            (TokenKind.Equals, "="),
+            (TokenKind.NumericLiteral, "2"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_ColonColonOperator_ReturnsCorrectTokens()
+    {
+        var tokens = Lexer.Lex("var global = global::System.DateTime.Now;");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.Identifier, "var"),
+            (TokenKind.Identifier, "global"),
+            (TokenKind.Equals, "="),
+            (TokenKind.Identifier, "global"),
+            (TokenKind.ColonColon, "::"),
+            (TokenKind.Identifier, "System"),
+            (TokenKind.Dot, "."),
+            (TokenKind.Identifier, "DateTime"),
+            (TokenKind.Dot, "."),
+            (TokenKind.Identifier, "Now"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_OtherOperators_ReturnsCorrectTokens()
+    {
+        var tokens = Lexer.Lex("x %= y; a >= b; c <= d;");
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.Identifier, "x"),
+            (TokenKind.PercentEquals, "%="),
+            (TokenKind.Identifier, "y"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.Identifier, "a"),
+            (TokenKind.GreaterThanEquals, ">="),
+            (TokenKind.Identifier, "b"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.Identifier, "c"),
+            (TokenKind.LessThanEquals, "<="),
+            (TokenKind.Identifier, "d"),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
 }
