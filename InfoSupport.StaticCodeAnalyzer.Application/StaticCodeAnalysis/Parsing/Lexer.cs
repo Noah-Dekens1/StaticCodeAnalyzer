@@ -10,6 +10,23 @@ using System.Threading.Tasks;
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 using ObservingStringType = (bool IsInterpolated, bool IsVerbatim);
+
+struct StringData
+{
+    public bool IsInterpolated { get; set; }
+    public bool IsVerbatim { get; set; }
+    public bool IsRaw { get; set; }
+
+    /** 
+     * For raw string literals we need to know quote count (for closing) 
+     * and the dollar sign ($) count for interpolation ($$ -> {{ and }})
+     * while $$$$ -> {{{{ and }}}}
+     */
+    public int DollarSignCount { get; set; }
+
+    public int DQouteCount { get; set; }
+}
+
 public enum TokenKind
 {
     Identifier,
@@ -78,7 +95,7 @@ public struct Token
     public TokenKind Kind { get; set; }
     public string Lexeme { get; set; }
     public Position Position { get; set; }
-    public object? Value { get; set; } // Mostly for numeric types
+    public object? Value { get; set; } // Mostly for numeric types, @TODO: refactor to Parser
 }
 
 public class Lexer(string fileContent)
@@ -102,10 +119,11 @@ public class Lexer(string fileContent)
         { 'r', '\r' },
         { 't', '\t' },
         { 'v', '\v' },
-        { '\'', '\\' },
+        { '\'', '\\' }, // Shouldn't this be \' again?
         { '"', '\"' },
         { '0', '\0' },
         // \x and \u \U have been excluded as they have trailing values!
+        // not a major issue though as nobody uses them ;)
     };
 
     private readonly List<string> _keywords = [
@@ -199,6 +217,12 @@ public class Lexer(string fileContent)
     public bool IsAtEnd()
         => _index >= _input.Length;
 
+    public int Tell()
+            => _index;
+
+    public void Seek(int pos)
+        => _index = pos;
+
     public char Consume()
     {
         _column++;
@@ -239,6 +263,20 @@ public class Lexer(string fileContent)
         }
 
         return false;
+    }
+
+    public int ConsumeIfMatchGreedy(char c, int minMatch = 0, int maxMatch = int.MaxValue)
+    {
+        int i = -1;
+
+        while (CanPeek(++i) && Peek(i) == c) ;
+
+        if (i >= minMatch && i <= maxMatch)
+            _index += i;
+        else
+            i = -1;
+
+        return i;
     }
 
     private void Emit(TokenKind kind, string content, object? value=null)
@@ -488,42 +526,65 @@ public class Lexer(string fileContent)
 
     // @todo: clean this up
     // @fixme: does this work for all cases? needs to be tested
-    private string ReadStringLiteral_New(ObservingStringType stringType)
+    private string ReadStringLiteral(StringData topString, int stringStart)
     {
         var literalBuilder = new StringBuilder();
-        var stringStart = _index;
+        //var stringStart = _index;
 
-        Consume();
+        Stack<(bool IsCode, StringData?)> stack = [];
+        stack.Push((false, topString));
 
-        Stack<(bool IsCode, ObservingStringType?)> stack = [];
-        stack.Push((false, stringType));
-
-        bool MatchString(out bool interpolated, out bool verbatim, out bool regularQuote, bool includeConsumed)
+        bool MatchString(out StringData str, bool includeConsumed)
         {
-            interpolated = verbatim = regularQuote = false;
+            str = new();
+            int dollarSigns, rawQuotes;
+
+            // Backtracking because I'm lazy
+            var pos = Tell();
+            if ((dollarSigns = ConsumeIfMatchGreedy('$', 1)) != -1)
+            {
+                if ((rawQuotes = ConsumeIfMatchGreedy('"', 3)) != -1)
+                {
+                    str.IsRaw = true;
+                    str.DollarSignCount = dollarSigns;
+                    str.DQouteCount = rawQuotes;
+                    str.IsInterpolated = true;
+                    return true;
+                }
+
+                // We didn't find a match so backtrack so that $"" or $@"" or @$"" still can match
+                Seek(pos);
+            }
+            // Check for regular raw string
+            else if ((rawQuotes = ConsumeIfMatchGreedy('"', 3)) != -1)
+            {
+                str.IsRaw = true;
+                str.IsInterpolated = false;
+                str.DQouteCount = rawQuotes;
+                return true;
+            }
 
             if (
                 ConsumeIfMatchSequence(['@', '$', '"'], includeConsumed) ||
                 ConsumeIfMatchSequence(['$', '@', '"'], includeConsumed)
                 )
             {
-                interpolated = true;
-                verbatim = true;
+                str.IsInterpolated = true;
+                str.IsVerbatim = true;
                 return true;
             }
             else if (ConsumeIfMatchSequence(['@', '"'], includeConsumed))
             {
-                verbatim = true;
+                str.IsVerbatim = true;
                 return true;
             }
             else if (ConsumeIfMatchSequence(['$', '"'], includeConsumed))
             {
-                interpolated = true;
+                str.IsInterpolated = true;
                 return true;
             }
             else if (ConsumeIfMatch('"', includeConsumed))
             {
-                regularQuote = true;
                 return true;
             }
 
@@ -532,19 +593,42 @@ public class Lexer(string fileContent)
 
         while (!IsAtEnd() && stack.Count != 0)
         {
+            char c = PeekCurrent();
+
+            //literalBuilder.Append(c);
+
             var (isCode, str) = stack.Peek();
-            var (isInterpolated, isVerbatim) = str ?? default;
 
             if (isCode)
             {
-                if (MatchString(out var interpolated, out var verbatim, out var regularQuote, false))
+                var possibleMatchStart = _index;
+
+                StringData? lastStr = null;
+
+                foreach (var item in stack)
                 {
-                    stack.Push((false, (interpolated, verbatim)));
+                    if (item.IsCode)
+                        continue;
+
+                    lastStr = item.Item2;
+                    break;
                 }
-                else if (ConsumeIfMatch('}'))
+
+                if (MatchString(out var stringData, false))
+                {
+                    stack.Push((false, stringData));
+                }
+                else if (lastStr.HasValue && !lastStr.Value.IsRaw && ConsumeIfMatch('}'))
                 {
                     Debug.Assert(stack.Peek().IsCode);
                     stack.Pop();
+                }
+                // Wait a sec, do we have to look up the stack to see the dollarsigncount?
+                else if (lastStr.HasValue && lastStr.Value.IsRaw && ConsumeIfMatchGreedy('}', lastStr.Value.DollarSignCount, lastStr.Value.DollarSignCount) != -1)
+                {
+                    Debug.Assert(stack.Peek().IsCode);
+                    stack.Pop();
+                    continue;
                 }
                 else
                 {
@@ -554,7 +638,7 @@ public class Lexer(string fileContent)
                 continue;
             }
 
-            if (!isVerbatim)
+            if (!str!.Value.IsVerbatim && !str!.Value.IsRaw)
             {
                 if (ConsumeIfMatch('\\'))
                 {
@@ -573,11 +657,31 @@ public class Lexer(string fileContent)
                     stack.Pop();
                     continue;
                 }
-                else if (!isInterpolated)
+                else if (!str.Value.IsInterpolated)
                 {
-                    Consume(); // if interpolated we might still consume the character there
+                    Consume();
                     continue;
                 }
+            }
+            else if (str!.Value.IsRaw)
+            {
+                var dollarSignCount = str.Value.DollarSignCount;
+                var dquoteCount = str.Value.DQouteCount;
+                var possibleStart = Tell();
+
+                if (str.Value.IsInterpolated && ConsumeIfMatchGreedy('{', dollarSignCount, dollarSignCount) != -1)
+                {
+                    stack.Push((true, null));
+                    continue;
+                }
+
+                if (ConsumeIfMatchGreedy('"', dquoteCount, dquoteCount) != -1)
+                {
+                    stack.Pop();
+                    continue;
+                }
+
+                Consume(); // We don't let standard interpolation handle consuming characters so we have to
             }
             else
             {
@@ -593,18 +697,16 @@ public class Lexer(string fileContent)
                             stack.Pop();
                             continue;
                         }
-                        else
-                            throw new NotImplementedException();
                     }
                 }
-                else if (!isInterpolated) // We've handled it so consume any character
+                else if (!str.Value.IsInterpolated) // We've handled it so consume any character
                 {
                     Consume();
                     continue;
                 }
             }
 
-            if (isInterpolated)
+            if (str.Value.IsInterpolated && !str.Value.IsRaw)
             {
                 if (ConsumeIfMatch('{'))
                 {
@@ -613,7 +715,6 @@ public class Lexer(string fileContent)
                         stack.Push((true, null));
                     }
                 }
-
                 else
                 {
                     Consume();
@@ -630,14 +731,9 @@ public class Lexer(string fileContent)
             literalBuilder.Append(_input[i]);
         }
 
-        return literalBuilder.ToString();
-    }
+        Console.WriteLine(literalBuilder.ToString());
 
-    // @fixme: multiline strings and \n!!!
-    // @todo: maybe instead of using plain counters we can use a stack of enums to keep track of what kind of string we're in?
-    private string ReadStringLiteral(bool isVerbatim, bool isInterpolated)
-    {
-        return ReadStringLiteral_New((isInterpolated, isVerbatim)); // caution: order changed
+        return literalBuilder.ToString();
     }
 
     private string ReadCharLiteral()
@@ -689,6 +785,48 @@ public class Lexer(string fileContent)
         }
 
         return;
+    }
+
+    private string ReadStringLiteral(out StringData outStr)
+    {
+        bool isInterpolated = false;
+        bool isVerbatim = false;
+
+        var pos = Tell();
+
+        if (ConsumeIfMatch('@'))
+            isVerbatim = true;
+
+        int dollarSigns;
+
+
+        if ((dollarSigns = ConsumeIfMatchGreedy('$')) != 0)
+            isInterpolated = true;
+
+
+        if (ConsumeIfMatch('@')) // ugly hack to handle @$ and $@, this is fine though for this test project
+            isVerbatim = true;
+
+        var dquoteCount = ConsumeIfMatchGreedy('"');
+
+        // 1 "    -> regular string start
+        // 2 "    -> complete empty string
+        // 3(+) " -> raw string literal (can be interpolated but not be verbatim)
+
+        var stringData = new StringData()
+        {
+            IsInterpolated = isInterpolated,
+            IsVerbatim = isVerbatim,
+            IsRaw = dquoteCount >= 3,
+
+            DollarSignCount = dollarSigns,
+            DQouteCount = dquoteCount,
+        };
+
+        var str = ReadStringLiteral(stringData, pos);
+
+        outStr = stringData;
+        return str;
     }
 
     public static List<Token> Lex(string content)
@@ -799,11 +937,7 @@ public class Lexer(string fileContent)
                     }
                     break;
                 case '"':
-                    if (CanPeek(2) && Peek(1) == '"' && Peek(2) == '"')
-                    {
-                        throw new NotImplementedException("No support for multiline string literals yet!");
-                    }
-                    Emit(TokenKind.StringLiteral, ReadStringLiteral(false, false));
+                    Emit(TokenKind.StringLiteral, ReadStringLiteral(out _));
                     break;
                 case '+':
                     Consume();
@@ -951,27 +1085,8 @@ public class Lexer(string fileContent)
                 case '@' when isVerbatimString:
                     // $"", $@"", @"", @$""
                     {
-                        Consume();
-                        bool isInterpolated = c == '$';
-                        bool isVerbatim = c == '@'; // @fixme: Do we care about verbatim strings as lexer?
-
-                        var second = PeekCurrent();
-                        var isValid = second == '$' || second == '@' || second == '"';
-                        isInterpolated |= second == '$';
-                        isVerbatim |= second == '@';
-
-                        bool secondIsQuote = second == '\"';
-
-                        if (!isValid)
-                        {
-                            throw new Exception(GetContextForDbg());
-                        }
-
-                        if (!secondIsQuote && isValid)
-                            Consume();
-
-                        var str = ReadStringLiteral(isVerbatim, isInterpolated);
-                        Emit(isInterpolated ? TokenKind.InterpolatedStringLiteral : TokenKind.StringLiteral, c.ToString() + (!secondIsQuote ? second.ToString() : "") + str);
+                        var str = ReadStringLiteral(out var data);
+                        Emit(data.IsInterpolated ? TokenKind.InterpolatedStringLiteral : TokenKind.StringLiteral, str);
                     }
 
                     break;

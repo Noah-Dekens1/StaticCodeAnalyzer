@@ -215,29 +215,15 @@ public class LexerTests
         ValidateTokens(expectedTokens, tokens);
     }
 
-    [TestMethod]
-    public void Lex_NestedStringLiteral_ReturnsCorrectTokens()
+    [DataTestMethod]
+    [DataRow(""""$$"""Hello world! {{"interpolated!"}}""";"""")]
+    [DataRow("""""$$$$$"""" Hello {{{{{@$"multiline {"world!" + """}}""" + $"""{"Test!" + @" ""abc"" "}"""}"}}}}} """;"""";""""")]
+    [DataRow("""$"t \" {"simple"} {{ }}\"\"";""")]
+    [DataRow("""$"Hello {"nested }"} string!";""")]
+    [DataRow("""$"{{ { ("regular", $@"}}""{$"Hello {"nested }"} string!"}")}";""")]
+    [DataRow("""@$"{{ {"hello"} {{}} {$"{"hello" + $"{"a}"}"}"} ""Hello 1""  ";""")]
+    public void Lex_ComplexInterpolatedStringLiterals_ReturnCorrectTokens(string str)
     {
-        // the ";" at the end if because we're using multiline strings and don't want to have """" at the end
-        const string str = """$"{{ { ("regular", $@"}}""{$"Hello {"nested }"} string!"}")}";""";
-
-        var tokens = Lexer.Lex(str);
-
-        var expectedTokens = new TokenList()
-        {
-            (TokenKind.InterpolatedStringLiteral, str[..^1]), // (remove last semicolon from string literal)
-            (TokenKind.Semicolon, ";"),
-            (TokenKind.EndOfFile, string.Empty)
-        };
-
-        ValidateTokens(expectedTokens, tokens);
-    }
-
-    [TestMethod]
-    public void Lex_ComplexStringLiteral_ReturnCorrectTokens()
-    {
-        const string str = """@$"{{ {"hello"} {{}} {$"{"hello" + $"{"a}"}"}"} ""Hello 1""  ";""";
-
         var tokens = Lexer.Lex(str);
 
         var expectedTokens = new TokenList()
