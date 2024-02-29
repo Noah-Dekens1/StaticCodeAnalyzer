@@ -619,7 +619,7 @@ public class Lexer(string fileContent)
                 {
                     stack.Push((false, stringData));
                 }
-                else if (lastStr.HasValue && !lastStr.Value.IsRaw && ConsumeIfMatch('}'))
+                else if (((lastStr.HasValue && !lastStr.Value.IsRaw) || !lastStr.HasValue) && ConsumeIfMatch('}'))
                 {
                     Debug.Assert(stack.Peek().IsCode);
                     stack.Pop();
@@ -699,6 +699,8 @@ public class Lexer(string fileContent)
                             continue;
                         }
                     }
+
+                    continue;
                 }
                 else if (!str.Value.IsInterpolated) // We've handled it so consume any character
                 {
@@ -732,7 +734,7 @@ public class Lexer(string fileContent)
             literalBuilder.Append(_input[i]);
         }
 
-        Console.WriteLine(literalBuilder.ToString());
+        //Console.WriteLine(literalBuilder.ToString());
 
         return literalBuilder.ToString();
     }

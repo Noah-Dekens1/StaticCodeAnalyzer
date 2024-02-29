@@ -218,6 +218,9 @@ public class LexerTests
     [DataTestMethod]
     [DataRow("\"\";")] // empty string
     [DataRow("\"::{645FF040-5081-101B-9F08-00AA002F954E}\";")]
+    // the ending """ isn't a multiline string, it's a verbatim "" escape and an end quote "
+    [DataRow(""""@"""Hello world!""";"""")]
+
     public void Lex_StringLiterals_ReturnCorrectTokens(string str)
     {
         var tokens = Lexer.Lex(str);
@@ -239,6 +242,7 @@ public class LexerTests
     [DataRow("""$"Hello {"nested }"} string!";""")]
     [DataRow("""$"{{ { ("regular", $@"}}""{$"Hello {"nested }"} string!"}")}";""")]
     [DataRow("""@$"{{ {"hello"} {{}} {$"{"hello" + $"{"a}"}"}"} ""Hello 1""  ";""")]
+    [DataRow(""""@$"/s ""{Path.Combine("", true ? "SetFilesAsDefault.reg" : "UnsetFilesAsDefault.reg")}""";"""")]
     public void Lex_ComplexInterpolatedStringLiterals_ReturnCorrectTokens(string str)
     {
         var tokens = Lexer.Lex(str);
