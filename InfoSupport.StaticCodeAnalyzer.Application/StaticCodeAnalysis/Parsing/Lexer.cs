@@ -356,6 +356,7 @@ public class Lexer(string fileContent)
             if ((isHex || isBinary) && (c == 'u' || c == 'l'))
             {
                 suffix += c == 'u' ? 'u' : 'l';
+                cleaned = cleaned.Remove(i);
             }
         }
 
