@@ -30,7 +30,6 @@ struct StringData
 public enum TokenKind
 {
     Identifier,
-    //Keyword, // Could be split up into specific keywords
     Semicolon,
     Dot,
     DotDot,
@@ -855,6 +854,7 @@ public class Lexer(string fileContent)
         }
 
         literalBuilder.Append('\'');
+        Consume(); // consume closing '
 
         return literalBuilder.ToString();
     }
@@ -1066,7 +1066,7 @@ public class Lexer(string fileContent)
                     // -, -=, --
                     if (ConsumeIfMatch('='))
                         Emit(TokenKind.MinusEquals, "-=");
-                    else if (ConsumeIfMatch('+'))
+                    else if (ConsumeIfMatch('-'))
                         Emit(TokenKind.MinusMinus, "--");
                     else
                         Emit(TokenKind.Minus, "-");
@@ -1074,7 +1074,7 @@ public class Lexer(string fileContent)
                     break;
                 case '?':
                     Consume();
-                    // ?, ??, ??=
+                    // ?, ??, ??=,( ?[ is for the parser, not lexer)
                     if (ConsumeIfMatch('?'))
                     {
                         if (ConsumeIfMatch('='))
