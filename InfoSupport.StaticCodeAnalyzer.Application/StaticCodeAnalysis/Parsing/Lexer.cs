@@ -30,7 +30,7 @@ struct StringData
 public enum TokenKind
 {
     Identifier,
-    Keyword, // Could be split up into specific keywords
+    //Keyword, // Could be split up into specific keywords
     Semicolon,
     Dot,
     DotDot,
@@ -80,7 +80,86 @@ public enum TokenKind
     Tilde,
     Slash,
     SlashEquals,
-    EndOfFile
+    EndOfFile,
+
+    // Keywords
+    AbstractKeyword,
+    AsKeyword,
+    BaseKeyword,
+    BoolKeyword,
+    BreakKeyword,
+    ByteKeyword,
+    CaseKeyword,
+    CatchKeyword,
+    CharKeyword,
+    CheckedKeyword,
+    ClassKeyword,
+    ConstKeyword,
+    ContinueKeyword,
+    DecimalKeyword,
+    DefaultKeyword,
+    DelegateKeyword,
+    DoKeyword,
+    DoubleKeyword,
+    ElseKeyword,
+    EnumKeyword,
+    EventKeyword,
+    ExplicitKeyword,
+    ExternKeyword,
+    FalseKeyword,
+    FinallyKeyword,
+    FixedKeyword,
+    FloatKeyword,
+    ForKeyword,
+    ForeachKeyword,
+    GotoKeyword,
+    IfKeyword,
+    ImplicitKeyword,
+    InKeyword,
+    IntKeyword,
+    InterfaceKeyword,
+    InternalKeyword,
+    IsKeyword,
+    LockKeyword,
+    LongKeyword,
+    NamespaceKeyword,
+    NewKeyword,
+    NullKeyword,
+    ObjectKeyword,
+    OperatorKeyword,
+    OutKeyword,
+    OverrideKeyword,
+    ParamsKeyword,
+    PrivateKeyword,
+    ProtectedKeyword,
+    PublicKeyword,
+    ReadonlyKeyword,
+    RefKeyword,
+    ReturnKeyword,
+    SbyteKeyword,
+    SealedKeyword,
+    ShortKeyword,
+    SizeofKeyword,
+    StackallocKeyword,
+    StaticKeyword,
+    StringKeyword,
+    StructKeyword,
+    SwitchKeyword,
+    ThisKeyword,
+    ThrowKeyword,
+    TrueKeyword,
+    TryKeyword,
+    TypeofKeyword,
+    UintKeyword,
+    UlongKeyword,
+    UncheckedKeyword,
+    UnsafeKeyword,
+    UshortKeyword,
+    UsingKeyword,
+    VirtualKeyword,
+    VoidKeyword,
+    VolatileKeyword,
+    WhileKeyword
 }
 
 public struct Position
@@ -206,6 +285,27 @@ public class Lexer(string fileContent)
         "while"
     ];
 
+    readonly Dictionary<string, TokenKind> _keywordMap = CreateKeywordMap();
+
+    static Dictionary<string, TokenKind> CreateKeywordMap()
+    {
+        var keywordMap = new Dictionary<string, TokenKind>();
+        var values = Enum.GetValues(typeof(TokenKind)).Cast<TokenKind>();
+
+        foreach (var value in values)
+        {
+            var name = value.ToString();
+            if (name.EndsWith("Keyword"))
+            {
+                var key = name.Substring(0, name.Length - "Keyword".Length);
+                key = char.ToLowerInvariant(key[0]) + key.Substring(1);
+                keywordMap[key] = value;
+            }
+        }
+
+        return keywordMap;
+    }
+
     public List<Token> GetTokens()
     {
         return _tokens;
@@ -307,7 +407,9 @@ public class Lexer(string fileContent)
 
         if (_keywords.Contains(name))
         {
-            Emit(TokenKind.Keyword, name);
+            //Emit(TokenKind.Keyword, name);
+            if (_keywordMap.TryGetValue(name, out var value))
+                Emit(value, name);
         }
         else
         {

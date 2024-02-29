@@ -71,12 +71,12 @@ public class LexerTests
             (TokenKind.LessThan, "<"),
             (TokenKind.Identifier, "List"),
             (TokenKind.LessThan, "<"),
-            (TokenKind.Keyword, "string"),
+            (TokenKind.StringKeyword, "string"),
             (TokenKind.GreaterThan, ">"),
             (TokenKind.GreaterThan, ">"),
             (TokenKind.Identifier, "helloWorld"),
             (TokenKind.Equals, "="),
-            (TokenKind.Keyword, "new"),
+            (TokenKind.NewKeyword, "new"),
             (TokenKind.OpenParen, "("),
             (TokenKind.CloseParen, ")"),
             (TokenKind.EndOfFile, string.Empty)
@@ -190,12 +190,12 @@ public class LexerTests
 
         var expectedTokens = new TokenList()
         {
-            (TokenKind.Keyword, "class"),
+            (TokenKind.ClassKeyword, "class"),
             (TokenKind.Identifier, "Example"),
             (TokenKind.OpenBrace, "{"),
-            (TokenKind.Keyword, "public"),
-            (TokenKind.Keyword, "static"),
-            (TokenKind.Keyword, "void"),
+            (TokenKind.PublicKeyword, "public"),
+            (TokenKind.StaticKeyword, "static"),
+            (TokenKind.VoidKeyword, "void"),
             (TokenKind.Identifier, "Main"),
             (TokenKind.OpenParen, "("),
             (TokenKind.CloseParen, ")"),
