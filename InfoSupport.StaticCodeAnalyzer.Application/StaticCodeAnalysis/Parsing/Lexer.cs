@@ -982,10 +982,6 @@ public class Lexer(string fileContent)
                 case ' ' or '\t' or '\r' or '\n':
                     Consume();
                     break; // Skip over whitespace
-                case ';':
-                    Consume();
-                    Emit(TokenKind.Semicolon, ";");
-                    break;
                 case ':':
                     Consume();
                     if (ConsumeIfMatch(':'))
