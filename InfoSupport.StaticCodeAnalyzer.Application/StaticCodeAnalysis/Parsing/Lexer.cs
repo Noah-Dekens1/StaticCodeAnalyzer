@@ -189,7 +189,8 @@ public class Lexer(string fileContent)
     private ulong _line = 1;
     private ulong _column = 1;
 
-    private Position _tokenStart = new Position();
+    private Position _tokenStart = new();
+    private ulong _lineEndColumn = 1;
 
     private readonly Dictionary<char, char> _escapeSequences = new()
     {
@@ -318,6 +319,17 @@ public class Lexer(string fileContent)
         };
     }
 
+    public Position GetPreviousPosition()
+    {
+        bool isPreviousLine = _column <= 1;
+
+        return new Position
+        {
+            Line = isPreviousLine ? _line - 1 : _line,
+            Column = isPreviousLine ? _lineEndColumn : _column - 1
+        };
+    }
+
     public List<Token> GetTokens()
     {
         return _tokens;
@@ -336,13 +348,21 @@ public class Lexer(string fileContent)
     {
         if (pos == _index) return;
         var dir = pos - _index >= 0 ? 1 : -1;
+
+        if (dir == -1)
+            throw new Exception("Backtracking not allowed!");
+        
+        // this isn't going to work as we can't reliably know what column we're at (unless reading till the beginning of the line?)
+        // so we can either do that or keep a table of line lengths
+        // otherwise block negative searching (but that means we need to remove backtracking, which should only be used at one place so could be easily replaced by peeking forwards instead?)
         
         while (_index != pos)
         {
-            _column++;
+            _column += (ulong)dir;
             if (_input[_index] == '\n')
             {
                 _line++;
+                _lineEndColumn = _column - 1;
                 _column = 1;
                 Console.WriteLine($"On line {_line}");
             }
@@ -395,6 +415,20 @@ public class Lexer(string fileContent)
 
         if (i >= minMatch && i <= maxMatch)
             Seek(_index + i);
+        else
+            i = -1;
+
+        return i;
+    }
+
+    public int PeekMatchGreedy(char c, ref int peekIndex, int minMatch = 0, int maxMatch = int.MaxValue)
+    {
+        int i = -1;
+
+        while (CanPeek(++i + peekIndex) && Peek(i + peekIndex) == c) ;
+
+        if (i >= minMatch && i <= maxMatch)
+            peekIndex += i;
         else
             i = -1;
 
@@ -666,19 +700,22 @@ public class Lexer(string fileContent)
 
             // Backtracking because I'm lazy
             var pos = Tell();
-            if ((dollarSigns = ConsumeIfMatchGreedy('$', 1)) != -1)
+            int peekIndex = 0;
+            if ((dollarSigns = PeekMatchGreedy('$', ref peekIndex, 1)) != -1)
             {
-                if ((rawQuotes = ConsumeIfMatchGreedy('"', 3)) != -1)
+                if ((rawQuotes = PeekMatchGreedy('"', ref peekIndex, 3)) != -1)
                 {
                     str.IsRaw = true;
                     str.DollarSignCount = dollarSigns;
                     str.DQouteCount = rawQuotes;
                     str.IsInterpolated = true;
+                    Seek(_index + peekIndex);
                     return true;
                 }
 
                 // We didn't find a match so backtrack so that $"" or $@"" or @$"" still can match
-                Seek(pos);
+                //Seek(pos);
+                // no need to backtrack anymore as we didn't consume anything
             }
             // Check for regular raw string
             else if ((rawQuotes = ConsumeIfMatchGreedy('"', 3)) != -1)
