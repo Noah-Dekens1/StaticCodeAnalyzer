@@ -216,6 +216,23 @@ public class LexerTests
     }
 
     [DataTestMethod]
+    [DataRow("\"\";")] // empty string
+    [DataRow("\"::{645FF040-5081-101B-9F08-00AA002F954E}\";")]
+    public void Lex_StringLiterals_ReturnCorrectTokens(string str)
+    {
+        var tokens = Lexer.Lex(str);
+
+        var expectedTokens = new TokenList()
+        {
+            (TokenKind.StringLiteral, str[..^1]),
+            (TokenKind.Semicolon, ";"),
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedTokens, tokens);
+    }
+
+    [DataTestMethod]
     [DataRow(""""$$"""Hello world! {{"interpolated!"}}""";"""")]
     [DataRow("""""$$$$$"""" Hello {{{{{@$"multiline {"world!" + """}}""" + $"""{"Test!" + @" ""abc"" "}"""}"}}}}} """;"""";""""")]
     [DataRow("""$"t \" {"simple"} {{ }}\"\"";""")]

@@ -807,7 +807,13 @@ public class Lexer(string fileContent)
         if (ConsumeIfMatch('@')) // ugly hack to handle @$ and $@, this is fine though for this test project
             isVerbatim = true;
 
-        var dquoteCount = ConsumeIfMatchGreedy('"');
+        var dquoteCount = ConsumeIfMatchGreedy('"', 3);
+
+        if (dquoteCount == -1)
+        {
+            if (!ConsumeIfMatch('"'))
+                throw new Exception("Tried to read invalid string literal");
+        }
 
         // 1 "    -> regular string start
         // 2 "    -> complete empty string
