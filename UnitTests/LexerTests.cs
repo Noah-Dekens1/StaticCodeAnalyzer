@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Runtime.InteropServices;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
@@ -7,6 +8,7 @@ namespace UnitTests;
 
 using TokenList = List<(TokenKind Kind, string Lexeme)>;
 using TokenListWithValues = List<(TokenKind Kind, string Lexeme, object? Value)>;
+using TokenListWithPositions = List<(TokenKind kind, Position start, Position end)>;
 
 [TestClass]
 public class LexerTests
@@ -39,6 +41,23 @@ public class LexerTests
             Assert.AreEqual(lexeme, actualToken.Lexeme);
             Assert.AreEqual(value?.GetType(), actualToken.Value?.GetType());
             Assert.AreEqual(value, actualToken.Value);
+        }
+    }
+
+    private void ValidateTokenPositions(TokenListWithPositions expectedPositions, List<Token> actualTokens)
+    {
+        Assert.AreEqual(expectedPositions.Count, actualTokens.Count, "Token count does not match expected.");
+
+        for (int i = 0; i < expectedPositions.Count; i++)
+        {
+            var expected = expectedPositions[i];
+            var actual = actualTokens[i];
+
+            Assert.AreEqual(expected.kind, actual.Kind, $"Token kind mismatch at index {i}.");
+            Assert.AreEqual(expected.start.Line, actual.Start.Line, $"Start line mismatch for token at index {i}.");
+            Assert.AreEqual(expected.start.Column, actual.Start.Column, $"Start column mismatch for token at index {i}.");
+            Assert.AreEqual(expected.end.Line, actual.End.Line, $"End line mismatch for token at index {i}.");
+            Assert.AreEqual(expected.end.Column, actual.End.Column, $"End column mismatch for token at index {i}.");
         }
     }
 
@@ -1010,4 +1029,67 @@ public class LexerTests
         ValidateTokens(expectedTokens, tokens);
     }
 
+    [TestMethod]
+    public void Lex_SingleLine_ReturnsTokensWithValidColumns()
+    {
+        var tokens = Lexer.Lex("var test = \"hello world!\";");
+
+        var expectedTokens = new TokenListWithPositions()
+        {
+            (TokenKind.Identifier, new(1, 1), new(1, 3)),
+            (TokenKind.Identifier, new(1, 5), new(1, 8)),
+            (TokenKind.Equals, new(1, 10), new(1, 10)),
+            (TokenKind.StringLiteral, new(1, 12), new(1, 25)),
+            (TokenKind.Semicolon, new(1, 26), new(1, 26)),
+            (TokenKind.EndOfFile, new(1, 26), new(1, 26))
+        };
+
+        ValidateTokenPositions(expectedTokens, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_MultiLine_ReturnsTokensWithValidPositions()
+    {
+        var tokens = Lexer.Lex("var x = 1;\nvar y = 2;");
+
+        // Expected token positions:
+        // var (1,1)-(1,3), x (1,5)-(1,5), = (1,7)-(1,7), 1 (1,9)-(1,9), ; (1,10)-(1,10)
+        // var (2,1)-(2,3), y (2,5)-(2,5), = (2,7)-(2,7), 2 (2,9)-(2,9), ; (2,10)-(2,10)
+        var expectedPositions = new List<(TokenKind, Position, Position)>
+        {
+            (TokenKind.Identifier, new(1, 1), new(1, 3)),
+            (TokenKind.Identifier, new(1, 5), new(1, 5)),
+            (TokenKind.Equals, new(1, 7), new(1, 7)),
+            (TokenKind.NumericLiteral, new(1, 9), new(1, 9)),
+            (TokenKind.Semicolon, new(1, 10), new(1, 10)),
+            (TokenKind.Identifier, new(2, 1), new(2, 3)),
+            (TokenKind.Identifier, new(2, 5), new(2, 5)),
+            (TokenKind.Equals, new(2, 7), new(2, 7)),
+            (TokenKind.NumericLiteral, new(2, 9), new(2, 9)),
+            (TokenKind.Semicolon, new(2, 10), new(2, 10)),
+            (TokenKind.EndOfFile, new(2, 10), new(2, 10)),
+        };
+
+        ValidateTokenPositions(expectedPositions, tokens);
+    }
+
+    [TestMethod]
+    public void Lex_PreprocessorDirective_IsIgnored()
+    {
+        var tokens = Lexer.Lex("#region test\n#endregion");
+
+        var expectedPositions = new TokenList()
+        {
+            (TokenKind.EndOfFile, string.Empty)
+        };
+
+        ValidateTokens(expectedPositions, tokens);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(UnexpectedCharacterException))]
+    public void Lex_InvalidCharacter_ThrowsException()
+    {
+        Lexer.Lex("\\");
+    }
 }
