@@ -27,6 +27,14 @@ struct StringData
     public int DQouteCount { get; set; }
 }
 
+public class UnexpectedCharacterException : Exception
+{
+    public UnexpectedCharacterException(string message) : base(message)
+    {
+
+    }
+}
+
 public enum TokenKind
 {
     Identifier,
@@ -166,6 +174,12 @@ public struct Position
 {
     public ulong Line { get; set; }
     public ulong Column { get; set; }
+
+    public Position(ulong line, ulong column)
+    {
+        Line = line;
+        Column = column;
+    }
 }
 
 [DebuggerDisplay("{Kind} {Lexeme} {Start} {End}")]
@@ -437,7 +451,7 @@ public class Lexer(string fileContent)
 
     private void Emit(TokenKind kind, string content, object? value=null)
     {
-        _tokens.Add(new Token { Kind = kind, Lexeme = content, Value = value, Start = _tokenStart, End = GetCurrentPosition() });
+        _tokens.Add(new Token { Kind = kind, Lexeme = content, Value = value, Start = _tokenStart, End = GetPreviousPosition() });
         //Console.WriteLine($"{_tokens[^1].Kind} {_tokens[^1].Lexeme}");
     }
 
@@ -652,19 +666,6 @@ public class Lexer(string fileContent)
         var value = ParseNumericLiteral(numericLiteral);
 
         return (numericLiteral, value);
-    }
-
-    private char ResolveEscapeSequence()
-    {
-        var c = Consume();
-        // Assume the backslash was already escaped
-
-        if (_escapeSequences.TryGetValue(c, out var escaped))
-        {
-            return escaped;
-        }
-
-        throw new Exception($"Unknown escape sequence \"\\{c}\"");
     }
 
     public bool ConsumeIfMatchSequence(char[] s, bool includeConsumed = false)
@@ -1261,7 +1262,7 @@ public class Lexer(string fileContent)
                     break;
 
                 default:
-                    throw new NotImplementedException($"Unknown char: {c}, context: {GetContextForDbg()}, after processing {_tokens.Count} tokens");
+                    throw new UnexpectedCharacterException($"Unknown char: {c}, context: {GetContextForDbg()}, after processing {_tokens.Count} tokens");
             }
         }
 
