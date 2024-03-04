@@ -107,7 +107,9 @@ public class LexerTests
     [TestMethod]
     public void Lex_NumericalLiterals_ReturnsValidTokens()
     {
-        var tokens = Lexer.Lex("0xFFFFFFFFF 36 .3 .74f .1f 63 97F 36.3f 3 483.3 0x4F 0xA3B9 0b00100111 3_000.5F");
+        var tokens = Lexer.Lex("0xFFFFFFFFF 36 .3 .74f .1f 63 97F 36.3f 3 483.3 0x4F 0xA3B9 0xAFC01UL 0b00100111 3_000.5F " +
+            "18446744073709551615UL 9223372036854775807L 4294967295U 0b1010_1111U 0x1FFFFFFFFUL " +
+            "1234567890 0xDeadBeef 0b1101_0011 2_147_483_647 4_294_967_295U");
 
         var expectedTokens = new TokenListWithValues()
         {
@@ -123,8 +125,19 @@ public class LexerTests
             (TokenKind.NumericLiteral, "483.3", 483.3),
             (TokenKind.NumericLiteral, "0x4F", 0x4F),
             (TokenKind.NumericLiteral, "0xA3B9", 0xA3B9),
+            (TokenKind.NumericLiteral, "0xAFC01UL", 0xAFC01UL),
             (TokenKind.NumericLiteral, "0b00100111", 0b00100111),
             (TokenKind.NumericLiteral, "3_000.5F", 3_000.5F),
+            (TokenKind.NumericLiteral, "18446744073709551615UL", 18446744073709551615UL),
+            (TokenKind.NumericLiteral, "9223372036854775807L", 9223372036854775807L),
+            (TokenKind.NumericLiteral, "4294967295U", 4294967295U),
+            (TokenKind.NumericLiteral, "0b1010_1111U", 0b10101111U),
+            (TokenKind.NumericLiteral, "0x1FFFFFFFFUL", 0x1FFFFFFFFUL),
+            (TokenKind.NumericLiteral, "1234567890", 1234567890),
+            (TokenKind.NumericLiteral, "0xDeadBeef", 0xDeadBeef),
+            (TokenKind.NumericLiteral, "0b1101_0011", 0b11010011),
+            (TokenKind.NumericLiteral, "2_147_483_647", 2_147_483_647),
+            (TokenKind.NumericLiteral, "4_294_967_295U", 4_294_967_295U),
             (TokenKind.EndOfFile, string.Empty, null),
         };
 

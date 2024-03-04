@@ -384,10 +384,10 @@ public class Lexer(string fileContent)
         }
     }
 
-    public char Consume()
+    public char Consume(int count=1)
     {
         var oldIndex = _index;
-        Seek(_index + 1);
+        Seek(_index + count);
         return _input[oldIndex];
     }
 
@@ -492,16 +492,58 @@ public class Lexer(string fileContent)
         // Parse as largest (so the number can fit), then cast downwards
         var parsed = Convert.ToUInt64(number, fromBase);
 
-        if (parsed < int.MaxValue)
+        if (parsed <= int.MaxValue)
             return (int)parsed;
 
-        if (parsed < uint.MaxValue)
+        if (parsed <= uint.MaxValue)
             return (uint)parsed;
 
-        if (parsed < long.MaxValue)
+        if (parsed <= long.MaxValue)
             return(long)parsed;
 
         return parsed;
+    }
+
+    private static object? ParseNumericTypeWithSuffix(string number, int fromBase, string suffix)
+    {
+        bool isUnsigned = suffix.Contains('u');
+        bool isLong = suffix.Contains('l');
+
+        if (isUnsigned && isLong)
+        {
+            // Explicitly UInt64
+            return Convert.ToUInt64(number, fromBase);
+        }
+        else if (isLong)
+        {
+            // Can be either UInt64 or Int64, decide based on value
+            try
+            {
+                return Convert.ToInt64(number, fromBase);
+            }
+            catch
+            {
+                return Convert.ToUInt64(number, fromBase);
+            }
+        }
+        else if (isUnsigned)
+        {
+            // Explicitly unsigned, but not necessarily long
+            var parsed = Convert.ToUInt64(number, fromBase);
+            if (parsed <= uint.MaxValue)
+            {
+                return (uint)parsed;
+            }
+            else
+            {
+                return parsed;
+            }
+        }
+        else
+        {
+            // No suffix, parse as smallest fitting type
+            return ParseSmallestNumericTypeForInteger(number, fromBase);
+        }
     }
 
     private static object? ParseNumericLiteral(string numericLiteral)
@@ -542,13 +584,13 @@ public class Lexer(string fileContent)
         {
             var hexStr = cleaned[2..];
 
-            result = ParseSmallestNumericTypeForInteger(hexStr, 16);
+            result = ParseNumericTypeWithSuffix(hexStr, 16, suffix);
         }
         else if (isBinary)
         {
             var binaryStr = cleaned[2..];
 
-            result = ParseSmallestNumericTypeForInteger(binaryStr, 2);
+            result = ParseNumericTypeWithSuffix(binaryStr, 2, suffix);
         }
         else
         {
@@ -570,7 +612,7 @@ public class Lexer(string fileContent)
             }
             else
             {
-                result = ParseSmallestNumericTypeForInteger(cleaned, 10);
+                result = ParseNumericTypeWithSuffix(cleaned, 10, suffix);
             }
         }
 
@@ -630,7 +672,7 @@ public class Lexer(string fileContent)
 
                 literalBuilder.Append(suffix);
 
-                Consume();
+                Consume(suffix.Length);
 
                 break;
             }
