@@ -1123,7 +1123,7 @@ public class Lexer(string fileContent)
                         Emit(TokenKind.Equals, "=");
                     }
                     break;
-                case '.': // @todo: .. tokens
+                case '.':
 
                     if (char.IsDigit(Peek(1)))
                     {
