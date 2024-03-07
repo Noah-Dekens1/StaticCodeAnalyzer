@@ -233,7 +233,7 @@ public class Parser
     {
         var binaryOperator = Consume(); // @fixme: deal with multi-token tokens (left shift for example is token LessThan & LessThan)
 
-        var rhs = ParseExpression();
+        var rhs = ParseExpression()!;
 
         var operators = new Dictionary<TokenKind, Func<BinaryExpressionNode>>
         {
@@ -254,8 +254,6 @@ public class Parser
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS=null)
     {
         var token = PeekCurrent();
-        var next = Peek(1);
-        ExpressionNode? expression = null;
 
         // 1. Check unary pre- and postfix operators
         // 1a. If found, group them into an ExpressionNode and store them temporarily
@@ -284,8 +282,7 @@ public class Parser
 
         bool isBinary = !isUnary && IsBinaryOperator(1);
         bool isTernary = false;
-        int a = 0;
-        int b = 0;
+
         if (isUnary)
         {
             var unaryExpr = ParseUnaryExpression(isPrefix); // may be the final symbol in the expr
@@ -320,7 +317,7 @@ public class Parser
 
         _input = tokens;
 
-        var expr = ParseExpression();
+        var expr = ParseExpression()!;
 
         ast.Root.GlobalStatements.Add(new GlobalStatementNode
         {
