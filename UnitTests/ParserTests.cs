@@ -22,7 +22,7 @@ public class ParserTests
     [TestMethod]
     public void Parse_BasicBinaryExpression_ReturnsValidAST()
     {
-        var tokens = Lexer.Lex("3 + -4 + 2 + -(someIdentifier * 8 + -(-(4)));");
+        var tokens = Lexer.Lex("3 + 4 * 1 - (9 / 3)");
         var ast = Parser.Parse(tokens);
 
         // How do I test a AST in a sane way?
@@ -60,6 +60,31 @@ public class ParserTests
                     ((NumericLiteralNode)n.LHS).Value!.Equals(2) && n.RHS.GetType() == typeof(IdentifierExpression))
             .GetChild<AddExpressionNode>(n => n.RHS)
                 .Validate<IdentifierExpression>(n => n.Identifier == "someIdentifier");
+    }
+
+    [TestMethod]
+    public void Parse_BasicBinaryExpressionWithUnaryOperators_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("3 + -4 + 2 + -(someIdentifier * 8 + -(-(4)));");
+        var ast = Parser.Parse(tokens);
+    }
+
+    [TestMethod]
+    public void Parse_UnaryIncrementDecrementOperators_ReturnsValidAST()
+    {
+        var identifier = 0;
+        var expr = 3 - identifier++ + 1;
+        var tokens = Lexer.Lex("3 - identifier++ + -1");
+        var ast = Parser.Parse(tokens);
+    }
+
+    [TestMethod]
+    public void Parse_BasicBooleanExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("(a == b && c >= 3) || (a != c && !!!d)");
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
     }
 
     [TestMethod]

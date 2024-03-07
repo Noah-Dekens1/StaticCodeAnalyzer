@@ -194,7 +194,10 @@ public class Parser
         bool currentIsOpenParen = current.Kind == TokenKind.OpenParen;
         isPrefix = !IsIdentifierOrLiteral(current) && !currentIsOpenParen;
 
-        return (!isPrefix && currentIsOpenParen) || IsUnaryOperator(current.Kind);
+        var next = CanPeek(1) ? Peek(peekStart + 1) : new Token();
+        var isPostfix = !isPrefix && (next.Kind == TokenKind.PlusPlus || next.Kind == TokenKind.MinusMinus);
+
+        return (isPrefix && IsUnaryOperator(current.Kind)) || isPostfix;
     }
 
     private UnaryExpressionNode ParseUnaryExpression(bool isPrefix)
@@ -204,12 +207,46 @@ public class Parser
             var op = Consume();
 
             bool isIncrementOrDecrement = op.Kind == TokenKind.PlusPlus || op.Kind == TokenKind.MinusMinus; // @todo: parse this earlier to an actual op like with binary expressions
-            var expr = isIncrementOrDecrement ? ParseIdentifierOrLiteral() : ParseExpression()!; // Either ParseExpression or ParseIdentifierOrLiteral depending on unary operator (generic vs increment/decrement)
-            var newNegation = new UnaryNegationNode(expr, true);
-            return newNegation;
-        }
+            var expr = isIncrementOrDecrement ? ParseIdentifierOrLiteral() : ParseExpression(null, true)!; // Either ParseExpression or ParseIdentifierOrLiteral depending on unary operator (generic vs increment/decrement)
+            UnaryExpressionNode? result = null;
 
-        return null!;
+            switch (op.Kind)
+            {
+                case TokenKind.PlusPlus:
+                    result = new UnaryIncrementNode(expr, isPrefix);
+                    break;
+                case TokenKind.MinusMinus:
+                    result = new UnaryDecrementNode(expr, isPrefix);
+                    break;
+                case TokenKind.Minus:
+                    result = new UnaryNegationNode(expr);
+                    break;
+                case TokenKind.Exclamation:
+                    result = new UnaryLogicalNotNode(expr);
+                    break;
+            }
+
+            return result ?? throw new Exception("Couldn't resolve unary prefix expression");
+        }
+        else
+        {
+            var identifierOrLiteral = ParseIdentifierOrLiteral();
+            var op = Consume();
+
+            UnaryExpressionNode? result = null;
+
+            switch (op.Kind)
+            {
+                case TokenKind.PlusPlus:
+                    result = new UnaryIncrementNode(identifierOrLiteral, false);
+                    break;
+                case TokenKind.MinusMinus:
+                    result = new UnaryDecrementNode(identifierOrLiteral, false);
+                    break;
+            }
+
+            return result ?? throw new Exception("Couldn't resolve unary postfix expression");
+        }
     }
 
     private bool IsBinaryOperator(int peekStart=0)
@@ -218,11 +255,22 @@ public class Parser
 
         switch (kind)
         {
+            // Arithmetic operators
             case TokenKind.Plus:
             case TokenKind.Minus:
             case TokenKind.Asterisk:
             case TokenKind.Slash:
             case TokenKind.Percent:
+
+            // Boolean/comparison operators
+            case TokenKind.EqualsEquals:
+            case TokenKind.ExclamationEquals:
+            case TokenKind.GreaterThan:
+            case TokenKind.GreaterThanEquals:
+            case TokenKind.LessThan:
+            case TokenKind.LessThanEquals:
+            case TokenKind.AmpersandAmpersand:
+            case TokenKind.BarBar:
                 // ...
                 return true;
             default: return false;
@@ -237,21 +285,28 @@ public class Parser
 
         var operators = new Dictionary<TokenKind, Func<BinaryExpressionNode>>
         {
-            { TokenKind.Plus,     () => new AddExpressionNode(lhs, rhs) },
-            { TokenKind.Minus,    () => new SubtractExpressionNode(lhs, rhs) },
-            { TokenKind.Asterisk, () => new MultiplyExpressionNode(lhs, rhs) },
-            { TokenKind.Slash,    () => new DivideExpressionNode(lhs, rhs) },
-            { TokenKind.Percent,  () => new ModulusExpressionNode(lhs, rhs) },
+            { TokenKind.Plus,                () => new AddExpressionNode(lhs, rhs) },
+            { TokenKind.Minus,               () => new SubtractExpressionNode(lhs, rhs) },
+            { TokenKind.Asterisk,            () => new MultiplyExpressionNode(lhs, rhs) },
+            { TokenKind.Slash,               () => new DivideExpressionNode(lhs, rhs) },
+            { TokenKind.Percent,             () => new ModulusExpressionNode(lhs, rhs) },
 
-            { TokenKind.EqualsEquals, () => new EqualsExpressionNode(lhs, rhs) },
-            { TokenKind.ExclamationEquals, () => new NotEqualsExpressionNode(lhs, rhs) },
+            { TokenKind.EqualsEquals,        () => new EqualsExpressionNode(lhs, rhs) },
+            { TokenKind.ExclamationEquals,   () => new NotEqualsExpressionNode(lhs, rhs) },
+            { TokenKind.GreaterThan,         () => new GreaterThanExpressionNode(lhs, rhs) },
+            { TokenKind.GreaterThanEquals,   () => new GreaterThanEqualsExpressionNode(lhs, rhs) },
+            { TokenKind.LessThan,            () => new LessThanExpressionNode(lhs, rhs) },
+            { TokenKind.LessThanEquals,      () => new LessThanEqualsExpressionNode(lhs, rhs) },
+            { TokenKind.AmpersandAmpersand,  () => new LogicalAndExpressionNode(lhs, rhs) },
+            { TokenKind.BarBar,              () => new LogicalOrExpressionNode(lhs, rhs) },
         };
+
 
         return operators[binaryOperator.Kind]();
     }
 
     // @note: pretty much everything in C# is an expression so we probably want to split this up
-    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS=null)
+    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS=null, bool onlyParseSingle=false)
     {
         var token = PeekCurrent();
 
@@ -272,7 +327,7 @@ public class Parser
             Consume();
             var expr = new ParenthesizedExpression(ParseExpression()!);
             Consume();
-            return expr;
+            possibleLHS = expr;
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);
@@ -280,32 +335,39 @@ public class Parser
 
         bool isUnary = IsUnaryOperator(out var isPrefix);
 
-        bool isBinary = !isUnary && IsBinaryOperator(1);
-        bool isTernary = false;
 
         if (isUnary)
         {
             var unaryExpr = ParseUnaryExpression(isPrefix); // may be the final symbol in the expr
-            var groupExpr = ParseExpression(unaryExpr);
-            return groupExpr ?? unaryExpr;
+            //var groupExpr = ParseExpression(unaryExpr);
+
+            //return unaryExpr;
+            possibleLHS = unaryExpr; // try to see if we're the LHS of a binary or ternary expression
         }
-        else if (isBinary)
+        
+        bool isBinary = !onlyParseSingle && IsBinaryOperator(possibleLHS is null ? 1 : 0);
+        bool isTernary = false;
+
+        if (isBinary)
         {
             // Does nullability not work in ternary subexpressions?
             ExpressionNode lhs = possibleLHS ?? (ExpressionNode?)literal ?? new IdentifierExpression { Identifier = token.Lexeme };
-            Consume();
+            if (possibleLHS is null)
+                Consume();
             return ParseBinaryExpression(lhs);
         }
         else if (isCurrentTokenIdentifier)
         {
+            Consume();
             return new IdentifierExpression { Identifier = token.Lexeme };
         }
         else if (isLiteral)
         {
+            Consume();
             return literal!;
         }
 
-        return null;
+        return possibleLHS;
     }
 
     private AST ParseInternal(Token[] tokens)

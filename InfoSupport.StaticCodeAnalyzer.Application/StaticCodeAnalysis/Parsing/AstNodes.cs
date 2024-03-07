@@ -118,6 +118,21 @@ public class UnaryNegationNode(ExpressionNode expr, bool isPrefix = true) : Unar
     public override UnaryOperator Operator => UnaryOperator.Negation;
 }
 
+public class UnaryIncrementNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
+{
+    public override UnaryOperator Operator => UnaryOperator.Increment;
+}
+
+public class UnaryDecrementNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
+{
+    public override UnaryOperator Operator => UnaryOperator.Decrement;
+}
+
+public class UnaryLogicalNotNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
+{
+    public override UnaryOperator Operator => UnaryOperator.LogicalNot;
+}
+
 public enum BinaryOperator
 {
     // Arithmetic
@@ -134,6 +149,8 @@ public enum BinaryOperator
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
+    LogicalAnd,
+    LogicalOr,
 
     // ...
 }
@@ -159,6 +176,16 @@ public class BinaryExpressionNode : ExpressionNode
         BinaryOperator.Multiply => "*",
         BinaryOperator.Divide => "/",
         BinaryOperator.Modulus => "%",
+
+        BinaryOperator.Equals => "==",
+        BinaryOperator.NotEquals => "==",
+        BinaryOperator.GreaterThan => ">",
+        BinaryOperator.GreaterThanOrEqual => ">=",
+        BinaryOperator.LessThan => "<",
+        BinaryOperator.LessThanOrEqual => "<=",
+        BinaryOperator.LogicalAnd => "&&",
+        BinaryOperator.LogicalOr => "||",
+
         _ => throw new NotImplementedException()
     };
 
@@ -199,6 +226,46 @@ public class NotEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : B
 {
     public override BinaryOperator Operator { get => BinaryOperator.NotEquals; }
 }
+
+public class GreaterThanExpressionNode : BinaryExpressionNode
+{
+    public GreaterThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
+
+    public override BinaryOperator Operator { get => BinaryOperator.GreaterThan; }
+}
+
+public class LogicalAndExpressionNode : BinaryExpressionNode
+{
+    public LogicalAndExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
+
+    public override BinaryOperator Operator { get => BinaryOperator.LogicalAnd; }
+}
+
+
+public class GreaterThanEqualsExpressionNode : BinaryExpressionNode
+{
+    public GreaterThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
+    public override BinaryOperator Operator { get => BinaryOperator.GreaterThanOrEqual; }
+}
+
+public class LessThanExpressionNode : BinaryExpressionNode
+{
+    public LessThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
+    public override BinaryOperator Operator { get => BinaryOperator.LessThan; }
+}
+
+public class LessThanEqualsExpressionNode : BinaryExpressionNode
+{
+    public LessThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
+    public override BinaryOperator Operator { get => BinaryOperator.LessThanOrEqual; }
+}
+
+public class LogicalOrExpressionNode : BinaryExpressionNode
+{
+    public LogicalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
+    public override BinaryOperator Operator { get => BinaryOperator.LogicalOr; }
+}
+
 
 public class TernaryExpressionNode : ExpressionNode
 {
