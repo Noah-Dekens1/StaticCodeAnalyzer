@@ -1083,7 +1083,6 @@ public class Lexer(string fileContent)
 
             switch (c)
             {
-                // @todo: Maybe remove simple chars and move them to a lookup table?
                 case ' ' or '\t' or '\r' or '\n':
                     Consume();
                     break; // Skip over whitespace
