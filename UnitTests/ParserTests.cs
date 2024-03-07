@@ -81,7 +81,7 @@ public class ParserTests
     [TestMethod]
     public void Parse_BasicBooleanExpression_ReturnsValidAST()
     {
-        var tokens = Lexer.Lex("(a == b && c >= 3) || (a != c && !!!d)");
+        var tokens = Lexer.Lex("(a == b && c >= 3) || (a != c && !!!d) && a < j && j <= b && q > e");
         var ast = Parser.Parse(tokens);
 
         Assert.IsTrue(false);

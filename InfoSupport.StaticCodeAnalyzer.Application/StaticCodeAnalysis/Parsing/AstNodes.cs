@@ -178,7 +178,7 @@ public class BinaryExpressionNode : ExpressionNode
         BinaryOperator.Modulus => "%",
 
         BinaryOperator.Equals => "==",
-        BinaryOperator.NotEquals => "==",
+        BinaryOperator.NotEquals => "!=",
         BinaryOperator.GreaterThan => ">",
         BinaryOperator.GreaterThanOrEqual => ">=",
         BinaryOperator.LessThan => "<",
