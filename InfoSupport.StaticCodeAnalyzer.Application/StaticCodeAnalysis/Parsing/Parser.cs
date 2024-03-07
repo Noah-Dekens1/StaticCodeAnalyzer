@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -49,6 +50,14 @@ public class Parser
         return _input[oldIndex];
     }
 
+    [DebuggerHidden]
+    public void Expect(TokenKind expected)
+    {
+        var actual = Consume().Kind;
+        if (actual != expected)
+            throw new Exception($"Expected {expected} but got {actual}");
+    }
+
     public Token PeekCurrent()
     {
         return _input[_index];
@@ -57,6 +66,11 @@ public class Parser
     public Token Peek(int count = 1)
     {
         return CanPeek(count) ? _input[_index + count] : throw new ArgumentOutOfRangeException();
+    }
+
+    public Token PeekSafe(int count = 1)
+    {
+        return CanPeek(count) ? _input[_index + count] : new Token();
     }
 
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
@@ -370,6 +384,74 @@ public class Parser
         return possibleLHS;
     }
 
+    private bool IsVariableDeclarationStatement()
+    {
+        var token = PeekCurrent();
+
+        bool maybeType = false;
+
+        var typeList = new List<TokenKind>
+        {
+            TokenKind.ByteKeyword,
+            TokenKind.SbyteKeyword,
+            TokenKind.ShortKeyword,
+            TokenKind.UshortKeyword,
+            TokenKind.IntKeyword,
+            TokenKind.UintKeyword,
+            TokenKind.LongKeyword,
+            TokenKind.UlongKeyword,
+            TokenKind.FloatKeyword,
+            TokenKind.DoubleKeyword,
+            TokenKind.DecimalKeyword,
+            TokenKind.BoolKeyword,
+            TokenKind.StringKeyword,
+            TokenKind.CharKeyword,
+        };
+
+        if (token.Kind == TokenKind.Identifier && token.Lexeme == "var")
+            return true;
+
+        if (typeList.Contains(token.Kind))
+            maybeType = true;
+
+        if (token.Kind == TokenKind.Identifier)
+            maybeType = true;
+
+        return maybeType && PeekSafe(1).Kind == TokenKind.Equals;
+    }
+
+    private StatementNode ParseVariableDeclarationStatement()
+    {
+        var type = Consume();
+        var identifier = Consume();
+        Expect(TokenKind.Equals);
+        var expr = ParseExpression();
+        Expect(TokenKind.Semicolon);
+
+        return new VariableDeclarationStatement(type.Lexeme, identifier.Lexeme, expr!);
+    }
+
+    private StatementNode ParseExpressionStatement()
+    {
+        var expr = ParseExpression();
+        Expect(TokenKind.Semicolon);
+
+        return new ExpressionStatementNode
+        {
+            Expression = expr!
+        };
+    }
+
+    private StatementNode ParseStatement()
+    {
+        if (IsVariableDeclarationStatement())
+            return ParseVariableDeclarationStatement();
+
+
+        // If no matches parse as an expression statement
+        return ParseExpressionStatement();
+    }
+
     private AST ParseInternal(Token[] tokens)
     {
         var ast = new AST { Root = new() };
@@ -379,12 +461,16 @@ public class Parser
 
         _input = tokens;
 
-        var expr = ParseExpression()!;
-
-        ast.Root.GlobalStatements.Add(new GlobalStatementNode
+        //var expr = ParseExpression()!;
+        while (!IsAtEnd())
         {
-            Statement = new ExpressionStatementNode { Expression = expr }
-        });
+            var result = ParseStatement();
+
+            ast.Root.GlobalStatements.Add(new GlobalStatementNode
+            {
+                Statement = result
+            });
+        }
 
         /*
 

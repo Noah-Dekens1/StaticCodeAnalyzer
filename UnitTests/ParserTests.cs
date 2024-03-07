@@ -88,6 +88,15 @@ public class ParserTests
     }
 
     [TestMethod]
+    public void Parse_BasicVariableDeclaration_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("var test = (a == b && c >= 3) || (a != c && !!!d) && a < j && j <= b && q > e;");
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
     public void Parse_BasicBinaryExpression2_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("3 * 4 / 2 + someIdentifier % 3;");

@@ -266,6 +266,14 @@ public class LogicalOrExpressionNode : BinaryExpressionNode
     public override BinaryOperator Operator { get => BinaryOperator.LogicalOr; }
 }
 
+[DebuggerDisplay("{Type,nq} {Identifier,nq} = {Expression,nq}")]
+public class VariableDeclarationStatement(string type, string identifier, ExpressionNode expression) : StatementNode
+{
+    public string Type { get; set; } = type;
+    public string Identifier { get; set; } = identifier;
+    public ExpressionNode Expression { get; set; } = expression;
+}
+
 
 public class TernaryExpressionNode : ExpressionNode
 {
