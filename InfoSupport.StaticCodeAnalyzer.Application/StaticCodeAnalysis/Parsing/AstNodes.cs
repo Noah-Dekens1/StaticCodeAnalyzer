@@ -27,6 +27,7 @@ public class StatementNode : AstNode
     public override List<AstNode> Children => [];
 }
 
+[DebuggerDisplay("{Statement,nq}")]
 public class GlobalStatementNode : AstNode
 {
     public required StatementNode Statement { get; set; }
@@ -34,6 +35,7 @@ public class GlobalStatementNode : AstNode
     public override List<AstNode> Children => [Statement];
 }
 
+[DebuggerDisplay("{Expression,nq}")]
 public class ExpressionStatementNode : StatementNode
 {
     public required ExpressionNode Expression { get; set; }
@@ -306,4 +308,13 @@ public class IfStatementNode(ExpressionNode expression, AstNode body, AstNode? e
 
     public override List<AstNode> Children => 
         ElseBody is not null ? [Expression, Body, ElseBody] : [Expression, Body];
+}
+
+[DebuggerDisplay("do ... while ({Condition,nq})")]
+public class DoStatementNode(ExpressionNode condition, AstNode body) : StatementNode
+{
+    public ExpressionNode Condition { get; set; } = condition;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Condition, Body];
 }

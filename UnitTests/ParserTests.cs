@@ -167,6 +167,22 @@ public class ParserTests
         Assert.IsTrue(false);
     }
 
+    [TestMethod]
+    public void Parse_DoStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = 0;
+            do
+            {
+                a++;
+            } while (a < 10);
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
     [DataTestMethod]
     [DataRow("1", 1)]
     [DataRow("3", 3)]

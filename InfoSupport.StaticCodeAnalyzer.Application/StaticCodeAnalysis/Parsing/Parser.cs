@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -63,6 +64,7 @@ public class Parser
     }
 
     [DebuggerHidden]
+    [Pure]
     public Token PeekCurrent()
     {
         return CanPeek(0) ? _input[_index] : new Token();
@@ -385,12 +387,12 @@ public class Parser
                 Consume();
             return ParseBinaryExpression(lhs);
         }
-        else if (isCurrentTokenIdentifier)
+        else if (isCurrentTokenIdentifier && possibleLHS is null)
         {
             Consume();
             return new IdentifierExpression { Identifier = token.Lexeme };
         }
-        else if (isLiteral)
+        else if (isLiteral && possibleLHS is null)
         {
             Consume();
             return literal!;
@@ -493,6 +495,19 @@ public class Parser
         return new IfStatementNode(expr, body, elseBody);
     }
 
+    private DoStatementNode ParseDoStatement()
+    {
+        Expect(TokenKind.DoKeyword);
+        var body = ParseBody()!;
+        Expect(TokenKind.WhileKeyword);
+        Expect(TokenKind.OpenParen);
+        var expr = ParseExpression()!;
+        Expect(TokenKind.CloseParen);
+        Expect(TokenKind.Semicolon);
+
+        return new DoStatementNode(expr, body);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -530,6 +545,9 @@ public class Parser
             // Selection statements
             case TokenKind.IfKeyword:
                 return ParseIfStatement();
+
+            case TokenKind.DoKeyword:
+                return ParseDoStatement(); 
 
             case TokenKind.SwitchKeyword:
                 throw new NotImplementedException();
