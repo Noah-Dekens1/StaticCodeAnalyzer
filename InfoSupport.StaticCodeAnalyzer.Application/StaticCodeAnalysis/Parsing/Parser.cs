@@ -658,6 +658,53 @@ public class Parser
         return new WhileStatementNode(expr, body);
     }
 
+    private static AstNode ResolveQualifiedNameRecursive(List<Token> members)
+    {
+        var member = members[^1];
+        var identifier = new IdentifierExpression() { Identifier = member.Lexeme };
+
+        if (members.Count == 1)
+            return identifier;
+
+        members.Remove(member);
+
+        return new QualifiedNameNode(
+            lhs: ResolveMemberAccess(members),
+            identifier: identifier
+        );
+    }
+
+    private AstNode ParseQualifiedName()
+    {
+        List<Token> members = [];
+
+        do
+        {
+            members.Add(Consume());
+        } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
+
+        return ResolveQualifiedNameRecursive(members);
+    }
+
+    private UsingDirectiveNode ParseUsingDirective()
+    {
+        Expect(TokenKind.UsingKeyword);
+
+        var hasAlias = PeekSafe().Kind == TokenKind.Equals;
+        string? alias = null;
+
+        if (hasAlias)
+        {
+            alias = Consume().Lexeme;
+            Expect(TokenKind.Equals);
+        }
+
+        var ns = ParseQualifiedName();
+        Expect(TokenKind.Semicolon);
+
+        return new UsingDirectiveNode(ns, alias);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -720,6 +767,18 @@ public class Parser
         return ParseExpressionStatement();
     }
 
+    private List<UsingDirectiveNode> ParseUsingDirectives()
+    {
+        List<UsingDirectiveNode> directives = [];
+
+        while (!IsAtEnd() && Matches(TokenKind.UsingKeyword))
+        {
+            directives.Add(ParseUsingDirective());
+        }
+
+        return directives;
+    }
+
     private List<StatementNode> ParseStatementList()
     {
         List<StatementNode> statements = [];
@@ -738,6 +797,10 @@ public class Parser
             return ast;
 
         _input = tokens;
+
+        var directives = ParseUsingDirectives();
+
+        ast.Root.UsingDirectives.AddRange(directives);
 
         var statements = ParseStatementList();
 

@@ -287,6 +287,20 @@ public class ParserTests
         Assert.IsTrue(false);
     }
 
+    [TestMethod]
+    public void Parse_UsingDirective_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            using Test = System.CoolStuff.Test;
+            using System.Text;
+            using System.Runtime.CompilerServices;
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
     [DataTestMethod]
     [DataRow("1", 1)]
     [DataRow("3", 3)]

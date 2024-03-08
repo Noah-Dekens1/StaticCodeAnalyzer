@@ -17,6 +17,7 @@ public abstract class AstNode
 
 public class RootNode : AstNode
 {
+    public List<UsingDirectiveNode> UsingDirectives { get; set; } = [];
     public List<GlobalStatementNode> GlobalStatements { get; set; } = [];
 
     public override List<AstNode> Children => [.. GlobalStatements];
@@ -343,7 +344,7 @@ public class ForStatementNode(
     public override List<AstNode> Children => [Initializer, Condition, IterationExpression, Body];
 }
 
-[DebuggerDisplay("{DebuggerDisplay}")]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class ExpressionStatementListNode(List<ExpressionStatementNode> statements) : AstNode
 {
     public List<ExpressionStatementNode> Statements { get; set; } = statements;
@@ -385,4 +386,30 @@ public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression
     public override List<AstNode> Children => [LHS, Identifier];
 
     public override string ToString() => $"{LHS}.{Identifier}";
+}
+
+[DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]
+public class QualifiedNameNode(AstNode lhs, IdentifierExpression identifier) : AstNode
+{
+    public AstNode LHS { get; set; } = lhs;
+    public IdentifierExpression Identifier { get; set; } = identifier;
+
+    public override List<AstNode> Children => [LHS, Identifier];
+
+    public override string ToString() => $"{LHS}.{Identifier}";
+
+}
+
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
+public class UsingDirectiveNode(AstNode ns, string? alias) : AstNode
+{
+    public string? Alias { get; set; } = alias;
+    public AstNode Namespace { get; set; } = ns;
+
+    public override List<AstNode> Children => [Namespace];
+
+    private string DebuggerDisplay
+    {
+        get => Alias is not null ? $"using {Alias} = {Namespace}" : $"using {Namespace}";
+    }
 }
