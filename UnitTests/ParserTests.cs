@@ -183,6 +183,42 @@ public class ParserTests
         Assert.IsTrue(false);
     }
 
+    [TestMethod]
+    public void Parse_ForStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            for (int i = 0; i < 10; i++)
+            {
+                i++;
+            }
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_ComplexForStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            int i = 0;
+            int b = 10;
+            int c = 5;
+            for (i = 3, ++i, i--, i++; i < 10; i++, c = 0)
+            {
+                b--;
+            }
+            """);
+
+        int a = 0;
+        var expr = a = 10 + 3; 
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
     [DataTestMethod]
     [DataRow("1", 1)]
     [DataRow("3", 3)]

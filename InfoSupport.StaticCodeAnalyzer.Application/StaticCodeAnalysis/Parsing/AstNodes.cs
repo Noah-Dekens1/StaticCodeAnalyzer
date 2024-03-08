@@ -40,6 +40,8 @@ public class ExpressionStatementNode : StatementNode
 {
     public required ExpressionNode Expression { get; set; }
     public override List<AstNode> Children => [Expression];
+
+    public override string ToString() => Expression.ToString()!;
 }
 
 public class ExpressionNode : AstNode
@@ -163,6 +165,8 @@ public enum BinaryOperator
     LogicalAnd,
     LogicalOr,
 
+    Assignment,
+
     // ...
 }
 
@@ -191,6 +195,8 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.LessThanOrEqual => "<=",
         BinaryOperator.LogicalAnd => "&&",
         BinaryOperator.LogicalOr => "||",
+
+        BinaryOperator.Assignment => "=",
 
         _ => throw new NotImplementedException()
     };
@@ -264,6 +270,11 @@ public class LogicalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : B
     public override BinaryOperator Operator { get => BinaryOperator.LogicalOr; }
 }
 
+public class AssignmentExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.Assignment;
+}
+
 [DebuggerDisplay("{Type,nq} {Identifier,nq} = {Expression,nq}")]
 public class VariableDeclarationStatement(string type, string identifier, ExpressionNode expression) : StatementNode
 {
@@ -317,4 +328,30 @@ public class DoStatementNode(ExpressionNode condition, AstNode body) : Statement
     public AstNode Body { get; set; } = body;
 
     public override List<AstNode> Children => [Condition, Body];
+}
+
+[DebuggerDisplay("for ({Initializer,nq};{Condition,nq};{IterationExpression,nq}) ...")]
+public class ForStatementNode(
+    AstNode initializer, ExpressionNode condition, AstNode iteration, AstNode body
+    ) : StatementNode
+{
+    public AstNode Initializer { get; set; } = initializer;
+    public ExpressionNode Condition { get; set; } = condition;
+    public AstNode IterationExpression { get; set; } = iteration;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Initializer, Condition, IterationExpression, Body];
+}
+
+[DebuggerDisplay("{DebuggerDisplay}")]
+public class ExpressionStatementListNode(List<ExpressionStatementNode> statements) : AstNode
+{
+    public List<ExpressionStatementNode> Statements { get; set; } = statements;
+
+    public override List<AstNode> Children => [.. Statements];
+
+    private string DebuggerDisplay
+    {
+        get => string.Join(',', Children);
+    }
 }

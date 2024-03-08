@@ -302,6 +302,10 @@ public class Parser
             case TokenKind.LessThanEquals:
             case TokenKind.AmpersandAmpersand:
             case TokenKind.BarBar:
+
+            // Special cases
+            case TokenKind.Equals: // Assignment expression is technically also a binary expression (LHS/RHS)
+
                 // ...
                 return true;
             default: return false;
@@ -330,6 +334,8 @@ public class Parser
             { TokenKind.LessThanEquals,      () => new LessThanEqualsExpressionNode(lhs, rhs) },
             { TokenKind.AmpersandAmpersand,  () => new LogicalAndExpressionNode(lhs, rhs) },
             { TokenKind.BarBar,              () => new LogicalOrExpressionNode(lhs, rhs) },
+
+            { TokenKind.Equals,              () => new AssignmentExpressionNode(lhs, rhs) },
         };
 
 
@@ -448,10 +454,11 @@ public class Parser
         return new VariableDeclarationStatement(type.Lexeme, identifier.Lexeme, expr!);
     }
 
-    private ExpressionStatementNode ParseExpressionStatement()
+    private ExpressionStatementNode ParseExpressionStatement(bool expectSemicolon=true)
     {
         var expr = ParseExpression();
-        Expect(TokenKind.Semicolon);
+        if (expectSemicolon)
+            Expect(TokenKind.Semicolon);
 
         return new ExpressionStatementNode
         {
@@ -508,6 +515,61 @@ public class Parser
         return new DoStatementNode(expr, body);
     }
 
+    private AstNode ParseCommaSeperatedExpressionStatements()
+    {
+        var statements = new List<ExpressionStatementNode>();
+
+        do
+        {
+            statements.Add(ParseExpressionStatement(false));
+        } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
+
+        return new ExpressionStatementListNode(statements);
+    }
+
+    private AstNode ParseForInitializer()
+    {
+        // The initializer may either be a variable declaration statement
+        // Like int i = 0; or a comma-seperated list of expression statements seperated by commas
+        // Only the following are allowed: increment/decrement, assignment,
+        // method invocation, await expression, object creation (new keyword)
+        // Like "for (i = 3, Console.WriteLine("test"), i++; i < 10; i++)"
+
+        // "Sane" path of variable declaration
+        if (IsDeclarationStatement())
+        {
+            return ParseDeclarationStatement();
+        }
+
+        var result = ParseCommaSeperatedExpressionStatements();
+        Expect(TokenKind.Semicolon);
+        return result;
+    }
+
+    private AstNode ParseForIteration()
+    {
+        // Comma seperated list of expression statements
+
+        var result = ParseCommaSeperatedExpressionStatements();
+        return result;
+    }
+
+    private ForStatementNode ParseForStatement()
+    {
+        Expect(TokenKind.ForKeyword);
+        Expect(TokenKind.OpenParen);
+        var initializer = ParseForInitializer();
+        //Expect(TokenKind.Semicolon);
+        var expression = ParseExpression()!;
+        Expect(TokenKind.Semicolon);
+        var iterationStatement = ParseForIteration()!;
+        Expect(TokenKind.CloseParen);
+
+        var body = ParseBody();
+
+        return new ForStatementNode(initializer, expression, iterationStatement, body);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -547,7 +609,10 @@ public class Parser
                 return ParseIfStatement();
 
             case TokenKind.DoKeyword:
-                return ParseDoStatement(); 
+                return ParseDoStatement();
+
+            case TokenKind.ForKeyword:
+                return ParseForStatement(); 
 
             case TokenKind.SwitchKeyword:
                 throw new NotImplementedException();
