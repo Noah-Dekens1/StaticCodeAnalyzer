@@ -457,7 +457,7 @@ public class Parser
         };
     }
 
-    private AstNode ParseBlock()
+    private BlockNode ParseBlock()
     {
         Expect(TokenKind.OpenBrace);
         var statements = ParseStatementList();

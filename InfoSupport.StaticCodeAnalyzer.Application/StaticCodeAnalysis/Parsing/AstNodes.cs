@@ -11,31 +11,38 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 public abstract class AstNode
 {
     public List<Token> Tokens { get; set; } = [];
+
+    public abstract List<AstNode> Children { get; }
 }
 
 public class RootNode : AstNode
 {
     public List<GlobalStatementNode> GlobalStatements { get; set; } = [];
+
+    public override List<AstNode> Children => [.. GlobalStatements];
 }
 
 public class StatementNode : AstNode
 {
-
+    public override List<AstNode> Children => [];
 }
 
 public class GlobalStatementNode : AstNode
 {
     public required StatementNode Statement { get; set; }
+
+    public override List<AstNode> Children => [Statement];
 }
 
 public class ExpressionStatementNode : StatementNode
 {
     public required ExpressionNode Expression { get; set; }
+    public override List<AstNode> Children => [Expression];
 }
 
 public class ExpressionNode : AstNode
 {
-
+    public override List<AstNode> Children => [];
 }
 
 public class LiteralExpressionNode : ExpressionNode
@@ -68,13 +75,13 @@ public class StringLiteralNode : LiteralExpressionNode
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class ParenthesizedExpression : ExpressionNode
+public class ParenthesizedExpression(ExpressionNode expr) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; }
-
-    public ParenthesizedExpression(ExpressionNode expr) => Expression = expr;
+    public ExpressionNode Expression { get; set; } = expr;
 
     public override string ToString() => $"({Expression})";
+
+    public override List<AstNode> Children => [Expression];
 }
 
 
@@ -109,6 +116,8 @@ public class UnaryExpressionNode : ExpressionNode
         UnaryOperator.Decrement => "--",
         _ => throw new NotImplementedException()
     };
+
+    public override List<AstNode> Children => [Expression];
 
     public override string ToString() => $"{(IsPrefix ? OperatorForDbg : "")}{Expression}{(!IsPrefix ? OperatorForDbg : "")}";
 }
@@ -156,18 +165,13 @@ public enum BinaryOperator
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class BinaryExpressionNode : ExpressionNode
+public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : ExpressionNode
 {
-    public ExpressionNode LHS { get; set; }
-    public ExpressionNode RHS { get; set; }
+    public ExpressionNode LHS { get; set; } = lhs;
+    public ExpressionNode RHS { get; set; } = rhs;
 
     public virtual BinaryOperator Operator { get; }
-
-    public BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs)
-    {
-        LHS = lhs;
-        RHS = rhs;
-    }
+    public override List<AstNode> Children => [LHS, RHS];
 
     private string OperatorForDbg => Operator switch
     {
@@ -227,42 +231,34 @@ public class NotEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : B
     public override BinaryOperator Operator { get => BinaryOperator.NotEquals; }
 }
 
-public class GreaterThanExpressionNode : BinaryExpressionNode
+public class GreaterThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public GreaterThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
-
     public override BinaryOperator Operator { get => BinaryOperator.GreaterThan; }
 }
 
-public class LogicalAndExpressionNode : BinaryExpressionNode
+public class LogicalAndExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public LogicalAndExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
-
     public override BinaryOperator Operator { get => BinaryOperator.LogicalAnd; }
 }
 
 
-public class GreaterThanEqualsExpressionNode : BinaryExpressionNode
+public class GreaterThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public GreaterThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
     public override BinaryOperator Operator { get => BinaryOperator.GreaterThanOrEqual; }
 }
 
-public class LessThanExpressionNode : BinaryExpressionNode
+public class LessThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public LessThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
     public override BinaryOperator Operator { get => BinaryOperator.LessThan; }
 }
 
-public class LessThanEqualsExpressionNode : BinaryExpressionNode
+public class LessThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public LessThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
     public override BinaryOperator Operator { get => BinaryOperator.LessThanOrEqual; }
 }
 
-public class LogicalOrExpressionNode : BinaryExpressionNode
+public class LogicalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public LogicalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : base(lhs, rhs) { }
     public override BinaryOperator Operator { get => BinaryOperator.LogicalOr; }
 }
 
@@ -272,6 +268,7 @@ public class VariableDeclarationStatement(string type, string identifier, Expres
     public string Type { get; set; } = type;
     public string Identifier { get; set; } = identifier;
     public ExpressionNode Expression { get; set; } = expression;
+    public override List<AstNode> Children => [Expression];
 }
 
 [DebuggerDisplay(";")]
@@ -283,6 +280,7 @@ public class EmptyStatementNode : StatementNode
 public class BlockNode(List<StatementNode> statements) : AstNode
 {
     public List<StatementNode> Statements { get; set; } = statements;
+    public override List<AstNode> Children => [.. Statements];
 }
 
 public class TernaryExpressionNode : ExpressionNode
@@ -305,4 +303,7 @@ public class IfStatementNode(ExpressionNode expression, AstNode body, AstNode? e
     public ExpressionNode Expression { get; set; } = expression;
     public AstNode Body { get; set; } = body;
     public AstNode? ElseBody { get; set; } = elseBody;
+
+    public override List<AstNode> Children => 
+        ElseBody is not null ? [Expression, Body, ElseBody] : [Expression, Body];
 }
