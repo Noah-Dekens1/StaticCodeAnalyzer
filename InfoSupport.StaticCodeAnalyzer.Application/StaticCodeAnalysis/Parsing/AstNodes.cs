@@ -368,10 +368,21 @@ public class ForEachStatementNode(string variableType, string variableIdentifier
 }
 
 [DebuggerDisplay("while ({Condition,nq}) ...")]
-public class WhileStatement(ExpressionNode condition, AstNode body) : StatementNode
+public class WhileStatementNode(ExpressionNode condition, AstNode body) : StatementNode
 {
     public ExpressionNode Condition { get; set; } = condition;
     public AstNode Body { get; set; } = body;
 
     public override List<AstNode> Children => [Condition, Body];
+}
+
+[DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]
+public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) : ExpressionNode
+{
+    public ExpressionNode LHS { get; set; } = lhs;
+    public IdentifierExpression Identifier { get; set; } = identifier;
+
+    public override List<AstNode> Children => [LHS, Identifier];
+
+    public override string ToString() => $"{LHS}.{Identifier}";
 }

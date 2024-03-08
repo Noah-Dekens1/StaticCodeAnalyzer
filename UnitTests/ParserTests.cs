@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using NuGet.Frameworks;
 
 namespace UnitTests;
@@ -241,7 +243,7 @@ public class ParserTests
     {
         var tokens = Lexer.Lex("""
             int count = 0;
-            foreach (var item in someList)
+            foreach (var item in test.someList)
                 count++;
             """);
 
@@ -259,6 +261,25 @@ public class ParserTests
             {
                 problems = problems - 1;
             }
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_MemberAccess_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            abc.def.g.hi++;
+            ++abc.def.g.hi;
+            ++a;
+            a++;
+            a.b++ + -3;
+            a = ++b;
+            a = b++ + 3;
+            a = ++b * c;
             """);
 
         var ast = Parser.Parse(tokens);

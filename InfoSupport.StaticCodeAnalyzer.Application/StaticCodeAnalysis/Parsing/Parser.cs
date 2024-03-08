@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -206,12 +207,15 @@ public class Parser
 
     private ExpressionNode ParseIdentifierOrLiteral()
     {
-        var token = Consume();
+        var token = PeekCurrent();
 
         if (token.Kind == TokenKind.Identifier)
-            return new IdentifierExpression { Identifier = token.Lexeme };
+        {
+            return ResolveIdentifier();
+        }
         else
         {
+            Consume();
             if (PeekLiteralExpression(out var expr, token))
                 return expr;
 
@@ -219,19 +223,37 @@ public class Parser
         }
     }
 
-    private bool IsUnaryOperator(out bool isPrefix, int peekStart = 0)
+    private bool IsUnaryOperator(bool hasReadIdentifier, out bool isPrefix, int peekStart = 0)
     {
+        /*
         var current = Peek(peekStart + 0);
         bool currentIsOpenParen = current.Kind == TokenKind.OpenParen;
-        isPrefix = !IsIdentifierOrLiteral(current) && !currentIsOpenParen;
+        isPrefix = !hasReadIdentifier && !IsIdentifierOrLiteral(current) && !currentIsOpenParen;
 
         var next = CanPeek(1) ? Peek(peekStart + 1) : new Token();
         var isPostfix = !isPrefix && (next.Kind == TokenKind.PlusPlus || next.Kind == TokenKind.MinusMinus);
 
         return (isPrefix && IsUnaryOperator(current.Kind)) || isPostfix;
+        */
+
+        var current = PeekSafe(peekStart);
+        
+        if (hasReadIdentifier && (current.Kind == TokenKind.PlusPlus || current.Kind == TokenKind.MinusMinus))
+        {
+            isPrefix = false;
+            return true;
+        }
+        else if (!hasReadIdentifier && IsUnaryOperator(current.Kind))
+        {
+            isPrefix = true;
+            return true;
+        }
+
+        isPrefix = false;
+        return false;
     }
 
-    private UnaryExpressionNode ParseUnaryExpression(bool isPrefix)
+    private UnaryExpressionNode ParseUnaryExpression(bool isPrefix, ExpressionNode? identifier=null)
     {
         if (isPrefix)
         {
@@ -261,7 +283,7 @@ public class Parser
         }
         else
         {
-            var identifierOrLiteral = ParseIdentifierOrLiteral();
+            var identifierOrLiteral = identifier ?? ParseIdentifierOrLiteral();
             var op = Consume();
 
             UnaryExpressionNode? result = null;
@@ -342,6 +364,34 @@ public class Parser
         return operators[binaryOperator.Kind]();
     }
 
+    private static ExpressionNode ResolveMemberAccess(List<Token> members)
+    {
+        var member = members[^1];
+        var identifier = new IdentifierExpression() { Identifier = member.Lexeme };
+
+        if (members.Count == 1)
+            return identifier;
+
+        members.Remove(member);
+
+        return new MemberAccessExpressionNode(
+            lhs: ResolveMemberAccess(members),
+            identifier: identifier
+        );
+    }
+
+    private ExpressionNode ResolveIdentifier()
+    {
+        List<Token> members = [];
+
+        do
+        {
+            members.Add(Consume());
+        } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
+
+        return ResolveMemberAccess(members);
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS=null, bool onlyParseSingle=false)
     {
@@ -367,22 +417,30 @@ public class Parser
             possibleLHS = expr;
         }
 
-        var isLiteral = PeekLiteralExpression(out var literal);
-        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier; // maybe? to help with LHS?
+        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier;
+        ExpressionNode? resolvedIdentifier = null;
 
-        bool isUnary = IsUnaryOperator(out var isPrefix);
+        if (isCurrentTokenIdentifier && possibleLHS is null)
+        {
+            resolvedIdentifier = ResolveIdentifier();
+            possibleLHS = resolvedIdentifier;
+        }
+
+        var isLiteral = PeekLiteralExpression(out var literal);
+
+        bool isUnary = IsUnaryOperator(isCurrentTokenIdentifier, out var isPrefix);
 
 
         if (isUnary)
         {
-            var unaryExpr = ParseUnaryExpression(isPrefix); // may be the final symbol in the expr
+            var unaryExpr = ParseUnaryExpression(isPrefix, resolvedIdentifier); // may be the final symbol in the expr
             //var groupExpr = ParseExpression(unaryExpr);
 
             //return unaryExpr;
             possibleLHS = unaryExpr; // try to see if we're the LHS of a binary or ternary expression
         }
         
-        bool isBinary = !onlyParseSingle && IsBinaryOperator(possibleLHS is null ? 1 : 0);
+        bool isBinary = !onlyParseSingle && IsBinaryOperator((possibleLHS is null && !isCurrentTokenIdentifier) ? 1 : 0);
         bool isTernary = false;
 
         if (isBinary)
@@ -589,7 +647,7 @@ public class Parser
         return new ForEachStatementNode(type.Lexeme, identifier.Lexeme, collection, body);
     }
 
-    private WhileStatement ParseWhileStatement()
+    private WhileStatementNode ParseWhileStatement()
     {
         Expect(TokenKind.WhileKeyword);
         Expect(TokenKind.OpenParen);
@@ -597,7 +655,7 @@ public class Parser
         Expect(TokenKind.CloseParen);
         var body = ParseBody();
 
-        return new WhileStatement(expr, body);
+        return new WhileStatementNode(expr, body);
     }
 
     private EmptyStatementNode ParseEmptyStatement()
