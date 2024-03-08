@@ -519,9 +519,14 @@ public class Parser
     {
         var statements = new List<ExpressionStatementNode>();
 
+        if (Matches(TokenKind.Semicolon) || Matches(TokenKind.CloseParen))
+            return new ExpressionStatementListNode(statements);
+
         do
         {
-            statements.Add(ParseExpressionStatement(false));
+            var expr = ParseExpressionStatement(false);
+            if (expr is not null)
+                statements.Add(expr);
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 
         return new ExpressionStatementListNode(statements);
@@ -570,6 +575,31 @@ public class Parser
         return new ForStatementNode(initializer, expression, iterationStatement, body);
     }
 
+    private ForEachStatementNode ParseForEachStatement()
+    {
+        Expect(TokenKind.ForeachKeyword);
+        Expect(TokenKind.OpenParen);
+        var type = Consume();
+        var identifier = Consume();
+        Expect(TokenKind.InKeyword);
+        var collection = ParseExpression()!;
+        Expect(TokenKind.CloseParen);
+        var body = ParseBody();
+
+        return new ForEachStatementNode(type.Lexeme, identifier.Lexeme, collection, body);
+    }
+
+    private WhileStatement ParseWhileStatement()
+    {
+        Expect(TokenKind.WhileKeyword);
+        Expect(TokenKind.OpenParen);
+        var expr = ParseExpression()!;
+        Expect(TokenKind.CloseParen);
+        var body = ParseBody();
+
+        return new WhileStatement(expr, body);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -613,6 +643,12 @@ public class Parser
 
             case TokenKind.ForKeyword:
                 return ParseForStatement(); 
+
+            case TokenKind.ForeachKeyword:
+                return ParseForEachStatement();
+
+            case TokenKind.WhileKeyword:
+                return ParseWhileStatement();
 
             case TokenKind.SwitchKeyword:
                 throw new NotImplementedException();

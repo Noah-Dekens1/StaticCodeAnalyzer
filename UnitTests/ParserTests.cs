@@ -211,8 +211,55 @@ public class ParserTests
             }
             """);
 
-        int a = 0;
-        var expr = a = 10 + 3; 
+        List<string> l = [""];
+        var t = (l, 1);
+        foreach (var s in t.l)
+        {
+
+        }
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_EmptyForStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            for (;;)
+                ;
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_ForEachStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            int count = 0;
+            foreach (var item in someList)
+                count++;
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_WhileStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var problems = 100;
+            while ((a == true && b < 4) || c && (l > r*2))
+            {
+                problems = problems - 1;
+            }
+            """);
 
         var ast = Parser.Parse(tokens);
 

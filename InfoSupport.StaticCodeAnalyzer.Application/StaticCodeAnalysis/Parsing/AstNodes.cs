@@ -355,3 +355,23 @@ public class ExpressionStatementListNode(List<ExpressionStatementNode> statement
         get => string.Join(',', Children);
     }
 }
+
+[DebuggerDisplay("foreach ({VariableType,nq} {VariableIdentifier,nq} in {Collection,nq}) ...")]
+public class ForEachStatementNode(string variableType, string variableIdentifier, ExpressionNode collection, AstNode body) : StatementNode
+{
+    public string VariableType { get; set; } = variableType;
+    public string VariableIdentifier { get; set; } = variableIdentifier;
+    public ExpressionNode Collection {  get; set; } = collection;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Collection, Body];
+}
+
+[DebuggerDisplay("while ({Condition,nq}) ...")]
+public class WhileStatement(ExpressionNode condition, AstNode body) : StatementNode
+{
+    public ExpressionNode Condition { get; set; } = condition;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Condition, Body];
+}
