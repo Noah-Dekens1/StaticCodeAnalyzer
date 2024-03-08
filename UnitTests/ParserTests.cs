@@ -97,6 +97,15 @@ public class ParserTests
     }
 
     [TestMethod]
+    public void Parse_VariableDeclarationWithType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("int a = 0;");
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
     public void Parse_BasicBinaryExpression2_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("3 * 4 / 2 + someIdentifier % 3;");
@@ -105,6 +114,57 @@ public class ParserTests
         var expr = GetGlobalStatement<ExpressionStatementNode>(ast, 0);
 
         Assert.IsNotNull(expr);
+    }
+
+    [TestMethod]
+    public void Parse_IfStatement_ReturnsValidAST()
+    {
+
+        var tokens = Lexer.Lex("""
+            if (10 > 3 && (5 < 7 || 2 != 3))
+                ;
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_IfStatementWithBlockBody_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            if (true)
+            {
+                var a = "Hello world!";
+                var b = true;
+                var c = false;
+            }
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_IfStatementWithElse_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            if (true)
+            {
+                ;
+            }
+            else if (false) // embedded if statement in else clause
+            {
+                ;
+            }
+            else
+                ;
+            """);
+
+        var ast = Parser.Parse(tokens);
+        Assert.IsTrue(false);
     }
 
     [DataTestMethod]

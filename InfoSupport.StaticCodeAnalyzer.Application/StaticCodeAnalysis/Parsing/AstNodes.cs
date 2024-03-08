@@ -43,7 +43,7 @@ public class LiteralExpressionNode : ExpressionNode
 
 }
 
-[DebuggerDisplay("{ToString()}")]
+[DebuggerDisplay("{ToString(),nq}")]
 public class NumericLiteralNode : LiteralExpressionNode
 {
     public object? Value { get; set; }
@@ -64,7 +64,7 @@ public class StringLiteralNode : LiteralExpressionNode
 {
     public required string Value { get; set; }
 
-    public override string ToString() => $"{Value}";
+    public override string ToString() => $"\"{Value}\"";
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -274,6 +274,16 @@ public class VariableDeclarationStatement(string type, string identifier, Expres
     public ExpressionNode Expression { get; set; } = expression;
 }
 
+[DebuggerDisplay(";")]
+public class EmptyStatementNode : StatementNode
+{
+
+}
+
+public class BlockNode(List<StatementNode> statements) : AstNode
+{
+    public List<StatementNode> Statements { get; set; } = statements;
+}
 
 public class TernaryExpressionNode : ExpressionNode
 {
@@ -287,4 +297,12 @@ public class IdentifierExpression : ExpressionNode
     public required string Identifier { get; set; }
 
     public override string ToString() => Identifier;
+}
+
+[DebuggerDisplay("if ({Expression,nq})")]
+public class IfStatementNode(ExpressionNode expression, AstNode body, AstNode? elseBody) : StatementNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+    public AstNode Body { get; set; } = body;
+    public AstNode? ElseBody { get; set; } = elseBody;
 }

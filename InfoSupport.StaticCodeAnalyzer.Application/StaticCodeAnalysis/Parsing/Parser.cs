@@ -29,9 +29,12 @@ public class Parser
         // \x and \u \U have been excluded as they have trailing values!
         // not a major issue though as nobody uses them ;)
     };
+
+    [DebuggerHidden]
     public bool CanPeek(int count = 1)
         => _index + count < _input.Length;
 
+    [DebuggerHidden]
     public bool IsAtEnd()
         => PeekCurrent().Kind == TokenKind.EndOfFile || _index >= _input.Length;
 
@@ -43,6 +46,7 @@ public class Parser
         _index = pos;
     }
 
+    [DebuggerHidden]
     public Token Consume(int count = 1)
     {
         var oldIndex = _index;
@@ -58,19 +62,30 @@ public class Parser
             throw new Exception($"Expected {expected} but got {actual}");
     }
 
+    [DebuggerHidden]
     public Token PeekCurrent()
     {
-        return _input[_index];
+        return CanPeek(0) ? _input[_index] : new Token();
     }
 
+    [DebuggerHidden]
     public Token Peek(int count = 1)
     {
         return CanPeek(count) ? _input[_index + count] : throw new ArgumentOutOfRangeException();
     }
 
+    [DebuggerHidden]
     public Token PeekSafe(int count = 1)
     {
-        return CanPeek(count) ? _input[_index + count] : new Token();
+        const int invalidTokenKind = 9999999; // To create an invalid token that will never match any case
+                                              // but prevent needing dozens of null-checks
+        return CanPeek(count) ? _input[_index + count] : new Token { Kind = (TokenKind)invalidTokenKind };
+    }
+
+    [DebuggerHidden]
+    public bool Matches(TokenKind kind)
+    {
+        return PeekCurrent().Kind == kind;
     }
 
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
@@ -265,7 +280,7 @@ public class Parser
 
     private bool IsBinaryOperator(int peekStart=0)
     {
-        var kind = Peek(peekStart + 0).Kind;
+        var kind = PeekSafe(peekStart + 0).Kind;
 
         switch (kind)
         {
@@ -384,7 +399,7 @@ public class Parser
         return possibleLHS;
     }
 
-    private bool IsVariableDeclarationStatement()
+    private bool IsDeclarationStatement()
     {
         var token = PeekCurrent();
 
@@ -417,10 +432,10 @@ public class Parser
         if (token.Kind == TokenKind.Identifier)
             maybeType = true;
 
-        return maybeType && PeekSafe(1).Kind == TokenKind.Equals;
+        return maybeType && PeekSafe(2).Kind == TokenKind.Equals;
     }
 
-    private StatementNode ParseVariableDeclarationStatement()
+    private StatementNode ParseDeclarationStatement()
     {
         var type = Consume();
         var identifier = Consume();
@@ -431,7 +446,7 @@ public class Parser
         return new VariableDeclarationStatement(type.Lexeme, identifier.Lexeme, expr!);
     }
 
-    private StatementNode ParseExpressionStatement()
+    private ExpressionStatementNode ParseExpressionStatement()
     {
         var expr = ParseExpression();
         Expect(TokenKind.Semicolon);
@@ -442,14 +457,100 @@ public class Parser
         };
     }
 
-    private StatementNode ParseStatement()
+    private AstNode ParseBlock()
     {
-        if (IsVariableDeclarationStatement())
-            return ParseVariableDeclarationStatement();
+        Expect(TokenKind.OpenBrace);
+        var statements = ParseStatementList();
+        Expect(TokenKind.CloseBrace);
 
+        return new BlockNode(statements);
+    }
+
+    private AstNode ParseBody()
+    {
+        // Could be either an embedded statement or a block?
+        return PeekCurrent().Kind == TokenKind.OpenBrace ? ParseBlock() : ParseStatement(isEmbeddedStatement: true);
+    }
+
+    private IfStatementNode ParseIfStatement()
+    {
+        Expect(TokenKind.IfKeyword);
+        Expect(TokenKind.OpenParen);
+        var expr = ParseExpression()!;
+        Expect(TokenKind.CloseParen);
+
+        var body = ParseBody();
+
+        AstNode? elseBody = null;
+
+        // @note: 'else if' doesn't really exist, it's just an embedded if statement in an else clause ;)
+
+        if (ConsumeIfMatch(TokenKind.ElseKeyword))
+        {
+            elseBody = ParseBody();
+        }
+
+        return new IfStatementNode(expr, body, elseBody);
+    }
+
+    private EmptyStatementNode ParseEmptyStatement()
+    {
+        Expect(TokenKind.Semicolon);
+        return new EmptyStatementNode();
+    }
+
+    private StatementNode ParseStatement(bool isEmbeddedStatement=false)
+    {
+        /*
+         * C# has the following statement types according to
+         * https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/statements
+         * 
+         * Declaration Statements
+         * Expression Statements (expressions that store the result in a variable)
+         * Selection Statements (if, switch)
+         * Iteration Statements (do, for, foreach, while)
+         * Jump Statements (break, continue, goto, return, yield)
+         * Exception-Handling Statements (throw, try-catch, try-finally, try-catch-finally)
+         * Checked/unchecked Statements
+         * Await statement
+         * Yield return statement
+         * Fixed statement
+         * Lock statement
+         * Labaled statements (for goto)
+         * Empty statement (;)
+         */
+
+        if (!isEmbeddedStatement && IsDeclarationStatement())
+            return ParseDeclarationStatement();
+
+        var token = PeekCurrent();
+
+        switch (token.Kind)
+        {
+            // Selection statements
+            case TokenKind.IfKeyword:
+                return ParseIfStatement();
+
+            case TokenKind.SwitchKeyword:
+                throw new NotImplementedException();
+                break;
+
+            case TokenKind.Semicolon:
+                return ParseEmptyStatement();
+        }
 
         // If no matches parse as an expression statement
         return ParseExpressionStatement();
+    }
+
+    private List<StatementNode> ParseStatementList()
+    {
+        List<StatementNode> statements = [];
+
+        while (!IsAtEnd() && !Matches(TokenKind.CloseBrace))
+            statements.Add(ParseStatement());
+
+        return statements;
     }
 
     private AST ParseInternal(Token[] tokens)
@@ -461,14 +562,14 @@ public class Parser
 
         _input = tokens;
 
-        //var expr = ParseExpression()!;
-        while (!IsAtEnd())
-        {
-            var result = ParseStatement();
+        var statements = ParseStatementList();
 
+        //var expr = ParseExpression()!;
+        foreach (var statement in statements)
+        {
             ast.Root.GlobalStatements.Add(new GlobalStatementNode
             {
-                Statement = result
+                Statement = statement
             });
         }
 
