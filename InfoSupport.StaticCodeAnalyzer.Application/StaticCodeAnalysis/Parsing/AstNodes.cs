@@ -521,13 +521,20 @@ public abstract class MemberNode : AstNode
 
 }
 
-public class FieldMemberNode(string fieldName, string fieldType, ExpressionNode? value) : MemberNode
+[DebuggerDisplay("{ToString(),nq}")]
+public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifier> modifiers, string fieldName, string fieldType, ExpressionNode? value) : MemberNode
 {
+    public AccessModifier AccessModifier = accessModifier;
+    public List<OptionalModifier> Modifiers = modifiers;
     public string FieldName { get; set; } = fieldName;
     public string FieldType { get; set; } = fieldType;
     public ExpressionNode? Value { get; set; } = value;
 
     public override List<AstNode> Children => Value is not null ? [Value] : [];
+
+    public override string ToString() => Value is not null
+        ? $"{AccessModifier} {string.Join(' ', Modifiers)} {FieldType} {FieldName} = {Value}"
+        : $"{AccessModifier} {string.Join(' ', Modifiers)} {FieldType} {FieldName}";
 }
 
 public enum PropertyAccessorType

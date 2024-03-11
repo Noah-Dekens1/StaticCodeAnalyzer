@@ -1145,7 +1145,7 @@ public class Parser
             var hasValue = ConsumeIfMatch(TokenKind.Equals);
             var value = hasValue ? ParseExpression() : null;
             Expect(TokenKind.Semicolon);
-            return new FieldMemberNode(identifier.Lexeme, type.Lexeme, value);
+            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, identifier.Lexeme, type.Lexeme, value);
         }
         else if (isProperty)
         {
