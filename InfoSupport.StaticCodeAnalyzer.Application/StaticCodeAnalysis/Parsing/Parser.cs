@@ -1019,7 +1019,7 @@ public class Parser
 
         Consume();
 
-        // Auto-implemented property
+        // Auto-implemented property { get; }
         if (ConsumeIfMatch(TokenKind.Semicolon))
             return new PropertyAccessorNode(
                 PropertyAccessorType.Auto,
@@ -1029,7 +1029,7 @@ public class Parser
                 initOnly
             );
 
-        // Expression bodied member
+        // Expression bodied member { get => true; }
         if (ConsumeIfMatch(TokenKind.EqualsGreaterThan))
         {
             var expr = ParseExpression();
@@ -1044,6 +1044,7 @@ public class Parser
             );
         }
 
+        // Block bodied member { get { return _field } }
         if (Matches(TokenKind.OpenBrace))
         {
             var block = ParseBlock();
