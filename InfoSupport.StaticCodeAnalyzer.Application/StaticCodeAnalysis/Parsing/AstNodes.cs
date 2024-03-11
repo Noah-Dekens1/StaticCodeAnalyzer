@@ -68,7 +68,7 @@ public class BooleanLiteralNode : LiteralExpressionNode
 {
     public bool Value { get; set; }
 
-    public override string ToString() => $"{Value}";
+    public override string ToString() => $"{(Value ? "true" : "false")}";
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -386,6 +386,42 @@ public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression
     public override List<AstNode> Children => [LHS, Identifier];
 
     public override string ToString() => $"{LHS}.{Identifier}";
+}
+
+[DebuggerDisplay("{ToString()}")]
+public class ArgumentNode(ExpressionNode expression, string? name) : AstNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+    public string? Name { get; set; } = name;
+
+    public override List<AstNode> Children => [Expression];
+
+    public override string ToString() => Name is not null
+        ? $"{Name}: {Expression}"
+        : $"{Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ArgumentList(List<ArgumentNode> arguments) : AstNode
+{
+    public List<ArgumentNode> Arguments { get; set; } = arguments;
+
+    public override List<AstNode> Children => [ .. Arguments];
+
+    public override string ToString() => Arguments.Count >= 10
+        ? $"{Arguments.Count} arguments"
+        : string.Join(',', Arguments.Select(a => a.ToString()));
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments) : ExpressionNode
+{
+    public ExpressionNode LHS { get; set; } = lhs;
+    public ArgumentList Arguments { get; set; } = arguments;
+
+    public override List<AstNode> Children => [LHS, Arguments];
+
+    public override string ToString() => $"{LHS}({Arguments})";
 }
 
 [DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]

@@ -392,6 +392,14 @@ public class Parser
         return ResolveMemberAccess(members);
     }
 
+    private InvocationExpressionNode ParseInvocation(ExpressionNode lhs)
+    {
+        Expect(TokenKind.OpenParen);
+        var arguments = ParseArgumentList();
+        Expect(TokenKind.CloseParen);
+        return new InvocationExpressionNode(lhs, arguments);
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS=null, bool onlyParseSingle=false)
     {
@@ -424,6 +432,13 @@ public class Parser
         {
             resolvedIdentifier = ResolveIdentifier();
             possibleLHS = resolvedIdentifier;
+        }
+
+        bool isMethodCall = PeekSafe(0).Kind == TokenKind.OpenParen && resolvedIdentifier is not null;
+
+        if (isMethodCall)
+        {
+            possibleLHS = ParseInvocation(resolvedIdentifier!);
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);
@@ -588,6 +603,40 @@ public class Parser
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 
         return new ExpressionStatementListNode(statements);
+    }
+
+    private ArgumentList ParseArgumentList()
+    {
+        var expressions = new List<ArgumentNode>();
+
+        do
+        {
+            if (Matches(TokenKind.CloseParen))
+                return new ArgumentList(expressions);
+
+            var current = PeekSafe(0);
+            var next = PeekSafe(1);
+
+            string? name = null;
+
+            if (
+                current.Kind == TokenKind.Identifier && 
+                next.Kind == TokenKind.Colon)
+            {
+                Consume();
+                Consume();
+
+                name = current.Lexeme;
+            }
+
+            var expr = ParseExpression();
+
+            if (expr is not null)
+                expressions.Add(new ArgumentNode(expr, name));
+
+        } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
+
+        return new ArgumentList(expressions);
     }
 
     private AstNode ParseForInitializer()

@@ -301,6 +301,29 @@ public class ParserTests
         Assert.IsTrue(false);
     }
 
+    [TestMethod]
+    public void Parse_SimpleMethodCall_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            someObj.MethodCall(3 + a(named: true), 9 - 8 + -1, 5 != 3);
+            """);
+
+        var ast = Parser.Parse(tokens);
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_MethodCall_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var expr = a() + (b(b(true, true) != 0, false) * c(1, test: true) + StaticClass.methodCall(1, 2, 3, 4, "hello world", -3 + 2));
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
     [DataTestMethod]
     [DataRow("1", 1)]
     [DataRow("3", 3)]
