@@ -632,21 +632,43 @@ public class MethodNode(
     public override List<AstNode> Children => [Parameters, Body];
 }
 
-[DebuggerDisplay("class {ClassName,nq}")]
-public class ClassDeclarationNode(string className, List<MemberNode> members, string? parentName=null, AccessModifier? accessModifier=null) : TypeDeclarationNode
+public class BasicDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
+    public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
     public string? ParentName { get; set; } = parentName;
-    public string ClassName { get; set; } = className;
+    public string Name { get; set; } = name;
     public List<MemberNode> Members { get; set; } = members;
 
     public override List<AstNode> Children => [.. Members];
 }
 
+[DebuggerDisplay("class {Name,nq}")]
+public class ClassDeclarationNode(string className, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) 
+    : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers)
+{
+
+}
+
+[DebuggerDisplay("interface {Name,nq}")]
+public class InterfaceDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
+    : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers)
+{
+
+}
+
+[DebuggerDisplay("struct {Name,nq}")]
+public class StructDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
+    : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers)
+{
+
+}
+
 [DebuggerDisplay("enum {EnumName,nq}")]
-public class EnumDeclarationNode(string enumName, List<EnumMemberNode> members, string? parentType, AccessModifier? accessModifier = null) : TypeDeclarationNode
+public class EnumDeclarationNode(string enumName, List<EnumMemberNode> members, string? parentType, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
+    public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
     public string? ParentType { get; set;} = parentType;
     public string EnumName { get; set; } = enumName;
     public List<EnumMemberNode> Members { get; set;} = members;

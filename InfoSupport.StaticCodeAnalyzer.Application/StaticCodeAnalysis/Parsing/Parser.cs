@@ -1244,13 +1244,16 @@ public class Parser
         var members = ParseMembers(kind, identifier);
 
         Expect(TokenKind.CloseBrace);
-
         switch (type)
         {
             case TokenKind.ClassKeyword:
-                return new ClassDeclarationNode(identifier, members, parentName, accessModifier);
+                return new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers);
             case TokenKind.EnumKeyword:
-                return new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier);
+                return new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers);
+            case TokenKind.InterfaceKeyword:
+                return new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers);
+            case TokenKind.StructKeyword:
+                return new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers);
             default:
                 throw new NotImplementedException();
         }
