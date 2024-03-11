@@ -360,7 +360,7 @@ public class ParserTests
 
                 virtual void Test();
 
-                public override ToString()
+                public override string ToString()
                 {
                     return _hello;
                 }

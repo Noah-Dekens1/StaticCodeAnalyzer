@@ -555,6 +555,19 @@ public class Parser
         return PeekCurrent().Kind == TokenKind.OpenBrace ? ParseBlock() : ParseStatement(isEmbeddedStatement: true);
     }
 
+    private AstNode ParseMethodBody()
+    {
+        // Could be either an expression bodied member or a block
+        if (ConsumeIfMatch(TokenKind.EqualsGreaterThan))
+        {
+            var expr = ParseExpression()!;
+            Expect(TokenKind.Semicolon);
+            return expr;
+        }
+
+        return ParseBlock();
+    }
+
     private IfStatementNode ParseIfStatement()
     {
         Expect(TokenKind.IfKeyword);
@@ -1122,9 +1135,22 @@ public class Parser
         Expect(TokenKind.OpenParen);  // parms
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
-        var body = ParseBody();
+        var body = ParseMethodBody();
 
         return new ConstructorNode(accessModifier, parms, body);
+    }
+
+    private MemberNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, string returnType, string methodName)
+    {
+        Expect(TokenKind.OpenParen);
+        var parms = ParseParameterList();
+        Expect(TokenKind.CloseParen);
+        AstNode? body = null;
+            
+        if (!ConsumeIfMatch(TokenKind.Semicolon))
+            body = ParseMethodBody();
+
+        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body);
     }
 
     private EnumMemberNode ParseEnumMember()
@@ -1169,6 +1195,10 @@ public class Parser
         else if (isProperty)
         {
             return ParseProperty(identifier.Lexeme, type.Lexeme);
+        }
+        else if (isMethod)
+        {
+            return ParseMethod(accessModifier ?? AccessModifier.Private, modifiers, type.Lexeme, identifier.Lexeme);
         }
 
         throw new NotImplementedException();

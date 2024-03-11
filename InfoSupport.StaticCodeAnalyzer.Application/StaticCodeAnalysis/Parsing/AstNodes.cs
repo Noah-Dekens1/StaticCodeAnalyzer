@@ -29,7 +29,7 @@ public class StatementNode : AstNode
     public override List<AstNode> Children => [];
 }
 
-[DebuggerDisplay("{ToString(),nq}")]
+[DebuggerDisplay("return {ToString(),nq}")]
 public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNode
 {
     public ExpressionNode? ReturnExpression { get; set; } = returnExpression;
@@ -609,6 +609,25 @@ public class ConstructorNode(AccessModifier accessModifier, ParameterListNode pa
     public AccessModifier AccessModifier { get; set; } = accessModifier;
     public ParameterListNode Parameters { get; set; } = parameters;
     public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Parameters, Body];
+}
+
+[DebuggerDisplay("{AccessModifier,nq} {ReturnType,nq} {MethodName,nq}({Parameters,nq})")]
+public class MethodNode(
+    AccessModifier accessModifier, 
+    List<OptionalModifier> modifiers, 
+    string returnType,
+    string methodName,
+    ParameterListNode parameters,
+    AstNode? body) : MemberNode
+{
+    public AccessModifier AccessModifier {  set; get; } = accessModifier;
+    public List<OptionalModifier> Modifiers { get; set; } = modifiers;
+    public string ReturnType { get; set; } = returnType;
+    public string MethodName { get; set; } = methodName;
+    public ParameterListNode Parameters { get; set; } = parameters;
+    public AstNode? Body { get; set; } = body;
 
     public override List<AstNode> Children => [Parameters, Body];
 }
