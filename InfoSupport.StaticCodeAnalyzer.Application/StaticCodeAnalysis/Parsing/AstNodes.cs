@@ -28,6 +28,16 @@ public class StatementNode : AstNode
     public override List<AstNode> Children => [];
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNode
+{
+    public ExpressionNode? ReturnExpression { get; set; } = returnExpression;
+
+    public override List<AstNode> Children => [ReturnExpression];
+
+    public override string ToString() => $"{ReturnExpression}";
+}
+
 [DebuggerDisplay("{Statement,nq}")]
 public class GlobalStatementNode : AstNode
 {
@@ -285,6 +295,7 @@ public class VariableDeclarationStatement(string type, string identifier, Expres
     public override List<AstNode> Children => [Expression];
 }
 
+
 [DebuggerDisplay(";")]
 public class EmptyStatementNode : StatementNode
 {
@@ -414,6 +425,31 @@ public class ArgumentList(List<ArgumentNode> arguments) : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
+public class ParameterNode(string type, string identifier) : AstNode
+{
+    public string Type { get; set; } = type;
+    public string Identifier { get; set; } = identifier;
+
+    public override List<AstNode> Children => [];
+
+    public override string ToString()
+        => $"{Type} {Identifier}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ParameterListNode(List<ParameterNode> parameters) : AstNode
+{
+    public List<ParameterNode> Parameters { get; set; } = parameters;
+
+    public override List<AstNode> Children => [..Parameters];
+
+    public override string ToString() => Parameters.Count >= 10
+        ? $"{Parameters.Count} parameters"
+        : string.Join(',', Parameters.Select(a => a.ToString()));
+
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
 public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
@@ -448,4 +484,120 @@ public class UsingDirectiveNode(AstNode ns, string? alias) : AstNode
     {
         get => Alias is not null ? $"using {Alias} = {Namespace}" : $"using {Namespace}";
     }
+}
+
+public abstract class TypeDeclarationNode : AstNode
+{
+    
+}
+
+public enum AccessModifier
+{
+    Private,
+    Protected,
+    Internal,
+    Public,
+    ProtectedInternal,
+    PrivateProtected
+}
+
+public enum OptionalModifier
+{
+    Static,
+    Virtual,
+    Override,
+    Abstract,
+    Sealed,
+    Extern,
+    Partial,
+    New,
+    Readonly,
+    Const,
+    Volatile,
+}
+
+public abstract class MemberNode : AstNode
+{
+
+}
+
+public class FieldMemberNode(string fieldName, string fieldType, ExpressionNode? value) : MemberNode
+{
+    public string FieldName { get; set; } = fieldName;
+    public string FieldType { get; set; } = fieldType;
+    public ExpressionNode? Value { get; set; } = value;
+
+    public override List<AstNode> Children => Value is not null ? [Value] : [];
+}
+
+public enum PropertyAccessorType
+{
+    Auto,
+    BlockBodied,
+    ExpressionBodied
+}
+
+public static class Utils
+{
+    public static List<T> ParamsToList<T>(params T?[] values)
+    {
+        var list = new List<T>();
+
+        foreach (var item in values)
+            if (item is not null)
+                list.Add(item);
+
+        return list;
+    }
+}
+
+public class PropertyAccessorNode(
+    PropertyAccessorType accessorType,
+    AccessModifier accessModifier,
+    ExpressionNode? expressionBody,
+    BlockNode? blockBody,
+    bool initOnly = false
+    ) : AstNode
+{
+    public PropertyAccessorType AccessorType { get; set; } = accessorType;
+    public AccessModifier AccessModifier { get; set; } = accessModifier;
+    public ExpressionNode? ExpressionBody { get; set; } = expressionBody;
+    public BlockNode? BlockBody { get; set; } = blockBody;
+    public bool IsInitOnly { get; set; } = initOnly;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ExpressionBody, BlockBody);
+}
+
+
+public class PropertyMemberNode(string propertyName, string propertyType, PropertyAccessorNode? getter, PropertyAccessorNode? setter, ExpressionNode? value) : MemberNode
+{
+    public string PropertyName { get; set; } = propertyName;
+    public string PropertyType { get; set; } = propertyType;
+    public PropertyAccessorNode? Getter { get; set; } = getter;
+    public PropertyAccessorNode? Setter { get; set; } = setter;
+    public ExpressionNode? Value { get; set; } = value;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Getter, Setter, Value);
+
+    public override string ToString() => $"{PropertyType} {PropertyName}";
+}
+
+[DebuggerDisplay("{AccessModifier,nq} Constructor({Parameters,nq})")]
+public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, AstNode body) : MemberNode
+{
+    public AccessModifier AccessModifier { get; set; } = accessModifier;
+    public ParameterListNode Parameters { get; set; } = parameters;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Parameters, Body];
+}
+
+public class ClassDeclarationNode(string className, List<MemberNode> members, string? parentName=null, AccessModifier? accessModifier=null) : TypeDeclarationNode
+{
+    public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
+    public string? ParentName { get; set; } = parentName;
+    public string ClassName { get; set; } = className;
+    public List<MemberNode> Members { get; set; } = members;
+
+    public override List<AstNode> Children => [.. Members];
 }

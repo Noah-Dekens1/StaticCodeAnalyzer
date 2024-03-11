@@ -203,6 +203,18 @@ public class ParserTests
     [TestMethod]
     public void Parse_ComplexForStatement_ReturnsValidAST()
     {
+        int i = 0;
+        int b = 10;
+        int c = 5;
+        for (i = 3, ++i, i--, i++; i < 10; i++, c = 0)
+        {
+            b--;
+        }
+
+        int x;
+        for (x = 0, i++; i < b; i++)
+            ;
+
         var tokens = Lexer.Lex("""
             int i = 0;
             int b = 10;
@@ -317,6 +329,42 @@ public class ParserTests
     {
         var tokens = Lexer.Lex("""
             var expr = a() + (b(b(true, true) != 0, false) * c(1, test: true) + StaticClass.methodCall(1, 2, 3, 4, "hello world", -3 + 2));
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_Class_ShouldReturnValidAST()
+    {
+        // fields, properties, constructors, methods, inheritance, nested types ...?
+        var tokens = Lexer.Lex("""
+            internal partial class TestClass : OtherClass
+            {
+                private int _test = 3;
+                private int _test2;
+                private int _test3 = 9 - (1 * 2);
+                public bool IsValid { get; protected set; } = true;
+                public bool OtherProperty { protected get; } = false;
+                public bool ExpressionBodied { get => true; }
+                public bool BlockBodied { get { return _field; } private set { _field = true; } }
+
+                protected readonly string _hello;
+
+                public TestClass()
+                {
+                    _hello = "Hello world!";
+                }
+
+                virtual void Test();
+
+                public override ToString()
+                {
+                    return _hello;
+                }
+            }
             """);
 
         var ast = Parser.Parse(tokens);

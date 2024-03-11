@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -156,7 +157,7 @@ public class Parser
         return sb.ToString();
     }
 
-    private bool PeekLiteralExpression([MaybeNullWhen(false)] out LiteralExpressionNode literal, Token? providedToken=null)
+    private bool PeekLiteralExpression([MaybeNullWhen(false)] out LiteralExpressionNode literal, Token? providedToken = null)
     {
         var token = providedToken ?? PeekCurrent();
         var kind = token.Kind;
@@ -237,7 +238,7 @@ public class Parser
         */
 
         var current = PeekSafe(peekStart);
-        
+
         if (hasReadIdentifier && (current.Kind == TokenKind.PlusPlus || current.Kind == TokenKind.MinusMinus))
         {
             isPrefix = false;
@@ -253,7 +254,7 @@ public class Parser
         return false;
     }
 
-    private UnaryExpressionNode ParseUnaryExpression(bool isPrefix, ExpressionNode? identifier=null)
+    private UnaryExpressionNode ParseUnaryExpression(bool isPrefix, ExpressionNode? identifier = null)
     {
         if (isPrefix)
         {
@@ -302,7 +303,7 @@ public class Parser
         }
     }
 
-    private bool IsBinaryOperator(int peekStart=0)
+    private bool IsBinaryOperator(int peekStart = 0)
     {
         var kind = PeekSafe(peekStart + 0).Kind;
 
@@ -401,7 +402,7 @@ public class Parser
     }
 
     // @note: pretty much everything in C# is an expression so we probably want to split this up
-    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS=null, bool onlyParseSingle=false)
+    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
     {
         var token = PeekCurrent();
 
@@ -454,7 +455,7 @@ public class Parser
             //return unaryExpr;
             possibleLHS = unaryExpr; // try to see if we're the LHS of a binary or ternary expression
         }
-        
+
         bool isBinary = !onlyParseSingle && IsBinaryOperator((possibleLHS is null && !isCurrentTokenIdentifier) ? 1 : 0);
         bool isTernary = false;
 
@@ -527,7 +528,7 @@ public class Parser
         return new VariableDeclarationStatement(type.Lexeme, identifier.Lexeme, expr!);
     }
 
-    private ExpressionStatementNode ParseExpressionStatement(bool expectSemicolon=true)
+    private ExpressionStatementNode ParseExpressionStatement(bool expectSemicolon = true)
     {
         var expr = ParseExpression();
         if (expectSemicolon)
@@ -620,7 +621,7 @@ public class Parser
             string? name = null;
 
             if (
-                current.Kind == TokenKind.Identifier && 
+                current.Kind == TokenKind.Identifier &&
                 next.Kind == TokenKind.Colon)
             {
                 Consume();
@@ -754,13 +755,27 @@ public class Parser
         return new UsingDirectiveNode(ns, alias);
     }
 
+    private ReturnStatementNode ParseReturnStatement()
+    {
+        Expect(TokenKind.ReturnKeyword);
+
+        if (ConsumeIfMatch(TokenKind.Semicolon))
+            return new ReturnStatementNode(null);
+
+        var expression = ParseExpression();
+
+        Expect(TokenKind.Semicolon);
+
+        return new ReturnStatementNode(expression);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
         return new EmptyStatementNode();
     }
 
-    private StatementNode ParseStatement(bool isEmbeddedStatement=false)
+    private StatementNode ParseStatement(bool isEmbeddedStatement = false)
     {
         /*
          * C# has the following statement types according to
@@ -796,7 +811,7 @@ public class Parser
                 return ParseDoStatement();
 
             case TokenKind.ForKeyword:
-                return ParseForStatement(); 
+                return ParseForStatement();
 
             case TokenKind.ForeachKeyword:
                 return ParseForEachStatement();
@@ -807,6 +822,9 @@ public class Parser
             case TokenKind.SwitchKeyword:
                 throw new NotImplementedException();
                 break;
+
+            case TokenKind.ReturnKeyword:
+                return ParseReturnStatement();
 
             case TokenKind.Semicolon:
                 return ParseEmptyStatement();
@@ -838,6 +856,356 @@ public class Parser
         return statements;
     }
 
+    private bool IsAccessModifier()
+    {
+        var kind = PeekSafe(0).Kind;
+        return kind == TokenKind.PrivateKeyword ||
+               kind == TokenKind.InternalKeyword ||
+               kind == TokenKind.ProtectedKeyword ||
+               kind == TokenKind.PublicKeyword;
+    }
+
+    private AccessModifier ParseAccessModifier()
+    {
+        var kind = Consume().Kind;
+        var next = PeekSafe(0).Kind;
+
+        if (kind == TokenKind.PrivateKeyword)
+        {
+            if (next == TokenKind.ProtectedKeyword)
+            {
+                Consume();
+                return AccessModifier.PrivateProtected;
+            }
+
+            return AccessModifier.Private;
+        }
+
+        if (kind == TokenKind.ProtectedKeyword)
+        {
+            if (next == TokenKind.InternalKeyword)
+            {
+                Consume();
+                return AccessModifier.ProtectedInternal;
+            }
+
+            return AccessModifier.Protected;
+        }
+
+        if (kind == TokenKind.InternalKeyword)
+            return AccessModifier.Internal;
+
+        if (kind == TokenKind.PublicKeyword)
+            return AccessModifier.Public;
+
+        throw new Exception($"Invalid access modifier {kind}");
+    }
+
+    private static bool IsTypeKeyword(Token token)
+    {
+        var kind = token.Kind;
+
+        return kind == TokenKind.ClassKeyword ||
+               kind == TokenKind.InterfaceKeyword ||
+               kind == TokenKind.EnumKeyword ||
+               kind == TokenKind.StructKeyword;
+    }
+
+    private bool IsTypeDeclaration()
+    {
+        var idx = -1;
+
+        // Skip over all (access) modifiers
+        while (IsValidTypeModifier(PeekSafe(++idx)))
+            ;
+
+        return IsTypeKeyword(PeekSafe(idx));
+    }
+
+    private List<StatementNode> ParseTopLevelStatements()
+    {
+        List<StatementNode> statements = [];
+
+        while (!IsAtEnd() && !IsTypeDeclaration())
+            statements.Add(ParseStatement());
+
+        return statements;
+    }
+
+    private static readonly Dictionary<TokenKind, OptionalModifier> Modifiers = new()
+    {
+        { TokenKind.StaticKeyword, OptionalModifier.Static },
+        { TokenKind.VirtualKeyword, OptionalModifier.Virtual },
+        { TokenKind.OverrideKeyword, OptionalModifier.Override },
+        { TokenKind.AbstractKeyword, OptionalModifier.Abstract },
+        { TokenKind.SealedKeyword, OptionalModifier.Sealed },
+        { TokenKind.ExternKeyword, OptionalModifier.Extern },
+        { TokenKind.NewKeyword, OptionalModifier.New },
+        { TokenKind.ReadonlyKeyword, OptionalModifier.Readonly },
+        { TokenKind.ConstKeyword, OptionalModifier.Const },
+        { TokenKind.VolatileKeyword, OptionalModifier.Volatile },
+    };
+
+    private static readonly List<string> ValidClassModifiers = [
+        "abstract",
+        "sealed",
+        "static",
+        "partial",
+        "internal",
+        "private",
+        "public",
+        "protected"
+    ];
+
+    private static bool IsValidTypeModifier(Token token)
+    {
+        return ValidClassModifiers.Contains(token.Lexeme);
+    }
+
+    private void ParseModifiers(out AccessModifier? accessModifier, out List<OptionalModifier> modifiers)
+    {
+        accessModifier = null;
+        modifiers = [];
+
+        while (!IsAtEnd())
+        {
+            var current = PeekSafe(0);
+
+            if (IsAccessModifier())
+            {
+                if (accessModifier is not null)
+                    throw new Exception("Multiple access modifiers found");
+
+                accessModifier = ParseAccessModifier();
+                continue;
+            }
+
+            if (Modifiers.TryGetValue(current.Kind, out var value))
+            {
+                modifiers.Add(value);
+                Consume();
+                continue;
+            }
+
+            if (current.Kind == TokenKind.Identifier && current.Lexeme == "partial")
+            {
+                modifiers.Add(OptionalModifier.Partial);
+                Consume();
+                continue;
+            }
+
+            break;
+        }
+    }
+
+    private PropertyAccessorNode? ParseAccessor(out bool isGetter)
+    {
+
+        AccessModifier? accessModifier = IsAccessModifier()
+            ? ParseAccessModifier()
+            : null;
+
+        var keyword = PeekCurrent();
+
+        isGetter = false;
+
+        bool isAccessor = keyword.Lexeme == "get" || keyword.Lexeme == "set" || keyword.Lexeme == "init";
+
+        if (!isAccessor)
+            return null;
+
+        bool initOnly = keyword.Lexeme == "init";
+        isGetter = keyword.Lexeme == "get";
+
+        Consume();
+
+        // Auto-implemented property
+        if (ConsumeIfMatch(TokenKind.Semicolon))
+            return new PropertyAccessorNode(
+                PropertyAccessorType.Auto,
+                accessModifier ?? AccessModifier.Public,
+                null,
+                null,
+                initOnly
+            );
+
+        // Expression bodied member
+        if (ConsumeIfMatch(TokenKind.EqualsGreaterThan))
+        {
+            var expr = ParseExpression();
+            Expect(TokenKind.Semicolon);
+
+            return new PropertyAccessorNode(
+                PropertyAccessorType.ExpressionBodied,
+                accessModifier ?? AccessModifier.Public,
+                expr,
+                null,
+                initOnly
+            );
+        }
+
+        if (Matches(TokenKind.OpenBrace))
+        {
+            var block = ParseBlock();
+
+            return new PropertyAccessorNode(
+                PropertyAccessorType.BlockBodied,
+                accessModifier ?? AccessModifier.Public,
+                null,
+                block,
+                initOnly
+            );
+        }
+
+        return null;
+    }
+
+    private MemberNode ParseProperty(string propertyName, string propertyType)
+    {
+        Expect(TokenKind.OpenBrace);
+
+        PropertyAccessorNode? getter = null;
+        PropertyAccessorNode? setter = null;
+
+        PropertyAccessorNode? accessor;
+        do
+        {
+            accessor = ParseAccessor(out bool isGetter);
+
+            if (accessor is not null)
+            {
+                if (isGetter)
+                    getter = accessor;
+                else
+                    setter = accessor;
+            }
+        } while (!IsAtEnd() && accessor is not null);
+
+        Expect(TokenKind.CloseBrace);
+
+        var hasValue = ConsumeIfMatch(TokenKind.Equals);
+        var value = hasValue ? ParseExpression() : null;
+
+        if (hasValue)
+        {
+            Expect(TokenKind.Semicolon);
+        }
+
+        return new PropertyMemberNode(propertyName, propertyType, getter, setter, value);
+    }
+
+    private ParameterListNode ParseParameterList()
+    {
+        var parameters = new List<ParameterNode>();
+
+        // @todo: support ref, out, params, optional, ...
+
+        do
+        {
+            if (Matches(TokenKind.CloseParen))
+                return new ParameterListNode(parameters);
+
+            var type = Consume();
+            var identifier = Consume();
+
+            parameters.Add(new ParameterNode(type.Lexeme, identifier.Lexeme));
+
+        } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
+
+        return new ParameterListNode(parameters);
+    }
+
+    private MemberNode ParseConstructor(AccessModifier accessModifier)
+    {
+        Expect(TokenKind.Identifier); // ctor name
+        Expect(TokenKind.OpenParen);  // parms
+        var parms = ParseParameterList();
+        Expect(TokenKind.CloseParen);
+        var body = ParseBody();
+
+        return new ConstructorNode(accessModifier, parms, body);
+    }
+
+    private MemberNode ParseMember(string typeName)
+    {
+        ParseModifiers(out var accessModifier, out var modifiers);
+        var isCtor = PeekCurrent().Lexeme == typeName;
+
+        if (isCtor)
+            return ParseConstructor(accessModifier ?? AccessModifier.Private);
+
+        var type = Consume();
+        var identifier = Consume();
+        var isMethod = Matches(TokenKind.OpenParen);
+        var isProperty = Matches(TokenKind.OpenBrace);
+        var isField = !isMethod && !isProperty; // @todo: events?
+
+        if (isField)
+        {
+            var hasValue = ConsumeIfMatch(TokenKind.Equals);
+            var value = hasValue ? ParseExpression() : null;
+            Expect(TokenKind.Semicolon);
+            return new FieldMemberNode(identifier.Lexeme, type.Lexeme, value);
+        }
+        else if (isProperty)
+        {
+            return ParseProperty(identifier.Lexeme, type.Lexeme);
+        }
+
+        throw new NotImplementedException();
+    }
+
+    private List<MemberNode> ParseMembers(string typeName)
+    {
+        var members = new List<MemberNode>();
+
+        while (!IsAtEnd() && !Matches(TokenKind.CloseBrace))
+        {
+            members.Add(ParseMember(typeName));
+        }
+        
+        return members;
+    }
+
+    private TypeDeclarationNode ParseTypeDeclaration()
+    {
+        ParseModifiers(out var accessModifier, out var modifiers);
+
+        var type = Consume().Kind;
+
+        var identifier = Consume().Lexeme;
+        string? parentName = null;
+
+        if (ConsumeIfMatch(TokenKind.Colon))
+        {
+            parentName = Consume().Lexeme;
+        }
+
+        Expect(TokenKind.OpenBrace);
+
+        var members = ParseMembers(identifier);
+
+        Expect(TokenKind.CloseBrace);
+
+        switch (type)
+        {
+            case TokenKind.ClassKeyword:
+                return new ClassDeclarationNode(identifier, members, parentName, accessModifier);
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    private List<TypeDeclarationNode> ParseTypeDeclarations()
+    {
+        var declarations = new List<TypeDeclarationNode>();
+
+        while (!IsAtEnd() && IsTypeDeclaration())
+            declarations.Add(ParseTypeDeclaration());
+
+        return declarations;
+    }
+
     private AST ParseInternal(Token[] tokens)
     {
         var ast = new AST { Root = new() };
@@ -851,7 +1219,9 @@ public class Parser
 
         ast.Root.UsingDirectives.AddRange(directives);
 
-        var statements = ParseStatementList();
+        // the 'rule' in C# is that top-level statements must precede any type declarations and namespaces
+        // this method stops the moment it encounters a type declaration
+        var statements = ParseTopLevelStatements();
 
         //var expr = ParseExpression()!;
         foreach (var statement in statements)
@@ -861,6 +1231,8 @@ public class Parser
                 Statement = statement
             });
         }
+
+        ParseTypeDeclarations();
 
         /*
 
