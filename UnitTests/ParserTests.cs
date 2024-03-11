@@ -372,6 +372,23 @@ public class ParserTests
         Assert.IsTrue(false);
     }
 
+    [TestMethod]
+    public void Parse_Enum_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public enum Color : byte
+            {
+                Red,
+                Green = 1,
+                Blue
+            }
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
     [DataTestMethod]
     [DataRow("1", 1)]
     [DataRow("3", 3)]

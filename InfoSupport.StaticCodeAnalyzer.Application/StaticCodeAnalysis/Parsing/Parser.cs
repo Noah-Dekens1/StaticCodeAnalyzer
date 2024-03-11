@@ -1127,8 +1127,26 @@ public class Parser
         return new ConstructorNode(accessModifier, parms, body);
     }
 
-    private MemberNode ParseMember(string typeName)
+    private EnumMemberNode ParseEnumMember()
     {
+        var identifier = Consume();
+        ExpressionNode? value = null;
+
+        if (ConsumeIfMatch(TokenKind.Equals))
+        {
+            value = ParseExpression();
+        }
+
+        ConsumeIfMatch(TokenKind.Comma);
+
+        return new EnumMemberNode(identifier.Lexeme, value);
+    }
+
+    private MemberNode ParseMember(TypeKind kind, string typeName)
+    {
+        if (kind == TypeKind.Enum)
+            return ParseEnumMember();
+
         ParseModifiers(out var accessModifier, out var modifiers);
         var isCtor = PeekCurrent().Lexeme == typeName;
 
@@ -1156,13 +1174,13 @@ public class Parser
         throw new NotImplementedException();
     }
 
-    private List<MemberNode> ParseMembers(string typeName)
+    private List<MemberNode> ParseMembers(TypeKind kind, string typeName)
     {
         var members = new List<MemberNode>();
 
         while (!IsAtEnd() && !Matches(TokenKind.CloseBrace))
         {
-            members.Add(ParseMember(typeName));
+            members.Add(ParseMember(kind, typeName));
         }
         
         return members;
@@ -1184,7 +1202,16 @@ public class Parser
 
         Expect(TokenKind.OpenBrace);
 
-        var members = ParseMembers(identifier);
+        var kind = type switch
+        {
+            TokenKind.ClassKeyword => TypeKind.Class,
+            TokenKind.StructKeyword => TypeKind.Struct,
+            TokenKind.InterfaceKeyword => TypeKind.Interface,
+            TokenKind.EnumKeyword => TypeKind.Enum,
+            _ => throw new Exception()
+        };
+
+        var members = ParseMembers(kind, identifier);
 
         Expect(TokenKind.CloseBrace);
 
@@ -1192,6 +1219,8 @@ public class Parser
         {
             case TokenKind.ClassKeyword:
                 return new ClassDeclarationNode(identifier, members, parentName, accessModifier);
+            case TokenKind.EnumKeyword:
+                return new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier);
             default:
                 throw new NotImplementedException();
         }
@@ -1233,7 +1262,9 @@ public class Parser
             });
         }
 
-        ParseTypeDeclarations();
+        var typeDeclarations = ParseTypeDeclarations();
+
+        ast.Root.TypeDeclarations.AddRange(typeDeclarations);
 
         /*
 

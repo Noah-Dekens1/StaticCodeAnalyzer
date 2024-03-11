@@ -19,8 +19,9 @@ public class RootNode : AstNode
 {
     public List<UsingDirectiveNode> UsingDirectives { get; set; } = [];
     public List<GlobalStatementNode> GlobalStatements { get; set; } = [];
+    public List<TypeDeclarationNode> TypeDeclarations { get; set; } = [];
 
-    public override List<AstNode> Children => [.. GlobalStatements];
+    public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations];
 }
 
 public class StatementNode : AstNode
@@ -589,6 +590,19 @@ public class PropertyMemberNode(string propertyName, string propertyType, Proper
     public override string ToString() => $"{PropertyType} {PropertyName}";
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class EnumMemberNode(string identifier, ExpressionNode? value) : MemberNode
+{
+    public string Identifier { get; set; } = identifier;
+    public ExpressionNode? Value { get; set; } = value;
+
+    public override List<AstNode> Children => Value is not null ? [Value] : [];
+
+    public override string ToString() => Value is not null
+        ? $"{Identifier} = {Value}"
+        : $"{Identifier}";
+}
+
 [DebuggerDisplay("{AccessModifier,nq} Constructor({Parameters,nq})")]
 public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, AstNode body) : MemberNode
 {
@@ -599,6 +613,7 @@ public class ConstructorNode(AccessModifier accessModifier, ParameterListNode pa
     public override List<AstNode> Children => [Parameters, Body];
 }
 
+[DebuggerDisplay("class {ClassName,nq}")]
 public class ClassDeclarationNode(string className, List<MemberNode> members, string? parentName=null, AccessModifier? accessModifier=null) : TypeDeclarationNode
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
@@ -607,4 +622,24 @@ public class ClassDeclarationNode(string className, List<MemberNode> members, st
     public List<MemberNode> Members { get; set; } = members;
 
     public override List<AstNode> Children => [.. Members];
+}
+
+[DebuggerDisplay("enum {EnumName,nq}")]
+public class EnumDeclarationNode(string enumName, List<EnumMemberNode> members, string? parentType, AccessModifier? accessModifier = null) : TypeDeclarationNode
+{
+    public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
+    public string? ParentType { get; set;} = parentType;
+    public string EnumName { get; set; } = enumName;
+    public List<EnumMemberNode> Members { get; set;} = members;
+
+    public override List<AstNode> Children => [.. Members];
+}
+
+public enum TypeKind
+{
+    Class,
+    Struct,
+    Enum,
+    Interface,
+    Record
 }
