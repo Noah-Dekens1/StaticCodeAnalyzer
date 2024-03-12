@@ -814,7 +814,7 @@ public class Parser
          * Yield return statement
          * Fixed statement
          * Lock statement
-         * Labaled statements (for goto)
+         * Labeled statements (for goto)
          * Empty statement (;)
          */
 
