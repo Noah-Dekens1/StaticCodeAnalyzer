@@ -42,9 +42,11 @@ public class Parser
     public bool IsAtEnd()
         => PeekCurrent().Kind == TokenKind.EndOfFile || _index >= _input.Length;
 
+    [DebuggerHidden]
     public int Tell()
             => _index;
 
+    [DebuggerHidden]
     public void Seek(int pos)
     {
         _index = pos;
@@ -76,7 +78,7 @@ public class Parser
     [DebuggerHidden]
     public Token Peek(int count = 1)
     {
-        return CanPeek(count) ? _input[_index + count] : throw new ArgumentOutOfRangeException();
+        return CanPeek(count) ? _input[_index + count] : throw new ArgumentOutOfRangeException(nameof(count));
     }
 
     [DebuggerHidden]
