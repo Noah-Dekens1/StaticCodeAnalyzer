@@ -490,38 +490,41 @@ public class Parser
         return possibleLHS;
     }
 
+    private static readonly List<TokenKind> TypeList =
+    [
+        TokenKind.ByteKeyword,
+        TokenKind.SbyteKeyword,
+        TokenKind.ShortKeyword,
+        TokenKind.UshortKeyword,
+        TokenKind.IntKeyword,
+        TokenKind.UintKeyword,
+        TokenKind.LongKeyword,
+        TokenKind.UlongKeyword,
+        TokenKind.FloatKeyword,
+        TokenKind.DoubleKeyword,
+        TokenKind.DecimalKeyword,
+        TokenKind.BoolKeyword,
+        TokenKind.StringKeyword,
+        TokenKind.CharKeyword,
+        TokenKind.VoidKeyword
+    ];
+
+    private static bool IsMaybeType(Token token)
+    {
+        bool maybeType = false;
+
+        maybeType |= token.Kind == TokenKind.Identifier && token.Lexeme == "var";
+        maybeType |= TypeList.Contains(token.Kind);
+        maybeType |= token.Kind == TokenKind.Identifier;
+
+        return maybeType;
+    }
+
     private bool IsDeclarationStatement()
     {
         var token = PeekCurrent();
 
-        bool maybeType = false;
-
-        var typeList = new List<TokenKind>
-        {
-            TokenKind.ByteKeyword,
-            TokenKind.SbyteKeyword,
-            TokenKind.ShortKeyword,
-            TokenKind.UshortKeyword,
-            TokenKind.IntKeyword,
-            TokenKind.UintKeyword,
-            TokenKind.LongKeyword,
-            TokenKind.UlongKeyword,
-            TokenKind.FloatKeyword,
-            TokenKind.DoubleKeyword,
-            TokenKind.DecimalKeyword,
-            TokenKind.BoolKeyword,
-            TokenKind.StringKeyword,
-            TokenKind.CharKeyword,
-        };
-
-        if (token.Kind == TokenKind.Identifier && token.Lexeme == "var")
-            return true;
-
-        if (typeList.Contains(token.Kind))
-            maybeType = true;
-
-        if (token.Kind == TokenKind.Identifier)
-            maybeType = true;
+        bool maybeType = IsMaybeType(token);
 
         return maybeType && PeekSafe(2).Kind == TokenKind.Equals;
     }
@@ -791,6 +794,23 @@ public class Parser
         return new ReturnStatementNode(expression);
     }
 
+    private LocalFunctionDeclarationNode ParseLocalFunction()
+    {
+        ParseModifiers(out var accessModifier, out var modifiers);
+        Debug.Assert(accessModifier is null);
+
+        var type = Consume().Lexeme;
+        var identifier = Consume().Lexeme;
+        Expect(TokenKind.OpenParen);
+        var parms = ParseParameterList();
+        Expect(TokenKind.CloseParen);
+        var body = ParseMethodBody();
+
+        Debug.Assert(body is not null);
+
+        return new LocalFunctionDeclarationNode(modifiers, identifier, type, parms, body);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -820,6 +840,9 @@ public class Parser
 
         if (!isEmbeddedStatement && IsDeclarationStatement())
             return ParseDeclarationStatement();
+
+        if (IsLocalFunctionDeclaration())
+            return ParseLocalFunction();
 
         var token = PeekCurrent();
 
@@ -935,13 +958,31 @@ public class Parser
 
     private bool IsTypeDeclaration()
     {
-        var idx = -1;
+        var idx = 0;
 
         // Skip over all (access) modifiers
-        while (IsValidTypeModifier(PeekSafe(++idx)))
-            ;
+        while (IsValidTypeModifier(PeekSafe(idx)))
+            idx++;
 
         return IsTypeKeyword(PeekSafe(idx));
+    }
+
+    private bool IsLocalFunctionDeclaration()
+    {
+        var idx = 0;
+
+        // Skip over all (access) modifiers
+        while (IsValidTypeModifier(PeekSafe(idx)))
+            idx++;
+
+        bool maybeFunction = true;
+
+        // @note: this doesn't short circuit so we may be wasting a few function calls here
+        maybeFunction &= IsMaybeType(PeekSafe(idx++));
+        maybeFunction &= PeekSafe(idx++).Kind == TokenKind.Identifier;
+        maybeFunction &= PeekSafe(idx++).Kind == TokenKind.OpenParen;
+
+        return maybeFunction;
     }
 
     private List<StatementNode> ParseTopLevelStatements()
@@ -1012,6 +1053,13 @@ public class Parser
             if (current.Kind == TokenKind.Identifier && current.Lexeme == "partial")
             {
                 modifiers.Add(OptionalModifier.Partial);
+                Consume();
+                continue;
+            }
+
+            if (current.Kind == TokenKind.Identifier && current.Lexeme == "async")
+            {
+                modifiers.Add(OptionalModifier.Async);
                 Consume();
                 continue;
             }

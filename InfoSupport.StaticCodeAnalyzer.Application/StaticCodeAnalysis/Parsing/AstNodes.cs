@@ -525,6 +525,7 @@ public enum OptionalModifier
     Readonly,
     Const,
     Volatile,
+    Async,
 }
 
 public abstract class MemberNode : AstNode
@@ -693,4 +694,21 @@ public enum TypeKind
     Enum,
     Interface,
     Record
+}
+
+// @fixme: Maybe it's not entirely correct to make it a statement
+[DebuggerDisplay("{ToString(),nq}")]
+public class LocalFunctionDeclarationNode(
+    List<OptionalModifier> modifiers, string name, string returnType, ParameterListNode parameters, AstNode body
+    ) : StatementNode
+{
+    public List<OptionalModifier> Modifiers { get; set; } = modifiers;
+    public string Name { get; set; } = name;
+    public string ReturnType { get; set; } = returnType;
+    public ParameterListNode Parameters { get; set; } = parameters;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Parameters, Body];
+
+    public override string ToString() => $"{ReturnType} {Name}({Parameters})";
 }

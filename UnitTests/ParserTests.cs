@@ -428,6 +428,22 @@ public class ParserTests
         Assert.IsTrue(false);
     }
 
+    [TestMethod]
+    public void Parse_LocalFunction_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = 0;
+            void Increment()
+            {
+                a += 1;
+            }
+            Console.WriteLine(a);
+            """);
+
+        var ast = Parser.Parse(tokens);
+        Assert.IsTrue(false);
+    }
+
     [DataTestMethod]
     [DataRow("1", 1)]
     [DataRow("3", 3)]
