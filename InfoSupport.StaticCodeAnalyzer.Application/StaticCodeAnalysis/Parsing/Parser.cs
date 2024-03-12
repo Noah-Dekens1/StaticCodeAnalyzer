@@ -427,7 +427,7 @@ public class Parser
         var expr = ParseExpression();
         var indexExpr = new IndexExpressionNode(expr!);
 
-        var args = new ArgumentList([new ArgumentNode(indexExpr, null)]);
+        var args = new BracketedArgumentList([new ArgumentNode(indexExpr, null)]);
 
         Expect(TokenKind.CloseBracket);
 

@@ -479,6 +479,12 @@ public class ArgumentList(List<ArgumentNode> arguments) : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
+public class BracketedArgumentList(List<ArgumentNode> arguments) : ArgumentList(arguments)
+{
+
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
 public class ParameterNode(string type, string identifier) : AstNode
 {
     public string Type { get; set; } = type;
@@ -516,7 +522,7 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments
 
 // @todo: maybe add new class BracketedArgumentList that inherits from ArgumentList instead
 [DebuggerDisplay("{ToString(),nq}")]
-public class ElementAccessExpressionNode(ExpressionNode lhs, ArgumentList arguments) : ExpressionNode
+public class ElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentList arguments) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
     public ArgumentList Arguments { get; set; } = arguments;
