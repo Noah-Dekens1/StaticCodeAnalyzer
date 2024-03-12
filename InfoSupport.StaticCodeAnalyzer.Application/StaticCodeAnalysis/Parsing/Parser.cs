@@ -401,22 +401,24 @@ public class Parser
         return new InvocationExpressionNode(lhs, arguments);
     }
 
+    private ExpressionNode? TryParsePrimaryExpression()
+    {
+        if (ConsumeIfMatch(TokenKind.NewKeyword))
+        {
+            var identifier = ResolveIdentifier();
+            Expect(TokenKind.OpenParen);
+            var args = ParseArgumentList();
+            Expect(TokenKind.CloseParen);
+            return new NewExpressionNode(identifier, args);
+        }
+
+        return null;
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
     {
         var token = PeekCurrent();
-
-        // 1. Check unary pre- and postfix operators
-        // 1a. If found, group them into an ExpressionNode and store them temporarily
-        // 2. Check (peek past LHS) for binary operators
-
-        // --or maybe
-        // a) An expression can consist out of 1, 2, or 3 parts
-        // (Unary, binary, ternary), each operand may be nested
-        // for example add (a, b) may be add (4, add (2, 1
-
-        // @todo: check for identifier- and literalexpressions first
-        // @todo when finished with an unary operator group the expr and check if there's still an expr available
 
         if (token.Kind == TokenKind.OpenParen)
         {
@@ -440,6 +442,13 @@ public class Parser
         if (isMethodCall)
         {
             possibleLHS = ParseInvocation(resolvedIdentifier!);
+        }
+
+        var primaryExpression = TryParsePrimaryExpression();
+
+        if (primaryExpression is not null)
+        {
+            possibleLHS = primaryExpression;
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);
@@ -1174,7 +1183,7 @@ public class Parser
             return ParseEnumMember();
 
         ParseModifiers(out var accessModifier, out var modifiers);
-        var isCtor = PeekCurrent().Lexeme == typeName;
+        var isCtor = PeekCurrent().Lexeme == typeName && PeekSafe().Kind == TokenKind.OpenParen;
 
         if (isCtor)
             return ParseConstructor(accessModifier ?? AccessModifier.Private);
@@ -1244,19 +1253,15 @@ public class Parser
         var members = ParseMembers(kind, identifier);
 
         Expect(TokenKind.CloseBrace);
-        switch (type)
+
+        return type switch
         {
-            case TokenKind.ClassKeyword:
-                return new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers);
-            case TokenKind.EnumKeyword:
-                return new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers);
-            case TokenKind.InterfaceKeyword:
-                return new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers);
-            case TokenKind.StructKeyword:
-                return new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers);
-            default:
-                throw new NotImplementedException();
-        }
+            TokenKind.ClassKeyword     => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.EnumKeyword      => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers),
+            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.StructKeyword    => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            _ => throw new NotImplementedException(),
+        };
     }
 
     private List<TypeDeclarationNode> ParseTypeDeclarations()
@@ -1298,21 +1303,6 @@ public class Parser
         var typeDeclarations = ParseTypeDeclarations();
 
         ast.Root.TypeDeclarations.AddRange(typeDeclarations);
-
-        /*
-
-        while (!IsAtEnd())
-        {
-            var token = PeekCurrent();
-
-            switch (token.Kind)
-            {
-                default:
-            }
-
-            break;
-        }
-        */
 
         return ast;
     }

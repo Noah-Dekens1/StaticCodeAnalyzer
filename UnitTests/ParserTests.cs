@@ -9,6 +9,8 @@ using InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using Newtonsoft.Json.Bson;
+
 using NuGet.Frameworks;
 
 namespace UnitTests;
@@ -348,6 +350,7 @@ public class ParserTests
                 private int _test3 = 9 - (1 * 2);
                 public bool IsValid { get; protected set; } = true;
                 public bool OtherProperty { protected get; } = false;
+                public bool InitOnly { get; init; }
                 public bool ExpressionBodied { get => true; }
                 public bool BlockBodied { get { return _field; } private set { _field = true; } }
 
@@ -386,6 +389,42 @@ public class ParserTests
 
         var ast = Parser.Parse(tokens);
 
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_Interface_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public interface ITry
+            {
+                public string Name { get; protected set; }
+                internal void ShouldBe(int a, bool b, ITry c);
+            }
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_Struct_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public struct Test
+            {
+                public int A { get; private set; }
+                public static Test Create()
+                {
+                    var test = new Test();
+                    test.A = 100;
+                    return test;
+                }
+            }
+            """);
+
+        var ast = Parser.Parse(tokens);
         Assert.IsTrue(false);
     }
 

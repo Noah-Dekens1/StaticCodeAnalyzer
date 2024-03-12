@@ -461,6 +461,16 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments
     public override string ToString() => $"{LHS}({Arguments})";
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class NewExpressionNode(ExpressionNode identifier, ArgumentList arguments) : ExpressionNode
+{
+    public ExpressionNode Identifier { get; set; } = identifier;
+    public ArgumentList Arguments { get; set; } = arguments;
+    public override List<AstNode> Children => [Identifier, Arguments];
+
+    public override string ToString() => $"new {Identifier}({Arguments})";
+}
+
 [DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]
 public class QualifiedNameNode(AstNode lhs, IdentifierExpression identifier) : AstNode
 {
@@ -671,7 +681,7 @@ public class EnumDeclarationNode(string enumName, List<EnumMemberNode> members, 
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
     public string? ParentType { get; set;} = parentType;
     public string EnumName { get; set; } = enumName;
-    public List<EnumMemberNode> Members { get; set;} = members;
+    public List<EnumMemberNode> Members { get; set; } = members;
 
     public override List<AstNode> Children => [.. Members];
 }
