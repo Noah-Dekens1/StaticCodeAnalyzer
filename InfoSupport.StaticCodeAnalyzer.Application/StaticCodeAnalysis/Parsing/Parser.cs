@@ -229,17 +229,6 @@ public class Parser
 
     private bool IsUnaryOperator(bool hasReadIdentifier, out bool isPrefix, int peekStart = 0)
     {
-        /*
-        var current = Peek(peekStart + 0);
-        bool currentIsOpenParen = current.Kind == TokenKind.OpenParen;
-        isPrefix = !hasReadIdentifier && !IsIdentifierOrLiteral(current) && !currentIsOpenParen;
-
-        var next = CanPeek(1) ? Peek(peekStart + 1) : new Token();
-        var isPostfix = !isPrefix && (next.Kind == TokenKind.PlusPlus || next.Kind == TokenKind.MinusMinus);
-
-        return (isPrefix && IsUnaryOperator(current.Kind)) || isPostfix;
-        */
-
         var current = PeekSafe(peekStart);
 
         if (hasReadIdentifier && (current.Kind == TokenKind.PlusPlus || current.Kind == TokenKind.MinusMinus))
