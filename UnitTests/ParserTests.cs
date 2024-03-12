@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
 using InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -376,6 +377,20 @@ public class ParserTests
     }
 
     [TestMethod]
+    public void Parse_ElementAccess_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Console.WriteLine(someList[0]);
+            Console.WriteLine(someList[1]);
+            Console.WriteLine(someDict["Test"]);
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
     public void Parse_Enum_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
@@ -441,6 +456,20 @@ public class ParserTests
             """);
 
         var ast = Parser.Parse(tokens);
+        Assert.IsTrue(false);
+    }
+
+    [TestMethod]
+    public void Parse_IndexExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = list[0];
+            var b = list[-3];
+            var c = dict["hello"];
+            """);
+
+        var ast = Parser.Parse(tokens);
+
         Assert.IsTrue(false);
     }
 

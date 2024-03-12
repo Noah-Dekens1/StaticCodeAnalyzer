@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Principal;
 using System.Text;
@@ -419,6 +420,20 @@ public class Parser
         return new InvocationExpressionNode(lhs, arguments);
     }
 
+    private ElementAccessExpressionNode ParseElementAccess(ExpressionNode lhs)
+    {
+        Expect(TokenKind.OpenBracket);
+
+        var expr = ParseExpression();
+        var indexExpr = new IndexExpressionNode(expr!);
+
+        var args = new ArgumentList([new ArgumentNode(indexExpr, null)]);
+
+        Expect(TokenKind.CloseBracket);
+
+        return new ElementAccessExpressionNode(lhs, args);
+    }
+
     private ExpressionNode? TryParsePrimaryExpression()
     {
         if (ConsumeIfMatch(TokenKind.NewKeyword))
@@ -429,6 +444,19 @@ public class Parser
             Expect(TokenKind.CloseParen);
             return new NewExpressionNode(identifier, args);
         }
+
+        return null;
+    }
+
+    private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier)
+    {
+        // Invocation
+        if (Matches(TokenKind.OpenParen))
+            return ParseInvocation(resolvedIdentifier);
+
+        // Element access
+        if (Matches(TokenKind.OpenBracket))
+            return ParseElementAccess(resolvedIdentifier);
 
         return null;
     }
@@ -455,18 +483,15 @@ public class Parser
             possibleLHS = resolvedIdentifier;
         }
 
-        bool isMethodCall = PeekSafe(0).Kind == TokenKind.OpenParen && resolvedIdentifier is not null;
-
-        if (isMethodCall)
-        {
-            possibleLHS = ParseInvocation(resolvedIdentifier!);
-        }
-
         var primaryExpression = TryParsePrimaryExpression();
 
         if (primaryExpression is not null)
         {
             possibleLHS = primaryExpression;
+        }
+        else if (resolvedIdentifier is not null)
+        {
+            possibleLHS = TryParsePrimaryPostfixExpression(resolvedIdentifier);
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);

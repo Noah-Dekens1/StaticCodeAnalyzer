@@ -514,6 +514,27 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments
     public override string ToString() => $"{LHS}({Arguments})";
 }
 
+// @todo: maybe add new class BracketedArgumentList that inherits from ArgumentList instead
+[DebuggerDisplay("{ToString(),nq}")]
+public class ElementAccessExpressionNode(ExpressionNode lhs, ArgumentList arguments) : ExpressionNode
+{
+    public ExpressionNode LHS { get; set; } = lhs;
+    public ArgumentList Arguments { get; set; } = arguments;
+
+    public override List<AstNode> Children => [LHS, Arguments];
+
+    public override string ToString() => $"{LHS}[{Arguments}]";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class IndexExpressionNode(ExpressionNode expression) : ExpressionNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+
+    public override List<AstNode> Children => [Expression];
+    public override string ToString() => $"{Expression}";
+}
+
 [DebuggerDisplay("{ToString(),nq}")]
 public class NewExpressionNode(ExpressionNode identifier, ArgumentList arguments) : ExpressionNode
 {
