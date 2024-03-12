@@ -27,7 +27,7 @@ public class Parser
         { 'r', '\r' },
         { 't', '\t' },
         { 'v', '\v' },
-        { '\'', '\\' }, // Shouldn't this be \' again?
+        { '\'', '\'' },
         { '"', '\"' },
         { '0', '\0' },
         // \x and \u \U have been excluded as they have trailing values!
