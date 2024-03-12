@@ -177,6 +177,15 @@ public enum BinaryOperator
     LogicalAnd,
     LogicalOr,
 
+    // Compound
+    AddAssign,
+    SubtractAssign,
+    MultiplyAssign,
+    DivideAssign,
+    ModulusAssign,
+    AndAssign,
+    OrAssign,
+
     Assignment,
 
     // ...
@@ -207,6 +216,14 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.LessThanOrEqual => "<=",
         BinaryOperator.LogicalAnd => "&&",
         BinaryOperator.LogicalOr => "||",
+
+        BinaryOperator.AddAssign => "+=",
+        BinaryOperator.SubtractAssign => "-=",
+        BinaryOperator.MultiplyAssign => "*=",
+        BinaryOperator.DivideAssign => "/=",
+        BinaryOperator.ModulusAssign => "%=",
+        BinaryOperator.AndAssign => "&=",
+        BinaryOperator.OrAssign => "|=",
 
         BinaryOperator.Assignment => "=",
 
@@ -286,6 +303,42 @@ public class AssignmentExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : 
 {
     public override BinaryOperator Operator => BinaryOperator.Assignment;
 }
+
+public class AddAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.AddAssign;
+}
+
+public class MultiplyAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.MultiplyAssign;
+}
+
+public class SubtractAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.SubtractAssign;
+}
+
+public class DivideAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.DivideAssign;
+}
+
+public class ModulusAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.ModulusAssign;
+}
+
+public class AndAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.AndAssign;
+}
+
+public class OrAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.OrAssign;
+}
+
 
 [DebuggerDisplay("{Type,nq} {Identifier,nq} = {Expression,nq}")]
 public class VariableDeclarationStatement(string type, string identifier, ExpressionNode expression) : StatementNode

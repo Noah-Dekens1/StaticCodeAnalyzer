@@ -326,6 +326,16 @@ public class Parser
             case TokenKind.AmpersandAmpersand:
             case TokenKind.BarBar:
 
+            // Compound operators
+            case TokenKind.PlusEquals:
+            case TokenKind.MinusEquals:
+            case TokenKind.AsteriskEquals:
+            case TokenKind.SlashEquals:
+            case TokenKind.PercentEquals:
+
+            case TokenKind.AmpersandEquals:
+            case TokenKind.BarEquals:
+
             // Special cases
             case TokenKind.Equals: // Assignment expression is technically also a binary expression (LHS/RHS)
 
@@ -357,6 +367,14 @@ public class Parser
             { TokenKind.LessThanEquals,      () => new LessThanEqualsExpressionNode(lhs, rhs) },
             { TokenKind.AmpersandAmpersand,  () => new LogicalAndExpressionNode(lhs, rhs) },
             { TokenKind.BarBar,              () => new LogicalOrExpressionNode(lhs, rhs) },
+
+            { TokenKind.PlusEquals,          () => new AddAssignExpressionNode(lhs, rhs) },
+            { TokenKind.MinusEquals,         () => new SubtractAssignExpressionNode(lhs, rhs) },
+            { TokenKind.AsteriskEquals,      () => new MultiplyAssignExpressionNode(lhs, rhs) },
+            { TokenKind.SlashEquals,         () => new DivideAssignExpressionNode(lhs, rhs) },
+            { TokenKind.PercentEquals,       () => new ModulusAssignExpressionNode(lhs, rhs) },
+            { TokenKind.AmpersandEquals,     () => new AndAssignExpressionNode(lhs, rhs) },
+            { TokenKind.BarEquals,           () => new OrAssignExpressionNode(lhs, rhs) },
 
             { TokenKind.Equals,              () => new AssignmentExpressionNode(lhs, rhs) },
         };
