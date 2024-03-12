@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
 
 //var lexer = new Lexer(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Parsing\Lexer.cs"));
 var result = Lexer.Lex(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.CLI\InterpolationTest.cs"));
@@ -14,6 +15,8 @@ string[] paths = Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectori
 
 var counter = 0;
 var tokensLexed = 0;
+
+using var timer = new ScopedTimer("Lexer timer");
 
 foreach (string path in paths)
 {

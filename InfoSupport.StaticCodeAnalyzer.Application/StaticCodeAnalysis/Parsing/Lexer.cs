@@ -378,7 +378,7 @@ public class Lexer(string fileContent)
                 _line++;
                 _lineEndColumn = _column - 1;
                 _column = 1;
-                Console.WriteLine($"On line {_line}");
+                //Console.WriteLine($"On line {_line}");
             }
             _index += dir;
         }
