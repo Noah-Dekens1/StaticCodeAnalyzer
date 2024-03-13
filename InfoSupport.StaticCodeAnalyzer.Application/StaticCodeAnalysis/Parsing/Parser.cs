@@ -170,7 +170,7 @@ public class Parser
         if (kind == TokenKind.NumericLiteral)
         {
             //Consume();
-            literal = new NumericLiteralNode { Tokens = [token], Value = token.Value };
+            literal = new NumericLiteralNode(token.Value);
             return true;
         }
         else if (kind == TokenKind.StringLiteral || kind == TokenKind.InterpolatedStringLiteral)
@@ -460,7 +460,7 @@ public class Parser
         if (token.Kind == TokenKind.OpenParen)
         {
             Consume();
-            var expr = new ParenthesizedExpression(ParseExpression()!);
+            var expr = new ParenthesizedExpressionNode(ParseExpression()!);
             Consume();
             possibleLHS = expr;
         }

@@ -37,44 +37,33 @@ public class ParserTests
     [TestMethod]
     public void Parse_BasicBinaryExpression_ReturnsValidAST()
     {
-        var tokens = Lexer.Lex("3 + 4 * 1 - (9 / 3)");
-        var ast = Parser.Parse(tokens);
+        var tokens = Lexer.Lex("3 + 4 * 1 - (9 / 3);");
+        var actual = Parser.Parse(tokens);
 
-        // How do I test a AST in a sane way?
-        /*
-        var expectedAst = AST.Build();
+        var expected = AST.Build();
 
-        expectedAst.Root.GlobalStatements.Add(new GlobalStatementNode {
+        expected.Root.GlobalStatements.Add(new GlobalStatementNode {
             Statement = new ExpressionStatementNode
             {
-                Expression = new AddExpressionNode
-                {
-                    LHS = new NumericLiteralNode
-                    {
-                        Value = 3,
-                    },
-                    RHS = new AddExpressionNode
-                    {
-                        LHS = 
-                    }
-                }
+                Expression = new AddExpressionNode(
+                    lhs: new NumericLiteralNode(3),
+                    rhs: new MultiplyExpressionNode(
+                        lhs: new NumericLiteralNode(3),
+                        rhs: new SubtractExpressionNode(
+                            lhs: new NumericLiteralNode(1),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new DivideExpressionNode(
+                                    lhs: new NumericLiteralNode(9),
+                                    rhs: new NumericLiteralNode(3)
+                                )
+                            )
+                        )
+                    )
+                )
             }
         });
-        */
 
-        AstAssertions.AssertThat(ast).IsValidTree()
-            .GetGlobalStatement<ExpressionStatementNode>(ast)
-            .GetExpression()
-                .Validate<AddExpressionNode>(n =>
-                    ((NumericLiteralNode)n.LHS).Value!.Equals(3) && n.RHS.GetType() == typeof(AddExpressionNode))
-            .GetChild<AddExpressionNode>(n => n.RHS)
-                .Validate<AddExpressionNode>(n =>
-                    ((NumericLiteralNode)n.LHS).Value!.Equals(4) && n.RHS.GetType() == typeof(AddExpressionNode))
-            .GetChild<AddExpressionNode>(n => n.RHS)
-                .Validate<AddExpressionNode>(n =>
-                    ((NumericLiteralNode)n.LHS).Value!.Equals(2) && n.RHS.GetType() == typeof(IdentifierExpression))
-            .GetChild<AddExpressionNode>(n => n.RHS)
-                .Validate<IdentifierExpression>(n => n.Identifier == "someIdentifier");
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -487,7 +476,7 @@ public class ParserTests
                 Statement = new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression() { Identifier = "list"},
                     arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode() { Value = 0 }), name: null)
+                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
                     ])
                 ))
             },
@@ -496,7 +485,7 @@ public class ParserTests
                 Statement = new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression() { Identifier = "list" },
                     arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode() { Value = 3 })), name: null)
+                        new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
                     ])
                 ))
             },

@@ -67,9 +67,9 @@ public class LiteralExpressionNode : ExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class NumericLiteralNode : LiteralExpressionNode
+public class NumericLiteralNode(object? value) : LiteralExpressionNode
 {
-    public object? Value { get; set; }
+    public object? Value { get; set; } = value;
 
     public override string ToString() => $"{Value}";
 }
@@ -91,7 +91,7 @@ public class StringLiteralNode : LiteralExpressionNode
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class ParenthesizedExpression(ExpressionNode expr) : ExpressionNode
+public class ParenthesizedExpressionNode(ExpressionNode expr) : ExpressionNode
 {
     public ExpressionNode Expression { get; set; } = expr;
 
