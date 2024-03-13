@@ -170,17 +170,6 @@ public class Parser
         _ => false
     };
 
-    private bool IsIdentifierOrLiteral(Token token)
-    {
-        if (token.Kind == TokenKind.Identifier)
-            return true;
-
-        if (PeekLiteralExpression(out _, token))
-            return true;
-
-        return false;
-    }
-
     private ExpressionNode ParseIdentifierOrLiteral()
     {
         var token = PeekCurrent();
