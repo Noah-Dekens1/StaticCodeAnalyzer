@@ -467,7 +467,7 @@ public class ArgumentNode(ExpressionNode expression, string? name) : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ArgumentList(List<ArgumentNode> arguments) : AstNode
+public class ArgumentListNode(List<ArgumentNode> arguments) : AstNode
 {
     public List<ArgumentNode> Arguments { get; set; } = arguments;
 
@@ -479,7 +479,7 @@ public class ArgumentList(List<ArgumentNode> arguments) : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class BracketedArgumentList(List<ArgumentNode> arguments) : ArgumentList(arguments)
+public class BracketedArgumentList(List<ArgumentNode> arguments) : ArgumentListNode(arguments)
 {
 
 }
@@ -510,10 +510,10 @@ public class ParameterListNode(List<ParameterNode> parameters) : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments) : ExpressionNode
+public class InvocationExpressionNode(ExpressionNode lhs, ArgumentListNode arguments) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
-    public ArgumentList Arguments { get; set; } = arguments;
+    public ArgumentListNode Arguments { get; set; } = arguments;
 
     public override List<AstNode> Children => [LHS, Arguments];
 
@@ -525,7 +525,7 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentList arguments
 public class ElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentList arguments) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
-    public ArgumentList Arguments { get; set; } = arguments;
+    public ArgumentListNode Arguments { get; set; } = arguments;
 
     public override List<AstNode> Children => [LHS, Arguments];
 
@@ -542,10 +542,10 @@ public class IndexExpressionNode(ExpressionNode expression) : ExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class NewExpressionNode(ExpressionNode identifier, ArgumentList arguments) : ExpressionNode
+public class NewExpressionNode(ExpressionNode identifier, ArgumentListNode arguments) : ExpressionNode
 {
     public ExpressionNode Identifier { get; set; } = identifier;
-    public ArgumentList Arguments { get; set; } = arguments;
+    public ArgumentListNode Arguments { get; set; } = arguments;
     public override List<AstNode> Children => [Identifier, Arguments];
 
     public override string ToString() => $"new {Identifier}({Arguments})";

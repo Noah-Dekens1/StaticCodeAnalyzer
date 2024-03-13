@@ -13,6 +13,7 @@ using InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
 
 using NuGet.Frameworks;
 
@@ -313,7 +314,7 @@ public class ParserTests
                     identifier: "a",
                     expression: new NewExpressionNode(
                         identifier: new IdentifierExpression("SomeClass"),
-                        arguments: new ArgumentList([])
+                        arguments: new ArgumentListNode([])
                     )
                 )
             )
@@ -1003,13 +1004,13 @@ public class ParserTests
                             lhs: new IdentifierExpression("someObj"),
                             identifier: new IdentifierExpression("MethodCall")
                         ),
-                        arguments: new ArgumentList([
+                        arguments: new ArgumentListNode([
                             new ArgumentNode(
                                 expression: new AddExpressionNode(
                                     lhs: new NumericLiteralNode(3),
                                     rhs: new InvocationExpressionNode(
                                         lhs: new IdentifierExpression("a"),
-                                        arguments: new ArgumentList([
+                                        arguments: new ArgumentListNode([
                                             new ArgumentNode(
                                                 expression: new BooleanLiteralNode(true),
                                                 name: "named"
@@ -1249,20 +1250,6 @@ public class ParserTests
     }
 
     [TestMethod]
-    public void Parse_ElementAccess_ReturnsValidAST()
-    {
-        var tokens = Lexer.Lex("""
-            Console.WriteLine(someList[0]);
-            Console.WriteLine(someList[1]);
-            Console.WriteLine(someDict["Test"]);
-            """);
-
-        var ast = Parser.Parse(tokens);
-
-        Assert.IsTrue(false);
-    }
-
-    [TestMethod]
     public void Parse_Enum_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
@@ -1274,9 +1261,34 @@ public class ParserTests
             }
             """);
 
-        var ast = Parser.Parse(tokens);
+        var actual = Parser.Parse(tokens);
 
-        Assert.IsTrue(false);
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new EnumDeclarationNode(
+                enumName: "Color",
+                parentType: "byte",
+                accessModifier: AccessModifier.Public,
+                modifiers: [],
+                members: [
+                    new EnumMemberNode(
+                        identifier: "Red",
+                        value: null
+                    ),
+                    new EnumMemberNode(
+                        identifier: "Green",
+                        value: new NumericLiteralNode(1)
+                    ),
+                    new EnumMemberNode(
+                        identifier: "Blue",
+                        value: null
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -1290,9 +1302,50 @@ public class ParserTests
             }
             """);
 
-        var ast = Parser.Parse(tokens);
+        var actual = Parser.Parse(tokens);
 
-        Assert.IsTrue(false);
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new InterfaceDeclarationNode(
+                name: "ITry",
+                accessModifier: AccessModifier.Public,
+                modifiers: [],
+                members: [
+                    new PropertyMemberNode(
+                        propertyName: "Name",
+                        propertyType: "string",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Internal,
+                        modifiers: [],
+                        returnType: "void",
+                        methodName: "ShouldBe",
+                        parameters: new ParameterListNode([
+                            new ParameterNode(type: "int", identifier: "a"),
+                            new ParameterNode(type: "bool", identifier: "b"),
+                            new ParameterNode(type: "ITry", identifier: "c"),
+                        ]),
+                        body: null
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -1311,8 +1364,67 @@ public class ParserTests
             }
             """);
 
-        var ast = Parser.Parse(tokens);
-        Assert.IsTrue(false);
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new StructDeclarationNode(
+                name: "Test",
+                accessModifier: AccessModifier.Public,
+                modifiers: [],
+                members: [
+                    new PropertyMemberNode(
+                        propertyName: "A",
+                        propertyType: "int",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Private,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [OptionalModifier.Static],
+                        returnType: "Test",
+                        methodName: "Create",
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new VariableDeclarationStatement(
+                                type: "var",
+                                identifier: "test",
+                                expression: new NewExpressionNode(
+                                    identifier: new IdentifierExpression("Test"),
+                                    arguments: new ArgumentListNode([])
+                                )
+                            ),
+                            new ExpressionStatementNode(
+                                new AssignmentExpressionNode(
+                                    lhs: new MemberAccessExpressionNode(
+                                        lhs: new IdentifierExpression("test"),
+                                        identifier: new IdentifierExpression("A")
+                                    ),
+                                    rhs: new NumericLiteralNode(100)
+                                )
+                            ),
+                            new ReturnStatementNode(
+                                new IdentifierExpression("test")
+                            )
+                        ])
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -1327,8 +1439,53 @@ public class ParserTests
             Console.WriteLine(a);
             """);
 
-        var ast = Parser.Parse(tokens);
-        Assert.IsTrue(false);
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "var",
+                    identifier: "a",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [],
+                    name: "Increment",
+                    returnType: "void",
+                    parameters: new ParameterListNode([]),
+                    body: new BlockNode([
+                        new ExpressionStatementNode(
+                            expression: new AddAssignExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new NumericLiteralNode(1)
+                            )
+                        )
+                    ])
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("Console"),
+                            identifier: new IdentifierExpression("WriteLine")
+                        ),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new IdentifierExpression("a"),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -1374,78 +1531,72 @@ public class ParserTests
     }
 
     [DataTestMethod]
-    [DataRow("1", 1)]
-    [DataRow("3", 3)]
-    [DataRow("173", 173)]
-    [DataRow("74.3f", 74.3f)]
+    [DataRow("1;", 1)]
+    [DataRow("3;", 3)]
+    [DataRow("173;", 173)]
+    [DataRow("74.3f;", 74.3f)]
     public void Parse_NumericLiteral_ReturnsValidAST(string numericLiteral, object value)
     {
-        // Arrange
         var tokens = Lexer.Lex(numericLiteral);
 
-        // Act
-        var ast = Parser.Parse(tokens);
+        var actual = Parser.Parse(tokens);
 
-        // Assert
-        var statement = ast.Root.GlobalStatements[0].Statement;
+        var expected = AST.Build();
 
-        Assert.IsNotNull(ast);
-        Assert.IsNotNull(ast.Root);
-        Assert.IsNotNull(statement);
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new NumericLiteralNode(value)
+                )
+            )
+        );
 
-        Assert.IsTrue(ast.Root.GlobalStatements.Count != 0);
-        Assert.AreEqual(typeof(ExpressionStatementNode), statement.GetType());
-
-        var expr = ((ExpressionStatementNode)statement).Expression;
-        Assert.IsNotNull(expr);
-
-        Assert.AreEqual(typeof(NumericLiteralNode), expr.GetType());
-        Assert.AreEqual(value, ((NumericLiteralNode)expr).Value);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [DataTestMethod]
-    [DataRow("true", true)]
-    [DataRow("false", false)]
+    [DataRow("true;", true)]
+    [DataRow("false;", false)]
     public void Parse_BooleanLiteral_ReturnsValidAST(string literal, bool value)
     {
-        // Arrange
         var tokens = Lexer.Lex(literal);
 
-        // Act
-        var ast = Parser.Parse(tokens);
+        var actual = Parser.Parse(tokens);
 
-        // Assert
-        Assert.IsNotNull(ast);
-        var expr = GetGlobalStatement<ExpressionStatementNode>(ast).Expression;
-        Assert.IsNotNull(expr);
+        var expected = AST.Build();
 
-        Assert.AreEqual(typeof(BooleanLiteralNode), expr.GetType());
-        var booleanLiteral = (BooleanLiteralNode)expr;
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new BooleanLiteralNode(value)
+                )
+            )
+        );
 
-        Assert.AreEqual(value, booleanLiteral.Value);
+        AssertStandardASTEquals(expected, actual);
     }
 
     // @FIXME: Don't we need to parse the string here?
     [DataTestMethod]
-    [DataRow(@"""Hello world!""", "Hello world!")]
-    [DataRow(@"""Other plain \"" string""", "Other plain \" string")]
-    public void Parse_StringLiteral_ReturnsValidAST(string literal, string expected)
+    [DataRow(@"""Hello world!"";", "Hello world!")]
+    [DataRow(@"""Other plain \"" string"";", "Other plain \" string")]
+    public void Parse_StringLiteral_ReturnsValidAST(string literal, string value)
     {
-        // Arrange
         var tokens = Lexer.Lex(literal);
 
-        // Act
-        var ast = Parser.Parse(tokens);
+        var actual = Parser.Parse(tokens);
 
-        // Assert
-        Assert.IsNotNull(ast);
-        var expr = GetGlobalStatement<ExpressionStatementNode>(ast).Expression;
-        Assert.IsNotNull(expr);
+        var expected = AST.Build();
 
-        Assert.AreEqual(typeof(StringLiteralNode), expr.GetType());
-        var strLiteral = (StringLiteralNode)expr;
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new StringLiteralNode(value)
+                )
+            )
+        );
 
-        Assert.AreEqual(expected, strLiteral.Value);
+        AssertStandardASTEquals(expected, actual);
     }
 
     

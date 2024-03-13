@@ -666,14 +666,14 @@ public class Parser
         return new ExpressionStatementListNode(statements);
     }
 
-    private ArgumentList ParseArgumentList()
+    private ArgumentListNode ParseArgumentList()
     {
         var expressions = new List<ArgumentNode>();
 
         do
         {
             if (Matches(TokenKind.CloseParen))
-                return new ArgumentList(expressions);
+                return new ArgumentListNode(expressions);
 
             var current = PeekSafe(0);
             var next = PeekSafe(1);
@@ -697,7 +697,7 @@ public class Parser
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 
-        return new ArgumentList(expressions);
+        return new ArgumentListNode(expressions);
     }
 
     private AstNode ParseForInitializer()
