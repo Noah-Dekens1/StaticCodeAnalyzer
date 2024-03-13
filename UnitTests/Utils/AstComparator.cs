@@ -55,7 +55,7 @@ public class AstComparator
 
         if (expectedType != actualType)
         {
-            throw new AssertFailedException($"Types of objects didn't match expected: {expectedType}, actual: {actualType}");
+            throw new AssertFailedException($"Types of objects at {propertyPath} didn't match expected: {expectedType}, actual: {actualType}");
         }
 
         var type = expectedType;

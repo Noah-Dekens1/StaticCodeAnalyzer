@@ -398,15 +398,15 @@ public class DoStatementNode(ExpressionNode condition, AstNode body) : Statement
 
 [DebuggerDisplay("for ({Initializer,nq};{Condition,nq};{IterationExpression,nq}) ...")]
 public class ForStatementNode(
-    AstNode initializer, ExpressionNode condition, AstNode iteration, AstNode body
+    AstNode initializer, ExpressionNode? condition, AstNode iteration, AstNode body
     ) : StatementNode
 {
     public AstNode Initializer { get; set; } = initializer;
-    public ExpressionNode Condition { get; set; } = condition;
+    public ExpressionNode? Condition { get; set; } = condition;
     public AstNode IterationExpression { get; set; } = iteration;
     public AstNode Body { get; set; } = body;
 
-    public override List<AstNode> Children => [Initializer, Condition, IterationExpression, Body];
+    public override List<AstNode> Children => Utils.ParamsToList(Initializer, Condition, IterationExpression, Body);
 }
 
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
