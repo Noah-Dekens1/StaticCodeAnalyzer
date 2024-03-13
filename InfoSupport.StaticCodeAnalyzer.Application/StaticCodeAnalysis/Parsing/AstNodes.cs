@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -200,6 +201,7 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
     public virtual BinaryOperator Operator { get; }
     public override List<AstNode> Children => [LHS, RHS];
 
+    [ExcludeFromCodeCoverage]
     private string OperatorForDbg => Operator switch
     {
         BinaryOperator.Add => "+",
@@ -230,6 +232,7 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         _ => throw new NotImplementedException()
     };
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS} {OperatorForDbg} {RHS}";
 }
 
