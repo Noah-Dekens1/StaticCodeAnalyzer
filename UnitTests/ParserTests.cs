@@ -42,10 +42,10 @@ public class ParserTests
 
         var expected = AST.Build();
 
-        expected.Root.GlobalStatements.Add(new GlobalStatementNode {
-            Statement = new ExpressionStatementNode
-            {
-                Expression = new AddExpressionNode(
+        expected.Root.GlobalStatements.Add(new GlobalStatementNode(
+            statement: new ExpressionStatementNode
+            (
+                expression: new AddExpressionNode(
                     lhs: new NumericLiteralNode(3),
                     rhs: new MultiplyExpressionNode(
                         lhs: new NumericLiteralNode(4),
@@ -60,8 +60,8 @@ public class ParserTests
                         )
                     )
                 )
-            }
-        });
+            )
+        ));
 
         AssertStandardASTEquals(expected, actual);
     }
@@ -70,7 +70,14 @@ public class ParserTests
     public void Parse_BasicBinaryExpressionWithUnaryOperators_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("3 + -4 + 2 + -(someIdentifier * 8 + -(-(4)));");
-        var ast = Parser.Parse(tokens);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(new GlobalStatementNode(
+            statement: new ExpressionStatementNode()
+        )); ;
     }
 
     [TestMethod]
@@ -471,33 +478,30 @@ public class ParserTests
 
         var expected = AST.Build();
         expected.Root.GlobalStatements.AddRange([
-            new GlobalStatementNode()
-            {
-                Statement = new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression() { Identifier = "list"},
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
                     ])
                 ))
-            },
-            new GlobalStatementNode()
-            {
-                Statement = new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression() { Identifier = "list" },
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
                     ])
                 ))
-            },
-            new GlobalStatementNode()
-            {
-                Statement = new VariableDeclarationStatement("var", "c", new ElementAccessExpressionNode(
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement("var", "c", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression() { Identifier = "dict" },
                     arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode() { Value = "hello" }), name: null)
+                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode( "hello")), name: null)
                     ])
                 ))
-            },
+            ),
         ]);
 
         AssertStandardASTEquals(expected, ast);

@@ -40,17 +40,17 @@ public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNo
 }
 
 [DebuggerDisplay("{Statement,nq}")]
-public class GlobalStatementNode : AstNode
+public class GlobalStatementNode(StatementNode statement) : AstNode
 {
-    public required StatementNode Statement { get; set; }
+    public StatementNode Statement { get; set; } = statement;
 
     public override List<AstNode> Children => [Statement];
 }
 
 [DebuggerDisplay("{Expression,nq}")]
-public class ExpressionStatementNode : StatementNode
+public class ExpressionStatementNode(ExpressionNode expression) : StatementNode
 {
-    public required ExpressionNode Expression { get; set; }
+    public ExpressionNode Expression { get; set; } = expression;
     public override List<AstNode> Children => [Expression];
 
     public override string ToString() => Expression.ToString()!;
@@ -75,17 +75,17 @@ public class NumericLiteralNode(object? value) : LiteralExpressionNode
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class BooleanLiteralNode : LiteralExpressionNode
+public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 {
-    public bool Value { get; set; }
+    public bool Value { get; set; } = value;
 
     public override string ToString() => $"{(Value ? "true" : "false")}";
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class StringLiteralNode : LiteralExpressionNode
+public class StringLiteralNode(string value) : LiteralExpressionNode
 {
-    public required string Value { get; set; }
+    public string Value { get; set; } = value;
 
     public override string ToString() => $"\"{Value}\"";
 }

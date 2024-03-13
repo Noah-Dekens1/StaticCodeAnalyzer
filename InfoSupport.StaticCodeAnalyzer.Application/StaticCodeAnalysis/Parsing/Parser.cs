@@ -175,7 +175,7 @@ public class Parser
         }
         else if (kind == TokenKind.StringLiteral || kind == TokenKind.InterpolatedStringLiteral)
         {
-            literal = new StringLiteralNode { Tokens = [token], Value = ParseStringLiteral(token.Lexeme) };
+            literal = new StringLiteralNode(ParseStringLiteral(token.Lexeme));
             return true;
         }
         else if (kind == TokenKind.CharLiteral)
@@ -185,7 +185,7 @@ public class Parser
         else if (kind == TokenKind.TrueKeyword || kind == TokenKind.FalseKeyword)
         {
             var value = kind == TokenKind.TrueKeyword;
-            literal = new BooleanLiteralNode { Tokens = [token], Value = value };
+            literal = new BooleanLiteralNode(value);
             return true;
         }
 
@@ -482,7 +482,11 @@ public class Parser
         }
         else if (resolvedIdentifier is not null)
         {
-            possibleLHS = TryParsePrimaryPostfixExpression(resolvedIdentifier);
+            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(resolvedIdentifier);
+            if (primaryPostfixExpression is not null)
+            {
+                possibleLHS = primaryPostfixExpression;
+            }
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);
@@ -580,10 +584,7 @@ public class Parser
         if (expectSemicolon)
             Expect(TokenKind.Semicolon);
 
-        return new ExpressionStatementNode
-        {
-            Expression = expr!
-        };
+        return new ExpressionStatementNode(expr!);
     }
 
     private BlockNode ParseBlock()
@@ -1376,10 +1377,7 @@ public class Parser
         //var expr = ParseExpression()!;
         foreach (var statement in statements)
         {
-            ast.Root.GlobalStatements.Add(new GlobalStatementNode
-            {
-                Statement = statement
-            });
+            ast.Root.GlobalStatements.Add(new GlobalStatementNode(statement));
         }
 
         var typeDeclarations = ParseTypeDeclarations();
