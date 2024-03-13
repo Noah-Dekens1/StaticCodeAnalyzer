@@ -39,7 +39,7 @@ public class AstComparator
     {
         if (expected is null ^ actual is null)
         {
-            throw new AssertFailedException($"Nullability didn't match");
+            throw new AssertFailedException($"Nullability of {propertyPath} didn't match");
         }
 
         // If both are null then they match (using || because the compiler doesn't understand the combination)
@@ -97,7 +97,7 @@ public class AstComparator
 
                 if (!expectedValue.Equals(actualValue))
                 {
-                    throw new AssertFailedException($"Value-type properties didn't match" +
+                    throw new AssertFailedException($"Value-type properties {propertyPath}.{property.Name} didn't match" +
                         $", expected {expectedValue} but got {actualValue}");
                 }
 

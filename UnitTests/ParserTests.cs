@@ -1090,7 +1090,157 @@ public class ParserTests
                 accessModifier: AccessModifier.Internal,
                 modifiers: [OptionalModifier.Partial],
                 members: [
-                    // @todo
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test",
+                        fieldType: "int",
+                        value: new NumericLiteralNode(3)
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test2",
+                        fieldType: "int",
+                        value: null
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test3",
+                        fieldType: "int",
+                        value: new SubtractExpressionNode(
+                            lhs: new NumericLiteralNode(9),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new MultiplyExpressionNode(
+                                    lhs: new NumericLiteralNode(1),
+                                    rhs: new NumericLiteralNode(2)
+                                )
+                            )
+                        )
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "IsValid",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: new BooleanLiteralNode(true)
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "OtherProperty",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: new BooleanLiteralNode(false)
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "InitOnly",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null,
+                            initOnly: true
+                        ),
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "ExpressionBodied",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.ExpressionBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: new BooleanLiteralNode(true),
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "BlockBodied",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.BlockBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: new BlockNode([
+                                new ReturnStatementNode(new IdentifierExpression("_field"))
+                            ])
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.BlockBodied,
+                            accessModifier: AccessModifier.Private,
+                            expressionBody: null,
+                            blockBody: new BlockNode([
+                                new ExpressionStatementNode(
+                                    expression: new AssignmentExpressionNode(
+                                        lhs: new IdentifierExpression("_field"),
+                                        rhs: new BooleanLiteralNode(true)
+                                    )
+                                )
+                            ])
+                        ),
+                        value: null
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Protected,
+                        modifiers: [OptionalModifier.Readonly],
+                        fieldName: "_hello",
+                        fieldType: "string",
+                        value: null
+                    ),
+                    new ConstructorNode(
+                        accessModifier: AccessModifier.Public,
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new ExpressionStatementNode(
+                                expression: new AssignmentExpressionNode(
+                                    lhs: new IdentifierExpression("_hello"),
+                                    rhs: new StringLiteralNode("Hello world!")
+                                )
+                            )
+                        ])
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [OptionalModifier.Virtual],
+                        returnType: "void",
+                        methodName: "Test",
+                        parameters: new ParameterListNode([]),
+                        body: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [OptionalModifier.Override],
+                        returnType: "string",
+                        methodName: "ToString",
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new ReturnStatementNode(new IdentifierExpression("_hello"))
+                        ])
+                    )
                 ]
             )
         );
