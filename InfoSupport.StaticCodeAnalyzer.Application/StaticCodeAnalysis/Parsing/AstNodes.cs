@@ -34,7 +34,7 @@ public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNo
 {
     public ExpressionNode? ReturnExpression { get; set; } = returnExpression;
 
-    public override List<AstNode> Children => [ReturnExpression];
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ReturnExpression);
 
     public override string ToString() => $"{ReturnExpression}";
 }
@@ -369,9 +369,9 @@ public class TernaryExpressionNode : ExpressionNode
 
 // @FIXME is an identifier an expression and not just a part of an expression?
 [DebuggerDisplay("{Identifier,nq}")]
-public class IdentifierExpression : ExpressionNode
+public class IdentifierExpression(string identifier) : ExpressionNode
 {
-    public required string Identifier { get; set; }
+    public string Identifier { get; set; } = identifier;
 
     public override string ToString() => Identifier;
 }
@@ -720,7 +720,7 @@ public class MethodNode(
     public ParameterListNode Parameters { get; set; } = parameters;
     public AstNode? Body { get; set; } = body;
 
-    public override List<AstNode> Children => [Parameters, Body];
+    public override List<AstNode> Children => Utils.ParamsToList(Parameters, Body);
 }
 
 public class BasicDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode

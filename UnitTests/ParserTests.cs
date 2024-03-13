@@ -74,10 +74,42 @@ public class ParserTests
         var actual = Parser.Parse(tokens);
 
         var expected = AST.Build();
-
+        
         expected.Root.GlobalStatements.Add(new GlobalStatementNode(
-            statement: new ExpressionStatementNode()
-        )); ;
+            statement: new ExpressionStatementNode(
+                expression: new AddExpressionNode(
+                    lhs: new NumericLiteralNode(3),
+                    rhs: new AddExpressionNode(
+                        lhs: new UnaryNegationNode(new NumericLiteralNode(4)),
+                        rhs: new AddExpressionNode(
+                            lhs: new NumericLiteralNode(2),
+                            rhs: new UnaryNegationNode(
+                                expr: new ParenthesizedExpressionNode(
+                                    expr: new MultiplyExpressionNode(
+                                        lhs: new IdentifierExpression("someIdentifier"),
+                                        rhs: new AddExpressionNode(
+                                            lhs: new NumericLiteralNode(8),
+                                            rhs: new UnaryNegationNode(
+                                                expr: new ParenthesizedExpressionNode(
+                                                    expr: new UnaryNegationNode(
+                                                        expr: new ParenthesizedExpressionNode(
+                                                            expr: new NumericLiteralNode(4)
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ));
+        
+
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -212,18 +244,6 @@ public class ParserTests
     [TestMethod]
     public void Parse_ComplexForStatement_ReturnsValidAST()
     {
-        int i = 0;
-        int b = 10;
-        int c = 5;
-        for (i = 3, ++i, i--, i++; i < 10; i++, c = 0)
-        {
-            b--;
-        }
-
-        int x;
-        for (x = 0, i++; i < b; i++)
-            ;
-
         var tokens = Lexer.Lex("""
             int i = 0;
             int b = 10;
@@ -480,7 +500,7 @@ public class ParserTests
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression() { Identifier = "list"},
+                    lhs: new IdentifierExpression("list"),
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
                     ])
@@ -488,7 +508,7 @@ public class ParserTests
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression() { Identifier = "list" },
+                    lhs: new IdentifierExpression("list"),
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
                     ])
@@ -496,7 +516,7 @@ public class ParserTests
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement("var", "c", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression() { Identifier = "dict" },
+                    lhs: new IdentifierExpression("dict"),
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode( "hello")), name: null)
                     ])

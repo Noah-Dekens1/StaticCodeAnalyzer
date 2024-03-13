@@ -378,7 +378,7 @@ public class Parser
     private static ExpressionNode ResolveMemberAccess(List<Token> members)
     {
         var member = members[^1];
-        var identifier = new IdentifierExpression() { Identifier = member.Lexeme };
+        var identifier = new IdentifierExpression(member.Lexeme);
 
         if (members.Count == 1)
             return identifier;
@@ -504,12 +504,12 @@ public class Parser
         }
 
         bool isBinary = !onlyParseSingle && IsBinaryOperator((possibleLHS is null && !isCurrentTokenIdentifier) ? 1 : 0);
-        bool isTernary = false;
+        //bool isTernary = false;
 
         if (isBinary)
         {
             // Does nullability not work in ternary subexpressions?
-            ExpressionNode lhs = possibleLHS ?? (ExpressionNode?)literal ?? new IdentifierExpression { Identifier = token.Lexeme };
+            ExpressionNode lhs = possibleLHS ?? (ExpressionNode?)literal ?? new IdentifierExpression(token.Lexeme);
             if (possibleLHS is null)
                 Consume();
             return ParseBinaryExpression(lhs);
@@ -517,7 +517,7 @@ public class Parser
         else if (isCurrentTokenIdentifier && possibleLHS is null)
         {
             Consume();
-            return new IdentifierExpression { Identifier = token.Lexeme };
+            return new IdentifierExpression(token.Lexeme);
         }
         else if (isLiteral && possibleLHS is null)
         {
@@ -771,7 +771,7 @@ public class Parser
     private static AstNode ResolveQualifiedNameRecursive(List<Token> members)
     {
         var member = members[^1];
-        var identifier = new IdentifierExpression() { Identifier = member.Lexeme };
+        var identifier = new IdentifierExpression(member.Lexeme);
 
         if (members.Count == 1)
             return identifier;
@@ -901,7 +901,6 @@ public class Parser
 
             case TokenKind.SwitchKeyword:
                 throw new NotImplementedException();
-                break;
 
             case TokenKind.ReturnKeyword:
                 return ParseReturnStatement();
