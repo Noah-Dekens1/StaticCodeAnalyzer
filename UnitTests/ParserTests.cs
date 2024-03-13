@@ -48,7 +48,7 @@ public class ParserTests
                 Expression = new AddExpressionNode(
                     lhs: new NumericLiteralNode(3),
                     rhs: new MultiplyExpressionNode(
-                        lhs: new NumericLiteralNode(3),
+                        lhs: new NumericLiteralNode(4),
                         rhs: new SubtractExpressionNode(
                             lhs: new NumericLiteralNode(1),
                             rhs: new ParenthesizedExpressionNode(
