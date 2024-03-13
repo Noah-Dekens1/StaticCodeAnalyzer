@@ -32,10 +32,10 @@ public class AstComparator
     [DebuggerHidden]
     public void Compare(AST expected, AST actual)
     {
-        CompareRecursive(expected, actual);
+        CompareRecursive(expected, actual, "");
     }
 
-    private void CompareRecursive(object? expected, object? actual)
+    private void CompareRecursive(object? expected, object? actual, string propertyPath)
     {
         if (expected is null ^ actual is null)
         {
@@ -89,7 +89,7 @@ public class AstComparator
             if (typeof(string) == property.PropertyType)
             {
                 if (expectedValue is null ^ actualValue is null)
-                    throw new AssertFailedException($"Nullability of string properties didn't match" +
+                    throw new AssertFailedException($"Nullability of string properties {propertyPath}.{property.Name} didn't match" +
                         $", expected {expectedValue} but got {actualValue}");
 
                 if (expectedValue is null || actualValue is null)
@@ -121,7 +121,7 @@ public class AstComparator
 
                 for (int i = 0; i < expectedCount; i++)
                 {
-                    CompareRecursive(expectedList[i], actualList[i]);
+                    CompareRecursive(expectedList[i], actualList[i], $"{propertyPath}.{property.Name}[{i}]");
                 }
 
                 continue;
@@ -131,13 +131,13 @@ public class AstComparator
             {
                 if (!expectedValue!.Equals(actualValue))
                 {
-                    throw new AssertFailedException($"Value-type properties didn't match" +
+                    throw new AssertFailedException($"Value-type properties {propertyPath}.{property.Name} didn't match" +
                         $", expected {expectedValue} but got {actualValue}");
                 }
             }
             else
             {
-                CompareRecursive(expectedValue, actualValue);
+                CompareRecursive(expectedValue, actualValue, $"{propertyPath}.{property.Name}");
             }
         }
     }
