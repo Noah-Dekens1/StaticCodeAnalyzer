@@ -1,0 +1,1603 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Text;
+using System.Threading.Tasks;
+
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
+using InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
+
+using NuGet.Frameworks;
+
+namespace UnitTests;
+
+[TestClass]
+public class ParserTests
+{
+    private static T GetGlobalStatement<T>(AST ast, int index=0) where T : StatementNode
+    {
+        return (T)ast.Root.GlobalStatements[index].Statement;
+    }
+
+    [DebuggerHidden]
+    private static void AssertStandardASTEquals(AST expected, AST actual)
+    {
+        AstComparator.
+            Create()
+            .IgnorePropertyOfType<AstNode>(n => n.Tokens)
+            .Compare(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BasicBinaryExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("3 + 4 * 1 - (9 / 3);");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(new GlobalStatementNode(
+            statement: new ExpressionStatementNode
+            (
+                expression: new AddExpressionNode(
+                    lhs: new NumericLiteralNode(3),
+                    rhs: new MultiplyExpressionNode(
+                        lhs: new NumericLiteralNode(4),
+                        rhs: new SubtractExpressionNode(
+                            lhs: new NumericLiteralNode(1),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new DivideExpressionNode(
+                                    lhs: new NumericLiteralNode(9),
+                                    rhs: new NumericLiteralNode(3)
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ));
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BasicBinaryExpressionWithUnaryOperators_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("3 + -4 + 2 + -(someIdentifier * 8 + -(-(4)));");
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+        
+        expected.Root.GlobalStatements.Add(new GlobalStatementNode(
+            statement: new ExpressionStatementNode(
+                expression: new AddExpressionNode(
+                    lhs: new NumericLiteralNode(3),
+                    rhs: new AddExpressionNode(
+                        lhs: new UnaryNegationNode(new NumericLiteralNode(4)),
+                        rhs: new AddExpressionNode(
+                            lhs: new NumericLiteralNode(2),
+                            rhs: new UnaryNegationNode(
+                                expr: new ParenthesizedExpressionNode(
+                                    expr: new MultiplyExpressionNode(
+                                        lhs: new IdentifierExpression("someIdentifier"),
+                                        rhs: new AddExpressionNode(
+                                            lhs: new NumericLiteralNode(8),
+                                            rhs: new UnaryNegationNode(
+                                                expr: new ParenthesizedExpressionNode(
+                                                    expr: new UnaryNegationNode(
+                                                        expr: new ParenthesizedExpressionNode(
+                                                            expr: new NumericLiteralNode(4)
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ));
+        
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_UnaryIncrementDecrementOperators_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("3 - identifier++ + -1;");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new SubtractExpressionNode(
+                        lhs: new NumericLiteralNode(3),
+                        rhs: new AddExpressionNode(
+                            lhs: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("identifier"),
+                                isPrefix: false
+                            ),
+                            rhs: new UnaryNegationNode(
+                                expr: new NumericLiteralNode(1)
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BasicBooleanExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("(a == b && c >= 3) || (a != c && !!!d) && a < j && j <= b && q > e;");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        // @note: at the moment the order-of-operations is not supported and will be wrong
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new LogicalOrExpressionNode(
+                        lhs: new ParenthesizedExpressionNode(
+                            expr: new EqualsExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new LogicalAndExpressionNode(
+                                    lhs: new IdentifierExpression("b"),
+                                    rhs: new GreaterThanEqualsExpressionNode(
+                                        lhs: new IdentifierExpression("c"),
+                                        rhs: new NumericLiteralNode(3)
+                                    )
+                                )
+                            )
+                        ),
+                        rhs: new LogicalAndExpressionNode(
+                            lhs: new ParenthesizedExpressionNode(
+                                expr: new NotEqualsExpressionNode(
+                                    lhs: new IdentifierExpression("a"),
+                                    rhs: new LogicalAndExpressionNode(
+                                        lhs: new IdentifierExpression("c"),
+                                        rhs: new UnaryLogicalNotNode(
+                                            expr: new UnaryLogicalNotNode(
+                                                expr: new UnaryLogicalNotNode(
+                                                    new IdentifierExpression("d")
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
+                            rhs: new LessThanExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new LogicalAndExpressionNode(
+                                    lhs: new IdentifierExpression("j"),
+                                    rhs: new LessThanEqualsExpressionNode(
+                                        lhs: new IdentifierExpression("j"),
+                                        rhs: new LogicalAndExpressionNode(
+                                            lhs: new IdentifierExpression("b"),
+                                            rhs: new GreaterThanExpressionNode(
+                                                lhs: new IdentifierExpression("q"),
+                                                rhs: new IdentifierExpression("e")
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BasicVariableDeclaration_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("var test = (a == b && c >= 3) || (a != c && !!!d) && a < j && j <= b && q > e;");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "var",
+                    identifier: "test",
+                    expression: new LogicalOrExpressionNode(
+                        lhs: new ParenthesizedExpressionNode(
+                            expr: new EqualsExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new LogicalAndExpressionNode(
+                                    lhs: new IdentifierExpression("b"),
+                                    rhs: new GreaterThanEqualsExpressionNode(
+                                        lhs: new IdentifierExpression("c"),
+                                        rhs: new NumericLiteralNode(3)
+                                    )
+                                )
+                            )
+                        ),
+                        rhs: new LogicalAndExpressionNode(
+                            lhs: new ParenthesizedExpressionNode(
+                                expr: new NotEqualsExpressionNode(
+                                    lhs: new IdentifierExpression("a"),
+                                    rhs: new LogicalAndExpressionNode(
+                                        lhs: new IdentifierExpression("c"),
+                                        rhs: new UnaryLogicalNotNode(
+                                            expr: new UnaryLogicalNotNode(
+                                                expr: new UnaryLogicalNotNode(
+                                                    new IdentifierExpression("d")
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
+                            rhs: new LessThanExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new LogicalAndExpressionNode(
+                                    lhs: new IdentifierExpression("j"),
+                                    rhs: new LessThanEqualsExpressionNode(
+                                        lhs: new IdentifierExpression("j"),
+                                        rhs: new LogicalAndExpressionNode(
+                                            lhs: new IdentifierExpression("b"),
+                                            rhs: new GreaterThanExpressionNode(
+                                                lhs: new IdentifierExpression("q"),
+                                                rhs: new IdentifierExpression("e")
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_VariableDeclarationWithType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("int a = 0;");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "int",
+                    identifier: "a",
+                    expression: new NumericLiteralNode(0)
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_VariableDeclarationWithNonPrimitiveType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("SomeClass a = new SomeClass();");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "SomeClass",
+                    identifier: "a",
+                    expression: new NewExpressionNode(
+                        identifier: new IdentifierExpression("SomeClass"),
+                        arguments: new ArgumentListNode([])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BasicBinaryExpression2_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("3 * 4 / 2 + someIdentifier % 3;");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new MultiplyExpressionNode(
+                        lhs: new NumericLiteralNode(3),
+                        rhs: new DivideExpressionNode(
+                            lhs: new NumericLiteralNode(4),
+                            rhs: new AddExpressionNode(
+                                lhs: new NumericLiteralNode(2),
+                                rhs: new ModulusExpressionNode(
+                                    lhs: new IdentifierExpression("someIdentifier"),
+                                    rhs: new NumericLiteralNode(3)
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_IfStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            if (10 > 3 && (5 < 7 || 2 != 3))
+                ;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new IfStatementNode(
+                    expression: new GreaterThanExpressionNode(
+                        lhs: new NumericLiteralNode(10),
+                        rhs: new LogicalAndExpressionNode(
+                            lhs: new NumericLiteralNode(3),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new LessThanExpressionNode(
+                                    lhs: new NumericLiteralNode(5),
+                                    rhs: new LogicalOrExpressionNode(
+                                        lhs: new NumericLiteralNode(7),
+                                        rhs: new NotEqualsExpressionNode(
+                                            lhs: new NumericLiteralNode(2),
+                                            rhs: new NumericLiteralNode(3)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    body: new EmptyStatementNode(),
+                    elseBody: null
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_IfStatementWithBlockBody_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            if (true)
+            {
+                var a = "Hello world!";
+                var b = true;
+                var c = false;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new IfStatementNode(
+                    expression: new BooleanLiteralNode(true),
+                    body: new BlockNode(
+                        statements: [
+                            new VariableDeclarationStatement(
+                                type: "var",
+                                identifier: "a",
+                                expression: new StringLiteralNode("Hello world!")
+                            ),
+                            new VariableDeclarationStatement(
+                                type: "var",
+                                identifier: "b",
+                                expression: new BooleanLiteralNode(true)
+                            ),
+                            new VariableDeclarationStatement(
+                                type: "var",
+                                identifier: "c",
+                                expression: new BooleanLiteralNode(false)
+                            ),
+                        ]
+                    ),
+                    elseBody: null
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected , actual);
+    }
+
+    [TestMethod]
+    public void Parse_IfStatementWithElse_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            if (true)
+            {
+                ;
+            }
+            else if (false) // embedded if statement in else clause
+            {
+                ;
+            }
+            else
+                ;
+            """);
+
+        var actual = Parser.Parse(tokens);
+        
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new IfStatementNode(
+                    expression: new BooleanLiteralNode(true),
+                    body: new BlockNode(statements: [new EmptyStatementNode()]),
+                    elseBody: new IfStatementNode(
+                        expression: new BooleanLiteralNode(false),
+                        body: new BlockNode(statements: [new EmptyStatementNode()]),
+                        elseBody: new EmptyStatementNode()
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_DoStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = 0;
+            do
+            {
+                a++;
+            } while (a < 10);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "var",
+                    identifier: "a",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new DoStatementNode(
+                    condition: new LessThanExpressionNode(
+                        lhs: new IdentifierExpression("a"),
+                        rhs: new NumericLiteralNode(10)
+                    ),
+                    body: new BlockNode(
+                        statements: [
+                            new ExpressionStatementNode(
+                                expression: new UnaryIncrementNode(
+                                    expr: new IdentifierExpression("a"),
+                                    isPrefix: false
+                                )
+                            )
+                        ]
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ForStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            for (int i = 0; i < 10; i++)
+            {
+                i++;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ForStatementNode(
+                    initializer: new VariableDeclarationStatement(
+                        type: "int",
+                        identifier: "i",
+                        expression: new NumericLiteralNode(0)
+                    ),
+                    condition: new LessThanExpressionNode(
+                        lhs: new IdentifierExpression("i"),
+                        rhs: new NumericLiteralNode(10)
+                    ),
+                    iteration: new ExpressionStatementListNode([new ExpressionStatementNode(
+                        expression: new UnaryIncrementNode(
+                            expr: new IdentifierExpression("i"),
+                            isPrefix: false
+                        )
+                    )]),
+                    body: new BlockNode(
+                        statements: [new ExpressionStatementNode(
+                            expression: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("i"),
+                                isPrefix: false
+                            )
+                        )
+                    ])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ComplexForStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            int i = 0;
+            int b = 10;
+            int c = 5;
+            for (i = 3, ++i, i--, i++; i < 10; i++, c = 0)
+            {
+                b--;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "int",
+                    identifier: "i",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "int",
+                    identifier: "b",
+                    expression: new NumericLiteralNode(10)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "int",
+                    identifier: "c",
+                    expression: new NumericLiteralNode(5)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ForStatementNode(
+                    initializer: new ExpressionStatementListNode([
+                        new ExpressionStatementNode(
+                            expression: new AssignmentExpressionNode(
+                                lhs: new IdentifierExpression("i"),
+                                rhs: new NumericLiteralNode(3)
+                            )
+                        ),
+                        new ExpressionStatementNode(
+                            expression: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("i"),
+                                isPrefix: true
+                            )
+                        ),
+                        new ExpressionStatementNode(
+                            expression: new UnaryDecrementNode(
+                                expr: new IdentifierExpression("i"),
+                                isPrefix: false
+                            )
+                        ),
+                        new ExpressionStatementNode(
+                            expression: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("i"),
+                                isPrefix: false
+                            )
+                        )
+                    ]),
+                    condition: new LessThanExpressionNode(
+                        lhs: new IdentifierExpression("i"),
+                        rhs: new NumericLiteralNode(10)
+                    ),
+                    iteration: new ExpressionStatementListNode([
+                        new ExpressionStatementNode(
+                            expression: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("i"),
+                                isPrefix: false
+                            )
+                        ),
+                        new ExpressionStatementNode(
+                            expression: new AssignmentExpressionNode(
+                                lhs: new IdentifierExpression("c"),
+                                rhs: new NumericLiteralNode(0)
+                            )
+                        )
+                    ]),
+                    body: new BlockNode([
+                        new ExpressionStatementNode(
+                            expression: new UnaryDecrementNode(
+                                expr: new IdentifierExpression("b"),
+                                isPrefix: false
+                            )
+                        )
+                    ])
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_EmptyForStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            for (;;)
+                ;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ForStatementNode(
+                    initializer: new ExpressionStatementListNode([]),
+                    condition: null,
+                    iteration: new ExpressionStatementListNode([]),
+                    body: new EmptyStatementNode()
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ForEachStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            uint count = 0;
+            foreach (var item in test.someList)
+                count++;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "uint",
+                    identifier: "count",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ForEachStatementNode(
+                    variableType: "var",
+                    variableIdentifier: "item",
+                    collection: new MemberAccessExpressionNode(
+                        lhs: new IdentifierExpression("test"),
+                        identifier: new IdentifierExpression("someList")
+                    ),
+                    body: new ExpressionStatementNode(
+                        expression: new UnaryIncrementNode(
+                            expr: new IdentifierExpression("count"),
+                            isPrefix: false
+                        )
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_WhileStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var problems = 100;
+            while ((a == true && b < 4) || c && (l > r*2))
+            {
+                problems = problems - 1;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "var",
+                    identifier: "problems",
+                    expression: new NumericLiteralNode(100)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new WhileStatementNode(
+                    condition: new LogicalOrExpressionNode(
+                        lhs: new ParenthesizedExpressionNode(
+                            expr: new EqualsExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new LogicalAndExpressionNode(
+                                    lhs: new BooleanLiteralNode(true),
+                                    rhs: new LessThanExpressionNode(
+                                        lhs: new IdentifierExpression("b"),
+                                        rhs: new NumericLiteralNode(4)
+                                    )
+                                )
+                            )
+                        ),
+                        rhs: new LogicalAndExpressionNode(
+                            lhs: new IdentifierExpression("c"),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new GreaterThanExpressionNode(
+                                    lhs: new IdentifierExpression("l"),
+                                    rhs: new MultiplyExpressionNode(
+                                        lhs: new IdentifierExpression("r"),
+                                        rhs: new NumericLiteralNode(2)
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    body: new BlockNode([
+                        new ExpressionStatementNode(
+                            expression: new AssignmentExpressionNode(
+                                lhs: new IdentifierExpression("problems"),
+                                rhs: new SubtractExpressionNode(
+                                    lhs: new IdentifierExpression("problems"),
+                                    rhs: new NumericLiteralNode(1)
+                                )
+                            )
+                        )
+                    ])
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_MemberAccess_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            abc.def.g.hi++;
+            ++abc.def.g.hi;
+            ++a;
+            a++;
+            a.b++ + -3;
+            a = ++b;
+            a = b++ + 3;
+            a = ++b * c;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new UnaryIncrementNode(
+                        expr: new MemberAccessExpressionNode(
+                            lhs: new MemberAccessExpressionNode(
+                                lhs: new MemberAccessExpressionNode(
+                                    lhs: new IdentifierExpression("abc"),
+                                    identifier: new IdentifierExpression("def")
+                                ),
+                                identifier: new IdentifierExpression("g")
+                            ),
+                            identifier: new IdentifierExpression("hi")
+                        ),
+                        isPrefix: false
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new UnaryIncrementNode(
+                        expr: new MemberAccessExpressionNode(
+                            lhs: new MemberAccessExpressionNode(
+                                lhs: new MemberAccessExpressionNode(
+                                    lhs: new IdentifierExpression("abc"),
+                                    identifier: new IdentifierExpression("def")
+                                ),
+                                identifier: new IdentifierExpression("g")
+                            ),
+                            identifier: new IdentifierExpression("hi")
+                        ),
+                        isPrefix: true
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new UnaryIncrementNode(
+                        expr: new IdentifierExpression("a"),
+                        isPrefix: true
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new UnaryIncrementNode(
+                        expr: new IdentifierExpression("a"),
+                        isPrefix: false
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new AddExpressionNode(
+                        lhs: new UnaryIncrementNode(
+                            expr: new MemberAccessExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                identifier: new IdentifierExpression("b")
+                            ),
+                            isPrefix: false
+                        ),
+                        rhs: new UnaryNegationNode(
+                            expr: new NumericLiteralNode(3)
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new AssignmentExpressionNode(
+                        lhs: new IdentifierExpression("a"),
+                        rhs: new UnaryIncrementNode(
+                            expr: new IdentifierExpression("b"),
+                            isPrefix: true
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new AssignmentExpressionNode(
+                        lhs: new IdentifierExpression("a"),
+                        rhs: new AddExpressionNode(
+                            lhs: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("b"),
+                                isPrefix: false
+                            ),
+                            rhs: new NumericLiteralNode(3)
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new AssignmentExpressionNode(
+                        lhs: new IdentifierExpression("a"),
+                        rhs: new MultiplyExpressionNode(
+                            lhs: new UnaryIncrementNode(
+                                expr: new IdentifierExpression("b"),
+                                isPrefix: true
+                            ),
+                            rhs: new IdentifierExpression("c")
+                        )
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_UsingDirective_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            using Test = System.CoolStuff.Test;
+            using System.Text;
+            using System.Runtime.CompilerServices;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.UsingDirectives.AddRange([
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new QualifiedNameNode(
+                        lhs: new IdentifierExpression("System"),
+                        identifier: new IdentifierExpression("CoolStuff")
+                    ),
+                    identifier: new IdentifierExpression("Test")
+                ),
+                alias: "Test"
+            ),
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new IdentifierExpression("System"),
+                    identifier: new IdentifierExpression("Text")
+                ),
+                alias: null
+            ),
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new QualifiedNameNode(
+                        lhs: new IdentifierExpression("System"),
+                        identifier: new IdentifierExpression("Runtime")
+                    ),
+                    identifier: new IdentifierExpression("CompilerServices")
+                ),
+                alias: null
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_SimpleMethodCall_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            someObj.MethodCall(3 + a(named: true), 9 - 8 + -1, 5 != 3);
+            """);
+
+        var actual = Parser.Parse(tokens);
+        
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("someObj"),
+                            identifier: new IdentifierExpression("MethodCall")
+                        ),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new AddExpressionNode(
+                                    lhs: new NumericLiteralNode(3),
+                                    rhs: new InvocationExpressionNode(
+                                        lhs: new IdentifierExpression("a"),
+                                        arguments: new ArgumentListNode([
+                                            new ArgumentNode(
+                                                expression: new BooleanLiteralNode(true),
+                                                name: "named"
+                                            )
+                                        ])
+                                    )
+                                ),
+                                name: null
+                            ),
+                            new ArgumentNode(
+                                expression: new SubtractExpressionNode(
+                                    lhs: new NumericLiteralNode(9),
+                                    rhs: new AddExpressionNode(
+                                        lhs: new NumericLiteralNode(8),
+                                        rhs: new UnaryNegationNode(
+                                            expr: new NumericLiteralNode(1)
+                                        )
+                                    )
+                                ),
+                                name: null
+                            ),
+                            new ArgumentNode(
+                                expression: new NotEqualsExpressionNode(
+                                    lhs: new NumericLiteralNode(5),
+                                    rhs: new NumericLiteralNode(3)
+                                ),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_Class_ShouldReturnValidAST()
+    {
+        // fields, properties, constructors, methods, inheritance, nested types ...?
+        var tokens = Lexer.Lex("""
+            internal partial class TestClass : OtherClass
+            {
+                private int _test = 3;
+                private int _test2;
+                private int _test3 = 9 - (1 * 2);
+                public bool IsValid { get; protected set; } = true;
+                public bool OtherProperty { protected get; } = false;
+                public bool InitOnly { get; init; }
+                public bool ExpressionBodied { get => true; }
+                public bool BlockBodied { get { return _field; } private set { _field = true; } }
+
+                protected readonly string _hello;
+
+                public TestClass()
+                {
+                    _hello = "Hello world!";
+                }
+
+                virtual void Test();
+
+                public override string ToString()
+                {
+                    return _hello;
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: "TestClass",
+                parentName: "OtherClass",
+                accessModifier: AccessModifier.Internal,
+                modifiers: [OptionalModifier.Partial],
+                members: [
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test",
+                        fieldType: "int",
+                        value: new NumericLiteralNode(3)
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test2",
+                        fieldType: "int",
+                        value: null
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test3",
+                        fieldType: "int",
+                        value: new SubtractExpressionNode(
+                            lhs: new NumericLiteralNode(9),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new MultiplyExpressionNode(
+                                    lhs: new NumericLiteralNode(1),
+                                    rhs: new NumericLiteralNode(2)
+                                )
+                            )
+                        )
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "IsValid",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: new BooleanLiteralNode(true)
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "OtherProperty",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: new BooleanLiteralNode(false)
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "InitOnly",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null,
+                            initOnly: true
+                        ),
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "ExpressionBodied",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.ExpressionBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: new BooleanLiteralNode(true),
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "BlockBodied",
+                        propertyType: "bool",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.BlockBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: new BlockNode([
+                                new ReturnStatementNode(new IdentifierExpression("_field"))
+                            ])
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.BlockBodied,
+                            accessModifier: AccessModifier.Private,
+                            expressionBody: null,
+                            blockBody: new BlockNode([
+                                new ExpressionStatementNode(
+                                    expression: new AssignmentExpressionNode(
+                                        lhs: new IdentifierExpression("_field"),
+                                        rhs: new BooleanLiteralNode(true)
+                                    )
+                                )
+                            ])
+                        ),
+                        value: null
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Protected,
+                        modifiers: [OptionalModifier.Readonly],
+                        fieldName: "_hello",
+                        fieldType: "string",
+                        value: null
+                    ),
+                    new ConstructorNode(
+                        accessModifier: AccessModifier.Public,
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new ExpressionStatementNode(
+                                expression: new AssignmentExpressionNode(
+                                    lhs: new IdentifierExpression("_hello"),
+                                    rhs: new StringLiteralNode("Hello world!")
+                                )
+                            )
+                        ])
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [OptionalModifier.Virtual],
+                        returnType: "void",
+                        methodName: "Test",
+                        parameters: new ParameterListNode([]),
+                        body: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [OptionalModifier.Override],
+                        returnType: "string",
+                        methodName: "ToString",
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new ReturnStatementNode(new IdentifierExpression("_hello"))
+                        ])
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_Enum_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public enum Color : byte
+            {
+                Red,
+                Green = 1,
+                Blue
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new EnumDeclarationNode(
+                enumName: "Color",
+                parentType: "byte",
+                accessModifier: AccessModifier.Public,
+                modifiers: [],
+                members: [
+                    new EnumMemberNode(
+                        identifier: "Red",
+                        value: null
+                    ),
+                    new EnumMemberNode(
+                        identifier: "Green",
+                        value: new NumericLiteralNode(1)
+                    ),
+                    new EnumMemberNode(
+                        identifier: "Blue",
+                        value: null
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_Interface_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public interface ITry
+            {
+                public string Name { get; protected set; }
+                internal void ShouldBe(int a, bool b, ITry c);
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new InterfaceDeclarationNode(
+                name: "ITry",
+                accessModifier: AccessModifier.Public,
+                modifiers: [],
+                members: [
+                    new PropertyMemberNode(
+                        propertyName: "Name",
+                        propertyType: "string",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Internal,
+                        modifiers: [],
+                        returnType: "void",
+                        methodName: "ShouldBe",
+                        parameters: new ParameterListNode([
+                            new ParameterNode(type: "int", identifier: "a"),
+                            new ParameterNode(type: "bool", identifier: "b"),
+                            new ParameterNode(type: "ITry", identifier: "c"),
+                        ]),
+                        body: null
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_Struct_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public struct Test
+            {
+                public int A { get; private set; }
+                public static Test Create()
+                {
+                    var test = new Test();
+                    test.A = 100;
+                    return test;
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new StructDeclarationNode(
+                name: "Test",
+                accessModifier: AccessModifier.Public,
+                modifiers: [],
+                members: [
+                    new PropertyMemberNode(
+                        propertyName: "A",
+                        propertyType: "int",
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Private,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [OptionalModifier.Static],
+                        returnType: "Test",
+                        methodName: "Create",
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new VariableDeclarationStatement(
+                                type: "var",
+                                identifier: "test",
+                                expression: new NewExpressionNode(
+                                    identifier: new IdentifierExpression("Test"),
+                                    arguments: new ArgumentListNode([])
+                                )
+                            ),
+                            new ExpressionStatementNode(
+                                new AssignmentExpressionNode(
+                                    lhs: new MemberAccessExpressionNode(
+                                        lhs: new IdentifierExpression("test"),
+                                        identifier: new IdentifierExpression("A")
+                                    ),
+                                    rhs: new NumericLiteralNode(100)
+                                )
+                            ),
+                            new ReturnStatementNode(
+                                new IdentifierExpression("test")
+                            )
+                        ])
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_LocalFunction_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = 0;
+            void Increment()
+            {
+                a += 1;
+            }
+            Console.WriteLine(a);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: "var",
+                    identifier: "a",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [],
+                    name: "Increment",
+                    returnType: "void",
+                    parameters: new ParameterListNode([]),
+                    body: new BlockNode([
+                        new ExpressionStatementNode(
+                            expression: new AddAssignExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new NumericLiteralNode(1)
+                            )
+                        )
+                    ])
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("Console"),
+                            identifier: new IdentifierExpression("WriteLine")
+                        ),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new IdentifierExpression("a"),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_IndexExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = list[0];
+            var b = list[-3];
+            var c = dict["hello"];
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("list"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
+                    ])
+                ))
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("list"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
+                    ])
+                ))
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement("var", "c", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("dict"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode( "hello")), name: null)
+                    ])
+                ))
+            ),
+        ]);
+
+        AssertStandardASTEquals(expected, ast);
+    }
+
+    [DataTestMethod]
+    [DataRow("1;", 1)]
+    [DataRow("3;", 3)]
+    [DataRow("173;", 173)]
+    [DataRow("74.3f;", 74.3f)]
+    public void Parse_NumericLiteral_ReturnsValidAST(string numericLiteral, object value)
+    {
+        var tokens = Lexer.Lex(numericLiteral);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new NumericLiteralNode(value)
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [DataTestMethod]
+    [DataRow("true;", true)]
+    [DataRow("false;", false)]
+    public void Parse_BooleanLiteral_ReturnsValidAST(string literal, bool value)
+    {
+        var tokens = Lexer.Lex(literal);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new BooleanLiteralNode(value)
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    // @FIXME: Don't we need to parse the string here?
+    [DataTestMethod]
+    [DataRow(@"""Hello world!"";", "Hello world!")]
+    [DataRow(@"""Other plain \"" string"";", "Other plain \" string")]
+    public void Parse_StringLiteral_ReturnsValidAST(string literal, string value)
+    {
+        var tokens = Lexer.Lex(literal);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new StringLiteralNode(value)
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    
+}
