@@ -779,7 +779,7 @@ public class Parser
         members.Remove(member);
 
         return new QualifiedNameNode(
-            lhs: ResolveMemberAccess(members),
+            lhs: ResolveQualifiedNameRecursive(members),
             identifier: identifier
         );
     }
