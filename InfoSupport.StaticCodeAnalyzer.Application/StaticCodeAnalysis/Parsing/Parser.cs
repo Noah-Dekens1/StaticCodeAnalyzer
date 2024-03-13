@@ -108,34 +108,6 @@ public class Parser
         return false;
     }
 
-    public int ConsumeIfMatchGreedy(TokenKind c, int minMatch = 0, int maxMatch = int.MaxValue)
-    {
-        int i = -1;
-
-        while (CanPeek(++i) && Peek(i).Kind == c) ;
-
-        if (i >= minMatch && i <= maxMatch)
-            Seek(_index + i);
-        else
-            i = -1;
-
-        return i;
-    }
-
-    public int PeekMatchGreedy(TokenKind c, ref int peekIndex, int minMatch = 0, int maxMatch = int.MaxValue)
-    {
-        int i = -1;
-
-        while (CanPeek(++i + peekIndex) && Peek(i + peekIndex).Kind == c) ;
-
-        if (i >= minMatch && i <= maxMatch)
-            peekIndex += i;
-        else
-            i = -1;
-
-        return i;
-    }
-
     private static char ResolveEscapeSequence(char c)
     {
         return EscapeSequences.TryGetValue(c, out var resolved) ? resolved : c;
@@ -197,17 +169,6 @@ public class Parser
         TokenKind.PlusPlus or TokenKind.MinusMinus or TokenKind.Exclamation or TokenKind.Minus or TokenKind.Tilde => true,
         _ => false
     };
-
-    private bool IsIdentifierOrLiteral(Token token)
-    {
-        if (token.Kind == TokenKind.Identifier)
-            return true;
-
-        if (PeekLiteralExpression(out _, token))
-            return true;
-
-        return false;
-    }
 
     private ExpressionNode ParseIdentifierOrLiteral()
     {

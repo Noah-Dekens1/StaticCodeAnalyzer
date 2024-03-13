@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -36,6 +37,7 @@ public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNo
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ReturnExpression);
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{ReturnExpression}";
 }
 
@@ -53,6 +55,7 @@ public class ExpressionStatementNode(ExpressionNode expression) : StatementNode
     public ExpressionNode Expression { get; set; } = expression;
     public override List<AstNode> Children => [Expression];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Expression.ToString()!;
 }
 
@@ -71,6 +74,7 @@ public class NumericLiteralNode(object? value) : LiteralExpressionNode
 {
     public object? Value { get; set; } = value;
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{Value}";
 }
 
@@ -79,6 +83,7 @@ public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 {
     public bool Value { get; set; } = value;
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{(Value ? "true" : "false")}";
 }
 
@@ -87,6 +92,7 @@ public class StringLiteralNode(string value) : LiteralExpressionNode
 {
     public string Value { get; set; } = value;
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"\"{Value}\"";
 }
 
@@ -95,6 +101,7 @@ public class ParenthesizedExpressionNode(ExpressionNode expr) : ExpressionNode
 {
     public ExpressionNode Expression { get; set; } = expr;
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"({Expression})";
 
     public override List<AstNode> Children => [Expression];
@@ -116,6 +123,7 @@ public class UnaryExpressionNode : ExpressionNode
     public ExpressionNode Expression { get; set; }
     public bool IsPrefix { get; set; } = true;
 
+    [ExcludeFromCodeCoverage]
     public virtual UnaryOperator Operator { get; }
 
     public UnaryExpressionNode(ExpressionNode expr, bool isPrefix = true)
@@ -124,6 +132,7 @@ public class UnaryExpressionNode : ExpressionNode
         IsPrefix = isPrefix;
     }
 
+    [ExcludeFromCodeCoverage]
     private string OperatorForDbg => Operator switch
     {
         UnaryOperator.Negation => "-",
@@ -135,6 +144,7 @@ public class UnaryExpressionNode : ExpressionNode
 
     public override List<AstNode> Children => [Expression];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{(IsPrefix ? OperatorForDbg : "")}{Expression}{(!IsPrefix ? OperatorForDbg : "")}";
 }
 
@@ -200,6 +210,7 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
     public virtual BinaryOperator Operator { get; }
     public override List<AstNode> Children => [LHS, RHS];
 
+    [ExcludeFromCodeCoverage]
     private string OperatorForDbg => Operator switch
     {
         BinaryOperator.Add => "+",
@@ -230,6 +241,7 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         _ => throw new NotImplementedException()
     };
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS} {OperatorForDbg} {RHS}";
 }
 
@@ -373,6 +385,7 @@ public class IdentifierExpression(string identifier) : ExpressionNode
 {
     public string Identifier { get; set; } = identifier;
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Identifier;
 }
 
@@ -416,6 +429,7 @@ public class ExpressionStatementListNode(List<ExpressionStatementNode> statement
 
     public override List<AstNode> Children => [.. Statements];
 
+    [ExcludeFromCodeCoverage]
     private string DebuggerDisplay
     {
         get => string.Join(',', Children);
@@ -450,6 +464,7 @@ public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression
 
     public override List<AstNode> Children => [LHS, Identifier];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}.{Identifier}";
 }
 
@@ -461,6 +476,7 @@ public class ArgumentNode(ExpressionNode expression, string? name) : AstNode
 
     public override List<AstNode> Children => [Expression];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Name is not null
         ? $"{Name}: {Expression}"
         : $"{Expression}";
@@ -473,6 +489,7 @@ public class ArgumentListNode(List<ArgumentNode> arguments) : AstNode
 
     public override List<AstNode> Children => [ .. Arguments];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Arguments.Count >= 10
         ? $"{Arguments.Count} arguments"
         : string.Join(',', Arguments.Select(a => a.ToString()));
@@ -492,6 +509,7 @@ public class ParameterNode(string type, string identifier) : AstNode
 
     public override List<AstNode> Children => [];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString()
         => $"{Type} {Identifier}";
 }
@@ -503,6 +521,7 @@ public class ParameterListNode(List<ParameterNode> parameters) : AstNode
 
     public override List<AstNode> Children => [..Parameters];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Parameters.Count >= 10
         ? $"{Parameters.Count} parameters"
         : string.Join(',', Parameters.Select(a => a.ToString()));
@@ -517,6 +536,7 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentListNode argum
 
     public override List<AstNode> Children => [LHS, Arguments];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}({Arguments})";
 }
 
@@ -529,6 +549,7 @@ public class ElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentLi
 
     public override List<AstNode> Children => [LHS, Arguments];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}[{Arguments}]";
 }
 
@@ -538,6 +559,8 @@ public class IndexExpressionNode(ExpressionNode expression) : ExpressionNode
     public ExpressionNode Expression { get; set; } = expression;
 
     public override List<AstNode> Children => [Expression];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{Expression}";
 }
 
@@ -548,6 +571,7 @@ public class NewExpressionNode(ExpressionNode identifier, ArgumentListNode argum
     public ArgumentListNode Arguments { get; set; } = arguments;
     public override List<AstNode> Children => [Identifier, Arguments];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"new {Identifier}({Arguments})";
 }
 
@@ -559,6 +583,7 @@ public class QualifiedNameNode(AstNode lhs, IdentifierExpression identifier) : A
 
     public override List<AstNode> Children => [LHS, Identifier];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}.{Identifier}";
 
 }
@@ -571,6 +596,7 @@ public class UsingDirectiveNode(AstNode ns, string? alias) : AstNode
 
     public override List<AstNode> Children => [Namespace];
 
+    [ExcludeFromCodeCoverage]
     private string DebuggerDisplay
     {
         get => Alias is not null ? $"using {Alias} = {Namespace}" : $"using {Namespace}";
@@ -624,6 +650,7 @@ public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifie
 
     public override List<AstNode> Children => Value is not null ? [Value] : [];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Value is not null
         ? $"{AccessModifier} {string.Join(' ', Modifiers)} {FieldType} {FieldName} = {Value}"
         : $"{AccessModifier} {string.Join(' ', Modifiers)} {FieldType} {FieldName}";
@@ -678,6 +705,7 @@ public class PropertyMemberNode(string propertyName, string propertyType, Proper
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Getter, Setter, Value);
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{PropertyType} {PropertyName}";
 }
 
@@ -689,6 +717,7 @@ public class EnumMemberNode(string identifier, ExpressionNode? value) : MemberNo
 
     public override List<AstNode> Children => Value is not null ? [Value] : [];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => Value is not null
         ? $"{Identifier} = {Value}"
         : $"{Identifier}";
@@ -790,5 +819,6 @@ public class LocalFunctionDeclarationNode(
 
     public override List<AstNode> Children => [Parameters, Body];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{ReturnType} {Name}({Parameters})";
 }

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
 
+[ExcludeFromCodeCoverage]
 public class ScopedTimer(string name) : IDisposable
 {
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();

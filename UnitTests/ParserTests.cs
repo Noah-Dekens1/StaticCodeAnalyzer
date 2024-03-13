@@ -1295,7 +1295,7 @@ public class ParserTests
     public void Parse_Interface_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
-            public interface ITry
+            private protected interface ITry
             {
                 public string Name { get; protected set; }
                 internal void ShouldBe(int a, bool b, ITry c);
@@ -1309,7 +1309,7 @@ public class ParserTests
         expected.Root.TypeDeclarations.Add(
             new InterfaceDeclarationNode(
                 name: "ITry",
-                accessModifier: AccessModifier.Public,
+                accessModifier: AccessModifier.PrivateProtected,
                 modifiers: [],
                 members: [
                     new PropertyMemberNode(
@@ -1352,7 +1352,7 @@ public class ParserTests
     public void Parse_Struct_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
-            public struct Test
+            protected internal struct Test
             {
                 public int A { get; private set; }
                 public static Test Create()
@@ -1371,7 +1371,7 @@ public class ParserTests
         expected.Root.TypeDeclarations.Add(
             new StructDeclarationNode(
                 name: "Test",
-                accessModifier: AccessModifier.Public,
+                accessModifier: AccessModifier.ProtectedInternal,
                 modifiers: [],
                 members: [
                     new PropertyMemberNode(
