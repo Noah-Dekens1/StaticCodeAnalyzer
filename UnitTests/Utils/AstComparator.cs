@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -15,17 +16,20 @@ public class AstComparator
 {
     private readonly Dictionary<Type, string> _ignoredProperties = [];
 
+    [DebuggerHidden]
     public static AstComparator Create()
     { 
         return new AstComparator();
     }
 
+    [DebuggerHidden]
     public AstComparator IgnorePropertyOfType<T>(Expression<Func<T, object>> selector)
     {
         _ignoredProperties.Add(typeof(T), ((MemberExpression)selector.Body).Member.Name);
         return this;
     }
 
+    [DebuggerHidden]
     public void Compare(AST expected, AST actual)
     {
         CompareRecursive(expected, actual);
@@ -100,8 +104,8 @@ public class AstComparator
                 continue;
             }
 
-            bool isValueType = property.PropertyType.IsValueType;
-            
+            bool isRuntimeValueType = expectedValue?.GetType().IsValueType ?? false;
+
             if (expectedValue is IEnumerable enumerable && actualValue is IEnumerable actualEnumerable)
             {
                 List<object> expectedList = [..enumerable];
@@ -123,7 +127,7 @@ public class AstComparator
                 continue;
             }
 
-            if (isValueType)
+            if (isRuntimeValueType)
             {
                 if (!expectedValue!.Equals(actualValue))
                 {
