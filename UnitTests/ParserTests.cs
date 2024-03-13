@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,15 @@ public class ParserTests
     private static T GetGlobalStatement<T>(AST ast, int index=0) where T : StatementNode
     {
         return (T)ast.Root.GlobalStatements[index].Statement;
+    }
+
+    [DebuggerHidden]
+    private static void AssertStandardASTEquals(AST expected, AST actual)
+    {
+        AstComparator.
+            Create()
+            .IgnorePropertyOfType<AstNode>(n => n.Tokens)
+            .Compare(expected, actual);
     }
 
     [TestMethod]
@@ -470,7 +480,38 @@ public class ParserTests
 
         var ast = Parser.Parse(tokens);
 
-        Assert.IsTrue(false);
+        var expected = AST.Build();
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode()
+            {
+                Statement = new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression() { Identifier = "list"},
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode() { Value = 0 }), name: null)
+                    ])
+                ))
+            },
+            new GlobalStatementNode()
+            {
+                Statement = new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression() { Identifier = "list" },
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode() { Value = 3 })), name: null)
+                    ])
+                ))
+            },
+            new GlobalStatementNode()
+            {
+                Statement = new VariableDeclarationStatement("var", "c", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression() { Identifier = "dict" },
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode() { Value = "hello" }), name: null)
+                    ])
+                ))
+            },
+        ]);
+
+        AssertStandardASTEquals(expected, ast);
     }
 
     [DataTestMethod]
