@@ -2018,4 +2018,95 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_AmbigiousGenerics1_ReturnsValidAST()
+    {
+        // Example case from 
+        // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure
+        // Should parse as a call to F with one argument which is a call to G
+        // This is due to the open paren ( acting as a disambiguating token)
+        var tokens = Lexer.Lex("""
+            F(G<A, B>(7));
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new IdentifierExpression("F"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new InvocationExpressionNode(
+                                    lhs: new GenericNameNode(
+                                        identifier: new IdentifierExpression("G"),
+                                        typeArguments: new TypeArgumentsNode([
+                                            AstUtils.SimpleNameAsType("A"),
+                                            AstUtils.SimpleNameAsType("B")
+                                        ])
+                                    ),
+                                    arguments: new ArgumentListNode([
+                                        new ArgumentNode(
+                                            expression: new NumericLiteralNode(7), 
+                                            name: null
+                                        )
+                                    ])
+                                ),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_AmbigiousGenerics2_ReturnsValidAST()
+    {
+        // Example case from 
+        // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure
+        // Should parse as a call to F with two arguments (G<A and B>7) because there's no disambiguating ( token here
+        var tokens = Lexer.Lex("""
+            F(G<A, B>7);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new IdentifierExpression("F"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new LessThanExpressionNode(
+                                    lhs: new IdentifierExpression("G"),
+                                    rhs: new IdentifierExpression("A")
+                                ),
+                                name: null
+                            ),
+                            new ArgumentNode(
+                                expression: new GreaterThanExpressionNode(
+                                    lhs: new IdentifierExpression("B"),
+                                    rhs: new NumericLiteralNode(7)
+                                ),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

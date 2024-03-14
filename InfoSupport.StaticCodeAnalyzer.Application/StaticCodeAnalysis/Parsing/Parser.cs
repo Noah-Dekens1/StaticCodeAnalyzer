@@ -364,11 +364,11 @@ public class Parser
         return ResolveMemberAccess(members);
     }
 
-    private ExpressionNode ResolveMaybeGenericIdentifier()
+    private ExpressionNode ResolveMaybeGenericIdentifier(bool isInNamespaceOrType)
     {
         var identifier = ResolveIdentifier();
 
-        if (Matches(TokenKind.LessThan) && PossiblyParseTypeArgumentList(out var typeArguments))
+        if (Matches(TokenKind.LessThan) && PossiblyParseTypeArgumentList(out var typeArguments, isInNamespaceOrType))
         {
             return new GenericNameNode(identifier, typeArguments);
         }
@@ -455,7 +455,7 @@ public class Parser
 
         if (isCurrentTokenIdentifier && possibleLHS is null)
         {
-            resolvedIdentifier = ResolveMaybeGenericIdentifier();
+            resolvedIdentifier = ResolveMaybeGenericIdentifier(false);
             possibleLHS = resolvedIdentifier;
         }
 
@@ -552,7 +552,35 @@ public class Parser
         return maybeType && PeekSafe(2).Kind == TokenKind.Equals;
     }
 
-    private bool PossiblyParseTypeArgumentList(out TypeArgumentsNode? typeArguments, bool precededByDisambiguatingToken=false)
+    private readonly List<TokenKind> _disambiguatingTokenList = [
+        TokenKind.OpenParen,
+        TokenKind.CloseParen,
+        TokenKind.CloseBracket,
+        TokenKind.CloseBrace,
+        TokenKind.Colon,
+        TokenKind.Semicolon,
+        TokenKind.Comma,
+        TokenKind.Dot,
+        TokenKind.Question,
+        TokenKind.EqualsEquals,
+        TokenKind.ExclamationEquals,
+        TokenKind.Bar,
+        TokenKind.Caret,
+        TokenKind.AmpersandAmpersand,
+        TokenKind.BarBar,
+        TokenKind.Ampersand,
+        TokenKind.OpenBracket,
+
+        // Relational
+        TokenKind.LessThan,
+        TokenKind.GreaterThan,
+        TokenKind.LessThanEquals,
+        TokenKind.GreaterThanEquals,
+        TokenKind.IsKeyword,
+        TokenKind.AsKeyword
+    ];
+
+    private bool PossiblyParseTypeArgumentList(out TypeArgumentsNode? typeArguments, bool isInNamespaceOrTypeName, bool precededByDisambiguatingToken=false)
     {
         // See section 6.2.5 of C#'s lexical structure specification
         // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure
@@ -584,7 +612,7 @@ public class Parser
 
             if (Matches(TokenKind.LessThan))
             {
-                if (!PossiblyParseTypeArgumentList(out nestedTypes))
+                if (!PossiblyParseTypeArgumentList(out nestedTypes, isInNamespaceOrTypeName))
                 {
                     Seek(startPosition);
                     return false;
@@ -608,6 +636,18 @@ public class Parser
 
         } while (!IsAtEnd());
 
+        bool isTypeArgumentList = isInNamespaceOrTypeName;
+
+        isTypeArgumentList |= _disambiguatingTokenList.Contains(PeekCurrent().Kind);
+        isTypeArgumentList |= precededByDisambiguatingToken;
+        // @todo: contextual query keywords/contextual disambiguating identifiers
+
+        if (!isTypeArgumentList)
+        {
+            Seek(startPosition);
+            return false;
+        }
+
         typeArguments = new TypeArgumentsNode(temp);
 
         return true;
@@ -621,7 +661,7 @@ public class Parser
 
         TypeArgumentsNode? typeArguments = null;
 
-        if (maybeGeneric && PossiblyParseTypeArgumentList(out typeArguments))
+        if (maybeGeneric && PossiblyParseTypeArgumentList(out typeArguments, true))
         {
             
         }
@@ -897,7 +937,7 @@ public class Parser
         Debug.Assert(accessModifier is null);
 
         var type = ParseType();
-        var identifier = ResolveMaybeGenericIdentifier();
+        var identifier = ResolveMaybeGenericIdentifier(true);
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
@@ -1095,7 +1135,7 @@ public class Parser
 
         ParseType();
 
-        var identifier = ResolveMaybeGenericIdentifier();
+        var identifier = ResolveMaybeGenericIdentifier(true);
 
         if (identifier is null)
         {
@@ -1377,7 +1417,7 @@ public class Parser
             return ParseConstructor(accessModifier ?? AccessModifier.Private);
 
         var type = ParseType();
-        var identifier = ResolveMaybeGenericIdentifier();
+        var identifier = ResolveMaybeGenericIdentifier(true);
         var isMethod = Matches(TokenKind.OpenParen);
         var isProperty = Matches(TokenKind.OpenBrace);
         var isField = !isMethod && !isProperty; // @todo: events?
@@ -1419,12 +1459,12 @@ public class Parser
 
         var type = Consume().Kind;
 
-        var identifier = ResolveMaybeGenericIdentifier();
+        var identifier = ResolveMaybeGenericIdentifier(true);
         AstNode? parentName = null;
 
         if (ConsumeIfMatch(TokenKind.Colon))
         {
-            parentName = ResolveMaybeGenericIdentifier();
+            parentName = ResolveMaybeGenericIdentifier(true);
         }
 
         Expect(TokenKind.OpenBrace);
