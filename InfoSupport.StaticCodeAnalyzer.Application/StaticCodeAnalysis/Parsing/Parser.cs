@@ -532,11 +532,11 @@ public class Parser
         TokenKind.VoidKeyword
     ];
 
-    private static bool IsMaybeType(Token token, bool mustBeValidReturnType)
+    private static bool IsMaybeType(Token token, bool excludeVar)
     {
         bool maybeType = false;
 
-        maybeType |= !mustBeValidReturnType && (token.Kind == TokenKind.Identifier && token.Lexeme == "var");
+        maybeType |= !excludeVar && (token.Kind == TokenKind.Identifier && token.Lexeme == "var");
         maybeType |= TypeList.Contains(token.Kind);
         maybeType |= token.Kind == TokenKind.Identifier;
 
@@ -572,7 +572,7 @@ public class Parser
 
         do
         {
-            if (!Matches(TokenKind.Identifier))
+            if (!IsMaybeType(PeekCurrent(), true))
             {
                 Seek(startPosition);
                 return false;
@@ -1326,7 +1326,7 @@ public class Parser
         return new ConstructorNode(accessModifier, parms, body);
     }
 
-    private MemberNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, string methodName)
+    private MemberNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName)
     {
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
@@ -1354,19 +1354,30 @@ public class Parser
         return new EnumMemberNode(identifier.Lexeme, value);
     }
 
-    private MemberNode ParseMember(TypeKind kind, string typeName)
+    private static string ResolveNameFromAstNode(AstNode node)
+    {
+        var identifierNode = node is GenericNameNode nameNode
+                    ? (IdentifierExpression)nameNode.Identifier
+                    : ((IdentifierExpression)node);
+
+        return identifierNode.Identifier;
+    }
+
+    private MemberNode ParseMember(TypeKind kind, AstNode typeName)
     {
         if (kind == TypeKind.Enum)
             return ParseEnumMember();
 
+        var name = ResolveNameFromAstNode(typeName);
+
         ParseModifiers(out var accessModifier, out var modifiers);
-        var isCtor = PeekCurrent().Lexeme == typeName && PeekSafe().Kind == TokenKind.OpenParen;
+        var isCtor = PeekCurrent().Lexeme == name && PeekSafe().Kind == TokenKind.OpenParen;
 
         if (isCtor)
             return ParseConstructor(accessModifier ?? AccessModifier.Private);
 
         var type = ParseType();
-        var identifier = Consume();
+        var identifier = ResolveMaybeGenericIdentifier();
         var isMethod = Matches(TokenKind.OpenParen);
         var isProperty = Matches(TokenKind.OpenBrace);
         var isField = !isMethod && !isProperty; // @todo: events?
@@ -1376,21 +1387,21 @@ public class Parser
             var hasValue = ConsumeIfMatch(TokenKind.Equals);
             var value = hasValue ? ParseExpression() : null;
             Expect(TokenKind.Semicolon);
-            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, identifier.Lexeme, type, value);
+            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers,ResolveNameFromAstNode(identifier), type, value);
         }
         else if (isProperty)
         {
-            return ParseProperty(identifier.Lexeme, type);
+            return ParseProperty(ResolveNameFromAstNode(identifier), type);
         }
         else if (isMethod)
         {
-            return ParseMethod(accessModifier ?? AccessModifier.Private, modifiers, type, identifier.Lexeme);
+            return ParseMethod(accessModifier ?? AccessModifier.Private, modifiers, type, identifier);
         }
 
         throw new NotImplementedException();
     }
 
-    private List<MemberNode> ParseMembers(TypeKind kind, string typeName)
+    private List<MemberNode> ParseMembers(TypeKind kind, AstNode typeName)
     {
         var members = new List<MemberNode>();
 
@@ -1408,12 +1419,12 @@ public class Parser
 
         var type = Consume().Kind;
 
-        var identifier = Consume().Lexeme;
-        string? parentName = null;
+        var identifier = ResolveMaybeGenericIdentifier();
+        AstNode? parentName = null;
 
         if (ConsumeIfMatch(TokenKind.Colon))
         {
-            parentName = Consume().Lexeme;
+            parentName = ResolveMaybeGenericIdentifier();
         }
 
         Expect(TokenKind.OpenBrace);

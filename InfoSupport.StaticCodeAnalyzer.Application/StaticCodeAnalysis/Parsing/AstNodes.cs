@@ -777,59 +777,59 @@ public class MethodNode(
     AccessModifier accessModifier, 
     List<OptionalModifier> modifiers, 
     TypeNode returnType,
-    string methodName,
+    AstNode methodName,
     ParameterListNode parameters,
     AstNode? body) : MemberNode
 {
     public AccessModifier AccessModifier {  set; get; } = accessModifier;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers;
     public TypeNode ReturnType { get; set; } = returnType;
-    public string MethodName { get; set; } = methodName;
+    public AstNode MethodName { get; set; } = methodName;
     public ParameterListNode Parameters { get; set; } = parameters;
     public AstNode? Body { get; set; } = body;
 
-    public override List<AstNode> Children => Utils.ParamsToList(ReturnType, Parameters, Body);
+    public override List<AstNode> Children => Utils.ParamsToList(ReturnType, MethodName, Parameters, Body);
 }
 
-public class BasicDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
+public class BasicDeclarationNode(AstNode name, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
-    public string? ParentName { get; set; } = parentName;
-    public string Name { get; set; } = name;
+    public AstNode? ParentName { get; set; } = parentName;
+    public AstNode Name { get; set; } = name;
     public List<MemberNode> Members { get; set; } = members;
 
     public override List<AstNode> Children => [.. Members];
 }
 
 [DebuggerDisplay("class {Name,nq}")]
-public class ClassDeclarationNode(string className, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) 
+public class ClassDeclarationNode(AstNode className, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) 
     : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers)
 {
 
 }
 
 [DebuggerDisplay("interface {Name,nq}")]
-public class InterfaceDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
+public class InterfaceDeclarationNode(AstNode name, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
     : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers)
 {
 
 }
 
 [DebuggerDisplay("struct {Name,nq}")]
-public class StructDeclarationNode(string name, List<MemberNode> members, string? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
+public class StructDeclarationNode(AstNode name, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
     : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers)
 {
 
 }
 
 [DebuggerDisplay("enum {EnumName,nq}")]
-public class EnumDeclarationNode(string enumName, List<EnumMemberNode> members, string? parentType, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
+public class EnumDeclarationNode(AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
-    public string? ParentType { get; set;} = parentType;
-    public string EnumName { get; set; } = enumName;
+    public AstNode? ParentType { get; set;} = parentType;
+    public AstNode EnumName { get; set; } = enumName;
     public List<EnumMemberNode> Members { get; set; } = members;
 
     public override List<AstNode> Children => [.. Members];

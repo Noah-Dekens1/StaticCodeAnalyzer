@@ -1086,8 +1086,8 @@ public class ParserTests
 
         expected.Root.TypeDeclarations.Add(
             new ClassDeclarationNode(
-                className: "TestClass",
-                parentName: "OtherClass",
+                className: AstUtils.SimpleName("TestClass"),
+                parentName: AstUtils.SimpleName("OtherClass"),
                 accessModifier: AccessModifier.Internal,
                 modifiers: [OptionalModifier.Partial],
                 members: [
@@ -1228,7 +1228,7 @@ public class ParserTests
                         accessModifier: AccessModifier.Private,
                         modifiers: [OptionalModifier.Virtual],
                         returnType: new TypeNode(new IdentifierExpression("void")),
-                        methodName: "Test",
+                        methodName: AstUtils.SimpleName("Test"),
                         parameters: new ParameterListNode([]),
                         body: null
                     ),
@@ -1236,7 +1236,7 @@ public class ParserTests
                         accessModifier: AccessModifier.Public,
                         modifiers: [OptionalModifier.Override],
                         returnType: new TypeNode(new IdentifierExpression("string")),
-                        methodName: "ToString",
+                        methodName: AstUtils.SimpleName("ToString"),
                         parameters: new ParameterListNode([]),
                         body: new BlockNode([
                             new ReturnStatementNode(new IdentifierExpression("_hello"))
@@ -1267,8 +1267,8 @@ public class ParserTests
 
         expected.Root.TypeDeclarations.Add(
             new EnumDeclarationNode(
-                enumName: "Color",
-                parentType: "byte",
+                enumName: AstUtils.SimpleName("Color"),
+                parentType: AstUtils.SimpleName("byte"),
                 accessModifier: AccessModifier.Public,
                 modifiers: [],
                 members: [
@@ -1308,7 +1308,7 @@ public class ParserTests
 
         expected.Root.TypeDeclarations.Add(
             new InterfaceDeclarationNode(
-                name: "ITry",
+                name: AstUtils.SimpleName("ITry"),
                 accessModifier: AccessModifier.PrivateProtected,
                 modifiers: [],
                 members: [
@@ -1333,7 +1333,7 @@ public class ParserTests
                         accessModifier: AccessModifier.Internal,
                         modifiers: [],
                         returnType: new TypeNode(new IdentifierExpression("void")),
-                        methodName: "ShouldBe",
+                        methodName: AstUtils.SimpleName("ShouldBe"),
                         parameters: new ParameterListNode([
                             new ParameterNode(type: new TypeNode(new IdentifierExpression("int")), identifier: "a"),
                             new ParameterNode(type: new TypeNode(new IdentifierExpression("bool")), identifier: "b"),
@@ -1370,7 +1370,7 @@ public class ParserTests
 
         expected.Root.TypeDeclarations.Add(
             new StructDeclarationNode(
-                name: "Test",
+                name: AstUtils.SimpleName("Test"),
                 accessModifier: AccessModifier.ProtectedInternal,
                 modifiers: [],
                 members: [
@@ -1395,7 +1395,7 @@ public class ParserTests
                         accessModifier: AccessModifier.Public,
                         modifiers: [OptionalModifier.Static],
                         returnType: new TypeNode(new IdentifierExpression("Test")),
-                        methodName: "Create",
+                        methodName: AstUtils.SimpleName("Create"),
                         parameters: new ParameterListNode([]),
                         body: new BlockNode([
                             new VariableDeclarationStatement(
@@ -1746,6 +1746,275 @@ public class ParserTests
                 )
             )
         ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_GenericClass_ShouldReturnValidAST()
+    {
+        // fields, properties, constructors, methods, inheritance, nested types ...?
+        var tokens = Lexer.Lex("""
+            internal partial class GenericTestClass<T1, T2> : OtherClass<T1, T2>
+            {
+                private int _test = 3;
+                private int _test2;
+                private int _test3 = 9 - (1 * 2);
+                private List<string> _fancyStrings = new List<string>();
+                public List<string> FancyStrings { get => _fancyStrings; }
+                public bool IsValid { get; protected set; } = true;
+                public bool OtherProperty { protected get; } = false;
+                public bool InitOnly { get; init; }
+                public bool ExpressionBodied { get => true; }
+                public bool BlockBodied { get { return _field; } private set { _field = true; } }
+
+                protected readonly string _hello;
+
+                public GenericTestClass()
+                {
+                    _hello = "Hello world!";
+                }
+
+                virtual void Test<T1, List<T2>>();
+
+                public override string ToString()
+                {
+                    return _hello;
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: new GenericNameNode(
+                    identifier: new IdentifierExpression("GenericTestClass"),
+                    typeArguments: new TypeArgumentsNode([
+                        AstUtils.SimpleNameAsType("T1"),
+                        AstUtils.SimpleNameAsType("T2")
+                    ])
+                ),
+                parentName: new GenericNameNode(
+                    identifier: new IdentifierExpression("OtherClass"),
+                    typeArguments: new TypeArgumentsNode([
+                        AstUtils.SimpleNameAsType("T1"),
+                        AstUtils.SimpleNameAsType("T2")
+                    ])
+                ),
+                accessModifier: AccessModifier.Internal,
+                modifiers: [OptionalModifier.Partial],
+                members: [
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test",
+                        fieldType: new TypeNode(new IdentifierExpression("int")),
+                        value: new NumericLiteralNode(3)
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test2",
+                        fieldType: new TypeNode(new IdentifierExpression("int")),
+                        value: null
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_test3",
+                        fieldType: new TypeNode(new IdentifierExpression("int")),
+                        value: new SubtractExpressionNode(
+                            lhs: new NumericLiteralNode(9),
+                            rhs: new ParenthesizedExpressionNode(
+                                expr: new MultiplyExpressionNode(
+                                    lhs: new NumericLiteralNode(1),
+                                    rhs: new NumericLiteralNode(2)
+                                )
+                            )
+                        )
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [],
+                        fieldName: "_fancyStrings",
+                        fieldType: new TypeNode(
+                            baseType: new IdentifierExpression("List"),
+                            typeArguments: new TypeArgumentsNode([
+                                new TypeNode(
+                                    baseType: new IdentifierExpression("string")
+                                )
+                            ])
+                        ),
+                        value: new NewExpressionNode(
+                            type: new TypeNode(
+                                baseType: new IdentifierExpression("List"),
+                                typeArguments: new TypeArgumentsNode([
+                                    new TypeNode(
+                                        baseType: new IdentifierExpression("string")
+                                    )
+                                ])
+                            ),
+                            arguments: new ArgumentListNode([])
+                        )
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "FancyStrings",
+                        propertyType: new TypeNode(
+                            baseType: new IdentifierExpression("List"),
+                            typeArguments: new TypeArgumentsNode([
+                                new TypeNode(
+                                    baseType: new IdentifierExpression("string")
+                                )
+                            ])
+                        ),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.ExpressionBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: new IdentifierExpression("_fancyStrings"),
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "IsValid",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: new BooleanLiteralNode(true)
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "OtherProperty",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Protected,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: new BooleanLiteralNode(false)
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "InitOnly",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null,
+                            initOnly: true
+                        ),
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "ExpressionBodied",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.ExpressionBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: new BooleanLiteralNode(true),
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: null
+                    ),
+                    new PropertyMemberNode(
+                        propertyName: "BlockBodied",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.BlockBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: new BlockNode([
+                                new ReturnStatementNode(new IdentifierExpression("_field"))
+                            ])
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.BlockBodied,
+                            accessModifier: AccessModifier.Private,
+                            expressionBody: null,
+                            blockBody: new BlockNode([
+                                new ExpressionStatementNode(
+                                    expression: new AssignmentExpressionNode(
+                                        lhs: new IdentifierExpression("_field"),
+                                        rhs: new BooleanLiteralNode(true)
+                                    )
+                                )
+                            ])
+                        ),
+                        value: null
+                    ),
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Protected,
+                        modifiers: [OptionalModifier.Readonly],
+                        fieldName: "_hello",
+                        fieldType: new TypeNode(new IdentifierExpression("string")),
+                        value: null
+                    ),
+                    new ConstructorNode(
+                        accessModifier: AccessModifier.Public,
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new ExpressionStatementNode(
+                                expression: new AssignmentExpressionNode(
+                                    lhs: new IdentifierExpression("_hello"),
+                                    rhs: new StringLiteralNode("Hello world!")
+                                )
+                            )
+                        ])
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Private,
+                        modifiers: [OptionalModifier.Virtual],
+                        returnType: new TypeNode(new IdentifierExpression("void")),
+                        methodName: new GenericNameNode(
+                            identifier: new IdentifierExpression("Test"),
+                            typeArguments: new TypeArgumentsNode([
+                                AstUtils.SimpleNameAsType("T1"),
+                                new TypeNode(
+                                    baseType: new IdentifierExpression("List"),
+                                    typeArguments: new TypeArgumentsNode([
+                                        AstUtils.SimpleNameAsType("T2")
+                                    ])
+                                )
+                            ])
+                        ),
+                        parameters: new ParameterListNode([]),
+                        body: null
+                    ),
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [OptionalModifier.Override],
+                        returnType: new TypeNode(new IdentifierExpression("string")),
+                        methodName: AstUtils.SimpleName("ToString"),
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([
+                            new ReturnStatementNode(new IdentifierExpression("_hello"))
+                        ])
+                    )
+                ]
+            )
+        );
 
         AssertStandardASTEquals(expected, actual);
     }

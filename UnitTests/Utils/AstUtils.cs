@@ -35,4 +35,9 @@ internal static class AstUtils
     {
         return new TypeNode(baseType: new IdentifierExpression(name));
     }
+
+    public static AstNode SimpleName(string name)
+    {
+        return new IdentifierExpression(name);
+    }
 }
