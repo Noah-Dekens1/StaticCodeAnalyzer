@@ -1454,7 +1454,7 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new LocalFunctionDeclarationNode(
                     modifiers: [],
-                    name: "Increment",
+                    name: new IdentifierExpression("Increment"),
                     returnType: new TypeNode(new IdentifierExpression("void")),
                     parameters: new ParameterListNode([]),
                     body: new BlockNode([
@@ -1672,5 +1672,81 @@ public class ParserTests
         AssertStandardASTEquals(expected, actual);
     }
 
-    
+    [TestMethod]
+    public void Parse_GenericLocalFunction_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = 0;
+            void Increment<GenericType, Dictionary<T1, T2<T3>>>()
+            {
+                a += 1;
+            }
+            Console.WriteLine(a);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    identifier: "a",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [],
+                    name: new GenericNameNode(
+                        identifier: new IdentifierExpression("Increment"),
+                        typeArguments: new TypeArgumentsNode([
+                            new TypeNode(new IdentifierExpression("GenericType")),
+                            new TypeNode(
+                                baseType: new IdentifierExpression("Dictionary"),
+                                typeArguments: new TypeArgumentsNode([
+                                    new TypeNode(new IdentifierExpression("T1")),
+                                    new TypeNode(
+                                        baseType: new IdentifierExpression("T2"),
+                                        typeArguments: new TypeArgumentsNode([
+                                            AstUtils.SimpleNameAsType("T3")
+                                        ])
+                                    ),
+                                ])
+                            ),
+                        ])
+                    ),
+                    returnType: new TypeNode(new IdentifierExpression("void")),
+                    parameters: new ParameterListNode([]),
+                    body: new BlockNode([
+                        new ExpressionStatementNode(
+                            expression: new AddAssignExpressionNode(
+                                lhs: new IdentifierExpression("a"),
+                                rhs: new NumericLiteralNode(1)
+                            )
+                        )
+                    ])
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("Console"),
+                            identifier: new IdentifierExpression("WriteLine")
+                        ),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new IdentifierExpression("a"),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

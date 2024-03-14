@@ -847,16 +847,16 @@ public enum TypeKind
 // @fixme: Maybe it's not entirely correct to make it a statement
 [DebuggerDisplay("{ToString(),nq}")]
 public class LocalFunctionDeclarationNode(
-    List<OptionalModifier> modifiers, string name, TypeNode returnType, ParameterListNode parameters, AstNode body
+    List<OptionalModifier> modifiers, AstNode name, TypeNode returnType, ParameterListNode parameters, AstNode body
     ) : StatementNode
 {
     public List<OptionalModifier> Modifiers { get; set; } = modifiers;
-    public string Name { get; set; } = name;
+    public AstNode Name { get; set; } = name;
     public TypeNode ReturnType { get; set; } = returnType;
     public ParameterListNode Parameters { get; set; } = parameters;
     public AstNode Body { get; set; } = body;
 
-    public override List<AstNode> Children => [ReturnType, Parameters, Body];
+    public override List<AstNode> Children => [Name, ReturnType, Parameters, Body];
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{ReturnType} {Name}({Parameters})";

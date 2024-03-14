@@ -532,11 +532,11 @@ public class Parser
         TokenKind.VoidKeyword
     ];
 
-    private static bool IsMaybeType(Token token)
+    private static bool IsMaybeType(Token token, bool mustBeValidReturnType)
     {
         bool maybeType = false;
 
-        maybeType |= token.Kind == TokenKind.Identifier && token.Lexeme == "var";
+        maybeType |= !mustBeValidReturnType && (token.Kind == TokenKind.Identifier && token.Lexeme == "var");
         maybeType |= TypeList.Contains(token.Kind);
         maybeType |= token.Kind == TokenKind.Identifier;
 
@@ -547,7 +547,7 @@ public class Parser
     {
         var token = PeekCurrent();
 
-        bool maybeType = IsMaybeType(token);
+        bool maybeType = IsMaybeType(token, false);
 
         return maybeType && PeekSafe(2).Kind == TokenKind.Equals;
     }
@@ -897,7 +897,7 @@ public class Parser
         Debug.Assert(accessModifier is null);
 
         var type = ParseType();
-        var identifier = Consume().Lexeme;
+        var identifier = ResolveMaybeGenericIdentifier();
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
@@ -1065,6 +1065,7 @@ public class Parser
 
     private bool IsLocalFunctionDeclaration()
     {
+        /*
         var idx = 0;
 
         // Skip over all (access) modifiers
@@ -1079,6 +1080,38 @@ public class Parser
         maybeFunction &= PeekSafe(idx++).Kind == TokenKind.OpenParen;
 
         return maybeFunction;
+        */
+
+        var startPos = Tell();
+
+        while (IsValidTypeModifier(PeekCurrent()))
+            Consume();
+
+        if (!IsMaybeType(PeekCurrent(), true))
+        {
+            Seek(startPos);
+            return false;
+        }
+
+        ParseType();
+
+        var identifier = ResolveMaybeGenericIdentifier();
+
+        if (identifier is null)
+        {
+            Seek(startPos);
+            return false;
+        }
+
+        if (!Matches(TokenKind.OpenParen))
+        {
+            Seek(startPos);
+            return false;
+        }
+
+        Seek(startPos);
+        return true;
+
     }
 
     private List<StatementNode> ParseTopLevelStatements()
