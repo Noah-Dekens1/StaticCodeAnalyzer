@@ -222,7 +222,7 @@ public class ParserTests
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "var",
+                    type: new TypeNode(new IdentifierExpression("var")),
                     identifier: "test",
                     expression: new LogicalOrExpressionNode(
                         lhs: new ParenthesizedExpressionNode(
@@ -289,7 +289,7 @@ public class ParserTests
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "int",
+                    type: new TypeNode(new IdentifierExpression("int")),
                     identifier: "a",
                     expression: new NumericLiteralNode(0)
                 )
@@ -310,10 +310,10 @@ public class ParserTests
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "SomeClass",
+                    type: new TypeNode(new IdentifierExpression("SomeClass")),
                     identifier: "a",
                     expression: new NewExpressionNode(
-                        identifier: new IdentifierExpression("SomeClass"),
+                        type: new TypeNode(new IdentifierExpression("SomeClass")),
                         arguments: new ArgumentListNode([])
                     )
                 )
@@ -419,17 +419,17 @@ public class ParserTests
                     body: new BlockNode(
                         statements: [
                             new VariableDeclarationStatement(
-                                type: "var",
+                                type: new TypeNode(new IdentifierExpression("var")),
                                 identifier: "a",
                                 expression: new StringLiteralNode("Hello world!")
                             ),
                             new VariableDeclarationStatement(
-                                type: "var",
+                                type: new TypeNode(new IdentifierExpression("var")),
                                 identifier: "b",
                                 expression: new BooleanLiteralNode(true)
                             ),
                             new VariableDeclarationStatement(
-                                type: "var",
+                                type: new TypeNode(new IdentifierExpression("var")),
                                 identifier: "c",
                                 expression: new BooleanLiteralNode(false)
                             ),
@@ -498,7 +498,7 @@ public class ParserTests
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "var",
+                    type: new TypeNode(new IdentifierExpression("var")),
                     identifier: "a",
                     expression: new NumericLiteralNode(0)
                 )
@@ -544,7 +544,7 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new ForStatementNode(
                     initializer: new VariableDeclarationStatement(
-                        type: "int",
+                        type: new TypeNode(new IdentifierExpression("int")),
                         identifier: "i",
                         expression: new NumericLiteralNode(0)
                     ),
@@ -593,21 +593,21 @@ public class ParserTests
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "int",
+                    type: new TypeNode(new IdentifierExpression("int")),
                     identifier: "i",
                     expression: new NumericLiteralNode(0)
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "int",
+                    type: new TypeNode(new IdentifierExpression("int")),
                     identifier: "b",
                     expression: new NumericLiteralNode(10)
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "int",
+                    type: new TypeNode(new IdentifierExpression("int")),
                     identifier: "c",
                     expression: new NumericLiteralNode(5)
                 )
@@ -715,14 +715,14 @@ public class ParserTests
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "uint",
+                    type: new TypeNode(new IdentifierExpression("uint")),
                     identifier: "count",
                     expression: new NumericLiteralNode(0)
                 )
             ),
             new GlobalStatementNode(
                 statement: new ForEachStatementNode(
-                    variableType: "var",
+                    variableType: new TypeNode(new IdentifierExpression("var")),
                     variableIdentifier: "item",
                     collection: new MemberAccessExpressionNode(
                         lhs: new IdentifierExpression("test"),
@@ -759,7 +759,7 @@ public class ParserTests
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "var",
+                    type: new TypeNode(new IdentifierExpression("var")),
                     identifier: "problems",
                     expression: new NumericLiteralNode(100)
                 )
@@ -1095,21 +1095,21 @@ public class ParserTests
                         accessModifier: AccessModifier.Private,
                         modifiers: [],
                         fieldName: "_test",
-                        fieldType: "int",
+                        fieldType: new TypeNode(new IdentifierExpression("int")),
                         value: new NumericLiteralNode(3)
                     ),
                     new FieldMemberNode(
                         accessModifier: AccessModifier.Private,
                         modifiers: [],
                         fieldName: "_test2",
-                        fieldType: "int",
+                        fieldType: new TypeNode(new IdentifierExpression("int")),
                         value: null
                     ),
                     new FieldMemberNode(
                         accessModifier: AccessModifier.Private,
                         modifiers: [],
                         fieldName: "_test3",
-                        fieldType: "int",
+                        fieldType: new TypeNode(new IdentifierExpression("int")),
                         value: new SubtractExpressionNode(
                             lhs: new NumericLiteralNode(9),
                             rhs: new ParenthesizedExpressionNode(
@@ -1122,7 +1122,7 @@ public class ParserTests
                     ),
                     new PropertyMemberNode(
                         propertyName: "IsValid",
-                        propertyType: "bool",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.Auto,
                             accessModifier: AccessModifier.Public,
@@ -1139,7 +1139,7 @@ public class ParserTests
                     ),
                     new PropertyMemberNode(
                         propertyName: "OtherProperty",
-                        propertyType: "bool",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.Auto,
                             accessModifier: AccessModifier.Protected,
@@ -1151,7 +1151,7 @@ public class ParserTests
                     ),
                     new PropertyMemberNode(
                         propertyName: "InitOnly",
-                        propertyType: "bool",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.Auto,
                             accessModifier: AccessModifier.Public,
@@ -1169,7 +1169,7 @@ public class ParserTests
                     ),
                     new PropertyMemberNode(
                         propertyName: "ExpressionBodied",
-                        propertyType: "bool",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.ExpressionBodied,
                             accessModifier: AccessModifier.Public,
@@ -1181,7 +1181,7 @@ public class ParserTests
                     ),
                     new PropertyMemberNode(
                         propertyName: "BlockBodied",
-                        propertyType: "bool",
+                        propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.BlockBodied,
                             accessModifier: AccessModifier.Public,
@@ -1209,7 +1209,7 @@ public class ParserTests
                         accessModifier: AccessModifier.Protected,
                         modifiers: [OptionalModifier.Readonly],
                         fieldName: "_hello",
-                        fieldType: "string",
+                        fieldType: new TypeNode(new IdentifierExpression("string")),
                         value: null
                     ),
                     new ConstructorNode(
@@ -1227,7 +1227,7 @@ public class ParserTests
                     new MethodNode(
                         accessModifier: AccessModifier.Private,
                         modifiers: [OptionalModifier.Virtual],
-                        returnType: "void",
+                        returnType: new TypeNode(new IdentifierExpression("void")),
                         methodName: "Test",
                         parameters: new ParameterListNode([]),
                         body: null
@@ -1235,7 +1235,7 @@ public class ParserTests
                     new MethodNode(
                         accessModifier: AccessModifier.Public,
                         modifiers: [OptionalModifier.Override],
-                        returnType: "string",
+                        returnType: new TypeNode(new IdentifierExpression("string")),
                         methodName: "ToString",
                         parameters: new ParameterListNode([]),
                         body: new BlockNode([
@@ -1314,7 +1314,7 @@ public class ParserTests
                 members: [
                     new PropertyMemberNode(
                         propertyName: "Name",
-                        propertyType: "string",
+                        propertyType: new TypeNode(new IdentifierExpression("string")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.Auto,
                             accessModifier: AccessModifier.Public,
@@ -1332,12 +1332,12 @@ public class ParserTests
                     new MethodNode(
                         accessModifier: AccessModifier.Internal,
                         modifiers: [],
-                        returnType: "void",
+                        returnType: new TypeNode(new IdentifierExpression("void")),
                         methodName: "ShouldBe",
                         parameters: new ParameterListNode([
-                            new ParameterNode(type: "int", identifier: "a"),
-                            new ParameterNode(type: "bool", identifier: "b"),
-                            new ParameterNode(type: "ITry", identifier: "c"),
+                            new ParameterNode(type: new TypeNode(new IdentifierExpression("int")), identifier: "a"),
+                            new ParameterNode(type: new TypeNode(new IdentifierExpression("bool")), identifier: "b"),
+                            new ParameterNode(type: new TypeNode(new IdentifierExpression("ITry")), identifier: "c"),
                         ]),
                         body: null
                     )
@@ -1376,7 +1376,7 @@ public class ParserTests
                 members: [
                     new PropertyMemberNode(
                         propertyName: "A",
-                        propertyType: "int",
+                        propertyType: new TypeNode(new IdentifierExpression("int")),
                         getter: new PropertyAccessorNode(
                             accessorType: PropertyAccessorType.Auto,
                             accessModifier: AccessModifier.Public,
@@ -1394,15 +1394,15 @@ public class ParserTests
                     new MethodNode(
                         accessModifier: AccessModifier.Public,
                         modifiers: [OptionalModifier.Static],
-                        returnType: "Test",
+                        returnType: new TypeNode(new IdentifierExpression("Test")),
                         methodName: "Create",
                         parameters: new ParameterListNode([]),
                         body: new BlockNode([
                             new VariableDeclarationStatement(
-                                type: "var",
+                                type: new TypeNode(new IdentifierExpression("var")),
                                 identifier: "test",
                                 expression: new NewExpressionNode(
-                                    identifier: new IdentifierExpression("Test"),
+                                    type: new TypeNode(new IdentifierExpression("Test")),
                                     arguments: new ArgumentListNode([])
                                 )
                             ),
@@ -1446,7 +1446,7 @@ public class ParserTests
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
-                    type: "var",
+                    type: new TypeNode(new IdentifierExpression("var")),
                     identifier: "a",
                     expression: new NumericLiteralNode(0)
                 )
@@ -1455,7 +1455,7 @@ public class ParserTests
                 statement: new LocalFunctionDeclarationNode(
                     modifiers: [],
                     name: "Increment",
-                    returnType: "void",
+                    returnType: new TypeNode(new IdentifierExpression("void")),
                     parameters: new ParameterListNode([]),
                     body: new BlockNode([
                         new ExpressionStatementNode(
@@ -1502,7 +1502,7 @@ public class ParserTests
         var expected = AST.Build();
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement("var", "a", new ElementAccessExpressionNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "a", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression("list"),
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
@@ -1510,7 +1510,7 @@ public class ParserTests
                 ))
             ),
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement("var", "b", new ElementAccessExpressionNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "b", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression("list"),
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
@@ -1518,7 +1518,7 @@ public class ParserTests
                 ))
             ),
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement("var", "c", new ElementAccessExpressionNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "c", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression("dict"),
                     arguments: new BracketedArgumentList([
                         new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode( "hello")), name: null)
@@ -1592,6 +1592,79 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new ExpressionStatementNode(
                     expression: new StringLiteralNode(value)
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BasicGenericType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            new NameSpace.Other.SomeClass<T1>();
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new NewExpressionNode(
+                        type: new TypeNode(
+                            baseType: AstUtils.ResolveMemberAccess("NameSpace.Other.SomeClass"),
+                            typeArguments: new TypeArgumentsNode([
+                                new TypeNode(
+                                    baseType: new IdentifierExpression("T1")
+                                )
+                            ])
+                        ),
+                        arguments: new ArgumentListNode([])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_NestedGenericType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            SomeClass.SomeMethod<Dictionary<T2, T3>>(true);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new GenericNameNode(
+                            identifier: AstUtils.ResolveMemberAccess("SomeClass.SomeMethod"),
+                            typeArguments: new TypeArgumentsNode([
+                                new TypeNode(
+                                    baseType: new IdentifierExpression("Dictionary"),
+                                    typeArguments: new TypeArgumentsNode([
+                                        AstUtils.SimpleNameAsType("T2"),
+                                        AstUtils.SimpleNameAsType("T3")
+                                    ])
+                                )
+                            ])
+                        ),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new BooleanLiteralNode(true),
+                                name: null
+                            )
+                        ])
+                    )
                 )
             )
         );
