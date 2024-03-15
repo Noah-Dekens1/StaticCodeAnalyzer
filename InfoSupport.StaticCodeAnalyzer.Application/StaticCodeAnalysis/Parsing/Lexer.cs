@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
-
-using ObservingStringType = (bool IsInterpolated, bool IsVerbatim);
-
 struct StringData
 {
     public bool IsInterpolated { get; set; }
@@ -365,11 +357,11 @@ public class Lexer(string fileContent)
 
         if (dir == -1)
             throw new Exception("Backtracking not allowed!");
-        
+
         // this isn't going to work as we can't reliably know what column we're at (unless reading till the beginning of the line?)
         // so we can either do that or keep a table of line lengths
         // otherwise block negative searching (but that means we need to remove backtracking, which should only be used at one place so could be easily replaced by peeking forwards instead?)
-        
+
         while (_index != pos)
         {
             _column += (ulong)dir;
@@ -384,14 +376,14 @@ public class Lexer(string fileContent)
         }
     }
 
-    public char Consume(int count=1)
+    public char Consume(int count = 1)
     {
         var oldIndex = _index;
         Seek(_index + count);
         return _input[oldIndex];
     }
 
-    internal string GetContextForDbg(int lookAround=5)
+    internal string GetContextForDbg(int lookAround = 5)
     {
         var start = Math.Max(_index - lookAround, 0);
         var end = Math.Min(_index + lookAround, _input.Length);
@@ -449,7 +441,7 @@ public class Lexer(string fileContent)
         return i;
     }
 
-    private void Emit(TokenKind kind, string content, object? value=null)
+    private void Emit(TokenKind kind, string content, object? value = null)
     {
         _tokens.Add(new Token { Kind = kind, Lexeme = content, Value = value, Start = _tokenStart, End = GetPreviousPosition() });
         //Console.WriteLine($"{_tokens[^1].Kind} {_tokens[^1].Lexeme}");
@@ -499,7 +491,7 @@ public class Lexer(string fileContent)
             return (uint)parsed;
 
         if (parsed <= long.MaxValue)
-            return(long)parsed;
+            return (long)parsed;
 
         return parsed;
     }
@@ -1223,7 +1215,7 @@ public class Lexer(string fileContent)
                         Emit(TokenKind.BarBar, "||");
                     else if (ConsumeIfMatch('='))
                         Emit(TokenKind.BarEquals, "|=");
-                    else 
+                    else
                         Emit(TokenKind.Bar, "|");
 
                     break;
@@ -1238,8 +1230,8 @@ public class Lexer(string fileContent)
 
                     break;
 
-                    // @note: for > and < there are no << and >> for shifting as that'd be ambigious with generics (for example List<List<string>>)
-                    // so the parser needs to resolve that, not the lexer
+                // @note: for > and < there are no << and >> for shifting as that'd be ambigious with generics (for example List<List<string>>)
+                // so the parser needs to resolve that, not the lexer
                 case '>':
                     Consume();
 
