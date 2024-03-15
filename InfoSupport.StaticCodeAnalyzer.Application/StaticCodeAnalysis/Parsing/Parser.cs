@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Security.Principal;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 public class Parser
@@ -90,7 +83,7 @@ public class Parser
     }
 
     [DebuggerHidden]
-    public bool Matches(TokenKind kind, int peekOffset=0)
+    public bool Matches(TokenKind kind, int peekOffset = 0)
     {
         return PeekSafe(peekOffset).Kind == kind;
     }
@@ -580,7 +573,7 @@ public class Parser
         TokenKind.AsKeyword
     ];
 
-    private bool PossiblyParseTypeArgumentList(out TypeArgumentsNode? typeArguments, bool isInNamespaceOrTypeName, bool precededByDisambiguatingToken=false)
+    private bool PossiblyParseTypeArgumentList(out TypeArgumentsNode? typeArguments, bool isInNamespaceOrTypeName, bool precededByDisambiguatingToken = false)
     {
         // See section 6.2.5 of C#'s lexical structure specification
         // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure
@@ -663,7 +656,7 @@ public class Parser
 
         if (maybeGeneric && PossiblyParseTypeArgumentList(out typeArguments, true))
         {
-            
+
         }
 
         return new TypeNode(baseType, typeArguments);
@@ -1372,7 +1365,7 @@ public class Parser
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
         AstNode? body = null;
-            
+
         if (!ConsumeIfMatch(TokenKind.Semicolon))
             body = ParseMethodBody();
 
@@ -1427,7 +1420,7 @@ public class Parser
             var hasValue = ConsumeIfMatch(TokenKind.Equals);
             var value = hasValue ? ParseExpression() : null;
             Expect(TokenKind.Semicolon);
-            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers,ResolveNameFromAstNode(identifier), type, value);
+            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, ResolveNameFromAstNode(identifier), type, value);
         }
         else if (isProperty)
         {
@@ -1449,7 +1442,7 @@ public class Parser
         {
             members.Add(ParseMember(kind, typeName));
         }
-        
+
         return members;
     }
 
@@ -1484,10 +1477,10 @@ public class Parser
 
         return type switch
         {
-            TokenKind.ClassKeyword     => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
-            TokenKind.EnumKeyword      => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers),
             TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
-            TokenKind.StructKeyword    => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
             _ => throw new NotImplementedException(),
         };
     }
