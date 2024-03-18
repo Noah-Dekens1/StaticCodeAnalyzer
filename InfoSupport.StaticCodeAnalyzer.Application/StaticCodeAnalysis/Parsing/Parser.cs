@@ -554,6 +554,15 @@ public class Parser
         return null;
     }
 
+    private LambdaExpressionNode ParseLambdaExpressionSingleParam(ExpressionNode param)
+    {
+        Expect(TokenKind.EqualsGreaterThan);
+
+        var paramIdentifier = ((IdentifierExpression)param).Identifier;
+
+        return new LambdaExpressionNode([new LambdaParameterNode(paramIdentifier)], ParseLambdaBody());
+    }
+
     private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier)
     {
         // Invocation
@@ -563,6 +572,9 @@ public class Parser
         // Element access
         if (Matches(TokenKind.OpenBracket))
             return ParseElementAccess(resolvedIdentifier);
+
+        if (Matches(TokenKind.EqualsGreaterThan))
+            return ParseLambdaExpressionSingleParam(resolvedIdentifier);
 
         return null;
     }

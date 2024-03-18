@@ -2318,6 +2318,7 @@ public class ParserTests
             var simpleLambdaExpr4 = (int a, int b) => a + b;
             var simpleLambdaExpr5 = (a, b) => a + b;
             var simpleLambdaExpr6 = (int a, int b) => { return a + b; };
+            var square = x => x * x;
             """);
 
         var actual = Parser.Parse(tokens);
@@ -2410,6 +2411,19 @@ public class ParserTests
                                 )
                             )
                         ])
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "square",
+                    expression: new LambdaExpressionNode(
+                        parameters: [new LambdaParameterNode("x")],
+                        body: new MultiplyExpressionNode(
+                            lhs: new IdentifierExpression("x"),
+                            rhs: new IdentifierExpression("x")
+                        )
                     )
                 )
             ),
