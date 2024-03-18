@@ -113,6 +113,17 @@ public class Parser
         return EscapeSequences.TryGetValue(c, out var resolved) ? resolved : c;
     }
 
+    private static char ParseCharLiteral(string str)
+    {
+        // @note: 1 & 2 because 0 (and 2/3) will be single quotes
+        char c = str[1];
+
+        if (str[1] == '\\')
+            c = ResolveEscapeSequence(str[2]);
+
+        return c;
+    }
+
     private static string ParseStringLiteral(string str)
     {
         // Assume only regular string literals for now
@@ -152,7 +163,8 @@ public class Parser
         }
         else if (kind == TokenKind.CharLiteral)
         {
-            throw new NotImplementedException();
+            literal = new CharLiteralNode(ParseCharLiteral(token.Lexeme));
+            return true;
         }
         else if (kind == TokenKind.TrueKeyword || kind == TokenKind.FalseKeyword)
         {
@@ -410,15 +422,95 @@ public class Parser
         return new ElementAccessExpressionNode(lhs, args);
     }
 
+    private IndexedCollectionInitializerNode ParseIndexedCollectionInitializerElement()
+    {
+        // @todo: support multiple expressions in bracket? For example for jagged arrays
+        bool isBracketedIndexer = ConsumeIfMatch(TokenKind.OpenBracket);
+
+        var indexer = isBracketedIndexer ? ParseExpression()! : ResolveIdentifier();
+
+        if (isBracketedIndexer)
+            Expect(TokenKind.CloseBracket);
+
+        Expect(TokenKind.Equals);
+
+        var value = ParseExpression()!;
+
+        return new IndexedCollectionInitializerNode(indexer, value);
+    }
+
+    private CollectionInitializerElementNode ParseComplexCollectionInitializerElement()
+    {
+        return null!;
+    }
+
+    private CollectionInitializerElementNode ParseRegularCollectionInitializerElement()
+    {
+        return null!;
+    }
+
     private ExpressionNode? TryParsePrimaryExpression()
     {
         if (ConsumeIfMatch(TokenKind.NewKeyword))
         {
-            var type = ParseType();
-            Expect(TokenKind.OpenParen);
-            var args = ParseArgumentList();
-            Expect(TokenKind.CloseParen);
-            return new NewExpressionNode(type, args);
+            TypeNode? type = null;
+
+            if (IsMaybeType(PeekCurrent(), true))
+                type = ParseType();
+
+            ArgumentListNode? args = null;
+
+            if (ConsumeIfMatch(TokenKind.OpenParen))
+            {
+                args = ParseArgumentList();
+                Expect(TokenKind.CloseParen);
+            }
+
+            CollectionInitializerNode? initializer = null;
+
+            // Could be collection initializer
+            if (ConsumeIfMatch(TokenKind.OpenBrace))
+            {
+                // What kind is it? List, indexed, grouped?
+
+                // If the current token is { again we can parse as a (list of?) complex initializer expressions
+                // { "a", "b" } and ["a"] = "b" syntax may not be mixed in a collection initializer expression
+                // Indexed can either be Name = "Value" or ["Str"] = "Value"
+                
+                var isIndexed = Matches(TokenKind.OpenBracket) ||
+                    (Matches(TokenKind.Identifier) && Matches(TokenKind.Equals, 1));
+                var isGrouped = Matches(TokenKind.OpenBrace);
+                var isRegular = !isIndexed && !isGrouped;
+
+                var values = new List<CollectionInitializerElementNode>();
+
+                do
+                {
+                    if (Matches(TokenKind.CloseBrace))
+                        break;
+
+                    if (isIndexed)
+                    {
+                        values.Add(ParseIndexedCollectionInitializerElement());
+                    }
+
+                    if (isGrouped)
+                    {
+                        values.Add(ParseComplexCollectionInitializerElement());
+                    }
+
+                    if (isRegular)
+                    {
+                        values.Add(ParseRegularCollectionInitializerElement());
+                    }
+                } while (ConsumeIfMatch(TokenKind.Comma));
+
+                initializer = new CollectionInitializerNode(values);
+
+                Expect(TokenKind.CloseBrace);
+            }
+
+            return new NewExpressionNode(type, args, initializer);
         }
 
         return null;

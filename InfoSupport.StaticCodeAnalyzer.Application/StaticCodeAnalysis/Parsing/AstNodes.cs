@@ -88,6 +88,15 @@ public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 }
 
 [DebuggerDisplay("{ToString()}")]
+public class CharLiteralNode(char value) : LiteralExpressionNode
+{
+    public char Value { get; set; } = value;
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"'{Value}'";
+}
+
+[DebuggerDisplay("{ToString()}")]
 public class StringLiteralNode(string value) : LiteralExpressionNode
 {
     public string Value { get; set; } = value;
@@ -603,15 +612,49 @@ public class IndexExpressionNode(ExpressionNode expression) : ExpressionNode
     public override string ToString() => $"{Expression}";
 }
 
-[DebuggerDisplay("{ToString(),nq}")]
-public class NewExpressionNode(TypeNode type, ArgumentListNode arguments) : ExpressionNode
+public abstract class CollectionInitializerElementNode : AstNode
 {
-    public TypeNode Type { get; set; } = type;
-    public ArgumentListNode Arguments { get; set; } = arguments;
-    public override List<AstNode> Children => [Type, Arguments];
+}
+
+public class RegularCollectionInitializerNode(ExpressionNode value) : AstNode
+{
+    public ExpressionNode Values { get; set; } = value;
+    public override List<AstNode> Children => [Values];
+}
+
+public class IndexedCollectionInitializerNode(ExpressionNode key, ExpressionNode value) : CollectionInitializerElementNode
+{
+    public ExpressionNode Key { get; set; } = key;
+    public ExpressionNode Value { get; set; } = value;
+
+    public override List<AstNode> Children => [Key, Value];
+}
+
+public class ComplexCollectionInitializerNode(List<ExpressionNode> values) : CollectionInitializerElementNode
+{
+    public List<ExpressionNode> Values { get; set; } = values;
+    public override List<AstNode> Children => [.. Values];
+}
+
+public class CollectionInitializerNode(List<CollectionInitializerElementNode> values) : CollectionInitializerElementNode
+{
+    public List<CollectionInitializerElementNode> Values { get; set; } = values;
+
+    public override List<AstNode> Children => [.. Values];
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class NewExpressionNode(TypeNode? type, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
+{
+    public TypeNode? Type { get; set; } = type;
+    public ArgumentListNode Arguments { get; set; } = arguments ?? new ArgumentListNode([]);
+    public CollectionInitializerNode? CollectionInitializer = initializer;
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type, Arguments, CollectionInitializer);
 
     [ExcludeFromCodeCoverage]
-    public override string ToString() => $"new {Type}({Arguments})";
+    public override string ToString() => CollectionInitializer is null
+        ? $"new {Type}({Arguments})"
+        : $"new {Type}({Arguments}) {CollectionInitializer}";
 }
 
 [DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]

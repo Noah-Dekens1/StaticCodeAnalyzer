@@ -2109,4 +2109,60 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_CollectionInitializerWithIndexers_ReturnsValidAST()
+    {
+        // Example from https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/object-and-collection-initializers
+        var tokens = Lexer.Lex("""
+            var thing = new IndexersExample
+            {
+                name = "object one",
+                [1] = '1',
+                [2] = '4',
+                [3] = '9',
+                Size = Math.PI
+            };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "thing",
+                    expression: new NewExpressionNode(
+                        type: AstUtils.SimpleNameAsType("IndexersExample"),
+                        initializer: new CollectionInitializerNode([
+                            new IndexedCollectionInitializerNode(
+                                key: new IdentifierExpression("name"),
+                                value: new StringLiteralNode("object one")
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new NumericLiteralNode(1),
+                                value: new CharLiteralNode('1')
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new NumericLiteralNode(2),
+                                value: new CharLiteralNode('4')
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new NumericLiteralNode(3),
+                                value: new CharLiteralNode('9')
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new IdentifierExpression("Size"),
+                                value: AstUtils.ResolveMemberAccess("Math.PI")
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
