@@ -2109,4 +2109,201 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_CollectionInitializerWithIndexers_ReturnsValidAST()
+    {
+        // Example from https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/object-and-collection-initializers
+        var tokens = Lexer.Lex("""
+            var thing = new IndexersExample
+            {
+                name = "object one",
+                [1] = '1',
+                [2] = '4',
+                [3] = '9',
+                Size = Math.PI
+            };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "thing",
+                    expression: new NewExpressionNode(
+                        type: AstUtils.SimpleNameAsType("IndexersExample"),
+                        initializer: new CollectionInitializerNode([
+                            new IndexedCollectionInitializerNode(
+                                key: new IdentifierExpression("name"),
+                                value: new StringLiteralNode("object one")
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new NumericLiteralNode(1),
+                                value: new CharLiteralNode('1')
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new NumericLiteralNode(2),
+                                value: new CharLiteralNode('4')
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new NumericLiteralNode(3),
+                                value: new CharLiteralNode('9')
+                            ),
+                            new IndexedCollectionInitializerNode(
+                                key: new IdentifierExpression("Size"),
+                                value: AstUtils.ResolveMemberAccess("Math.PI")
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_RegularCollectionInitializer_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var list = new List<string>() { "hello", "world" };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "list",
+                    expression: new NewExpressionNode(
+                        type: new TypeNode(
+                            baseType: new IdentifierExpression("List"),
+                            typeArguments: new TypeArgumentsNode([
+                                AstUtils.SimpleNameAsType("string")
+                            ])
+                        ),
+                        initializer: new CollectionInitializerNode([
+                            new RegularCollectionInitializerNode(
+                                value: new StringLiteralNode("hello")
+                            ),
+                            new RegularCollectionInitializerNode(
+                                value: new StringLiteralNode("world")
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ComplexCollectionInitializer_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Dictionary<char, string> dict = new()
+            {
+                { 'a', "a" },
+                { 'b', "b" },
+                { 'c', "c" }
+            };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("Dictionary"),
+                        typeArguments: new TypeArgumentsNode([
+                            AstUtils.SimpleNameAsType("char"),
+                            AstUtils.SimpleNameAsType("string")
+                        ])
+                    ),
+                    identifier: "dict",
+                    expression: new NewExpressionNode(
+                        type: null,
+                        initializer: new CollectionInitializerNode([
+                            new ComplexCollectionInitializerNode([
+                                new CharLiteralNode('a'),
+                                new StringLiteralNode("a")
+                            ]),
+                            new ComplexCollectionInitializerNode([
+                                new CharLiteralNode('b'),
+                                new StringLiteralNode("b")
+                            ]),
+                            new ComplexCollectionInitializerNode([
+                                new CharLiteralNode('c'),
+                                new StringLiteralNode("c")
+                            ])
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_CollectionExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            List<char> chars = [..basicChars, ..specialChars, 'a', 'b', 'c', ..getRemainingChars()];
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("List"),
+                        typeArguments: new TypeArgumentsNode([
+                            AstUtils.SimpleNameAsType("char")
+                        ])
+                    ),
+                    identifier: "chars",
+                    expression: new CollectionExpressionNode([
+                        new SpreadElementNode(
+                            expression: new IdentifierExpression("basicChars")
+                        ),
+                        new SpreadElementNode(
+                            expression: new IdentifierExpression("specialChars")
+                        ),
+                        new ExpressionElementNode(
+                            expression: new CharLiteralNode('a')
+                        ),
+                        new ExpressionElementNode(
+                            expression: new CharLiteralNode('b')
+                        ),
+                        new ExpressionElementNode(
+                            expression: new CharLiteralNode('c')
+                        ),
+                        new SpreadElementNode(
+                            expression: new InvocationExpressionNode(
+                                lhs: new IdentifierExpression("getRemainingChars"),
+                                arguments: new ArgumentListNode([])
+                            )
+                        )
+                    ])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

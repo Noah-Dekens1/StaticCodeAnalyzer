@@ -116,7 +116,7 @@ public class AstComparator
 
                 if (expectedCount != actualCount)
                 {
-                    throw new AssertFailedException($"[Prop {property.Name}]: Expected {expectedCount} items but got {actualCount}");
+                    throw new AssertFailedException($"[Prop {propertyPath}.{property.Name}]: Expected {expectedCount} items but got {actualCount}");
                 }
 
                 for (int i = 0; i < expectedCount; i++)
