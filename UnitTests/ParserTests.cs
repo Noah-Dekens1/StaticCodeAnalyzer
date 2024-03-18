@@ -2306,4 +2306,115 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+
+    [TestMethod]
+    public void Parse_LambdaExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var simpleLambdaExpr1 = () => true;
+            var simpleLambdaExpr2 = (a) => a + 1;
+            var simpleLambdaExpr3 = (int a) => a + 1;
+            var simpleLambdaExpr4 = (int a, int b) => a + b;
+            var simpleLambdaExpr5 = (a, b) => a + b;
+            var simpleLambdaExpr6 = (int a, int b) => { return a + b; };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "simpleLambdaExpr1",
+                    expression: new LambdaExpressionNode(
+                        parameters: [],
+                        body: new BooleanLiteralNode(true)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "simpleLambdaExpr2",
+                    expression: new LambdaExpressionNode(
+                        parameters: [new LambdaParameterNode("a")],
+                        body: new AddExpressionNode(
+                            lhs: new IdentifierExpression("a"),
+                            rhs: new NumericLiteralNode(1)
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "simpleLambdaExpr3",
+                    expression: new LambdaExpressionNode(
+                        parameters: [new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int"))],
+                        body: new AddExpressionNode(
+                            lhs: new IdentifierExpression("a"),
+                            rhs: new NumericLiteralNode(1)
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "simpleLambdaExpr4",
+                    expression: new LambdaExpressionNode(
+                        parameters: [
+                            new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int")),
+                            new LambdaParameterNode("b", AstUtils.SimpleNameAsType("int"))
+                        ],
+                        body: new AddExpressionNode(
+                            lhs: new IdentifierExpression("a"),
+                            rhs: new IdentifierExpression("b")
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "simpleLambdaExpr5",
+                    expression: new LambdaExpressionNode(
+                        parameters: [
+                            new LambdaParameterNode("a"),
+                            new LambdaParameterNode("b")
+                        ],
+                        body: new AddExpressionNode(
+                            lhs: new IdentifierExpression("a"),
+                            rhs: new IdentifierExpression("b")
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "simpleLambdaExpr6",
+                    expression: new LambdaExpressionNode(
+                        parameters: [
+                            new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int")),
+                            new LambdaParameterNode("b", AstUtils.SimpleNameAsType("int"))
+                        ],
+                        body: new BlockNode([
+                            new ReturnStatementNode(
+                                returnExpression: new AddExpressionNode(
+                                    lhs: new IdentifierExpression("a"),
+                                    rhs: new IdentifierExpression("b")
+                                )
+                            )
+                        ])
+                    )
+                )
+            ),
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

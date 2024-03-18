@@ -567,6 +567,67 @@ public class Parser
         return null;
     }
 
+    private ExpressionNode? ParseStartParenthesisExpression()
+    {
+        Expect(TokenKind.OpenParen);
+
+        var start = Tell();
+
+        bool maybeLambda = true;
+
+        bool isFirst = true;
+        bool isImplicit = true;
+
+        List<LambdaParameterNode> parameters = new List<LambdaParameterNode>();
+
+        do
+        {
+            if (Matches(TokenKind.CloseParen))
+                break;
+
+            // @note: besides checking whether it may be a type it also checks if the next token is an identifier
+            // because we don't have knowledge about which identifiers may be types
+            var type = IsMaybeType(PeekCurrent(), true) && Matches(TokenKind.Identifier, 1) 
+                ? ParseType() 
+                : null;
+
+            if (isFirst)
+                isImplicit = type is null;
+
+            if (type is null != isImplicit) // must all be implicit/explicit, exit as early as possible if not the case
+            {
+                maybeLambda = false;
+                break;
+            }    
+
+            if (!Matches(TokenKind.Identifier))
+            {
+                maybeLambda = false;
+                break;
+            }
+
+            var identifier = Consume();
+            parameters.Add(new LambdaParameterNode(identifier.Lexeme, type));
+            isFirst = false;
+        } while (ConsumeIfMatch(TokenKind.Comma) && maybeLambda);
+
+        maybeLambda &= ConsumeIfMatch(TokenKind.CloseParen);
+
+        if (maybeLambda)
+            maybeLambda = ConsumeIfMatch(TokenKind.EqualsGreaterThan);
+
+        if (!maybeLambda)
+        {
+            // @note: assumes parenthesized expr, may also be tuple?
+            Seek(start);
+            var expr = new ParenthesizedExpressionNode(ParseExpression()!);
+            Expect(TokenKind.CloseParen);
+            return expr;
+        }
+
+        return new LambdaExpressionNode(parameters, ParseLambdaBody());
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
     {
@@ -574,10 +635,16 @@ public class Parser
 
         if (token.Kind == TokenKind.OpenParen)
         {
+            // Could be plain parenthesis around a subexpression, a lambda's argument list, or a tuple
+            /*
             Consume();
             var expr = new ParenthesizedExpressionNode(ParseExpression()!);
             Consume();
             possibleLHS = expr;
+            */
+            var expr = ParseStartParenthesisExpression();
+
+            possibleLHS = expr; // @todo: only if it isn't a lambda
         }
 
         bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier;
@@ -861,6 +928,16 @@ public class Parser
         }
 
         return ParseBlock();
+    }
+
+    private AstNode ParseLambdaBody()
+    {
+        if (Matches(TokenKind.OpenBrace))
+        {
+            return ParseBlock();
+        }
+
+        return ParseExpression()!;
     }
 
     private IfStatementNode ParseIfStatement()
