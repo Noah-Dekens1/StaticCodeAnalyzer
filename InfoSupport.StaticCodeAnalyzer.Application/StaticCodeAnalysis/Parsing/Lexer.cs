@@ -965,7 +965,7 @@ public class Lexer(string fileContent)
     private void ReadSingleLineComment()
     {
         var comment = new StringBuilder();
-        while (CanPeek(1))
+        while (!IsAtEnd())
         {
             char c = Consume();
 

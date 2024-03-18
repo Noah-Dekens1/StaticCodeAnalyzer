@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
@@ -937,4 +938,25 @@ public class CollectionExpressionNode(List<ElementNode> elements) : ExpressionNo
     public override List<AstNode> Children => [.. Elements];
 
     public override string ToString() => string.Join(", ", Elements);
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class LambdaParameterNode(string identifier, TypeNode? type = null) : AstNode
+{
+    public TypeNode? Type { get; set; } = type;
+    public string Identifier { get; set; } = identifier;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString()
+        => $"{Type} {Identifier}";
+}
+
+public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode body) : ExpressionNode
+{
+    public List<LambdaParameterNode> Parameters { get; set; } = parameters;
+    public AstNode Body { get; set; } = body;
+
+    public override List<AstNode> Children => [Body];
 }
