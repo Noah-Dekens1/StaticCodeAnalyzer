@@ -2165,4 +2165,94 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_RegularCollectionInitializer_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var list = new List<string>() { "hello", "world" };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "list",
+                    expression: new NewExpressionNode(
+                        type: new TypeNode(
+                            baseType: new IdentifierExpression("List"),
+                            typeArguments: new TypeArgumentsNode([
+                                AstUtils.SimpleNameAsType("string")
+                            ])
+                        ),
+                        initializer: new CollectionInitializerNode([
+                            new RegularCollectionInitializerNode(
+                                value: new StringLiteralNode("hello")
+                            ),
+                            new RegularCollectionInitializerNode(
+                                value: new StringLiteralNode("world")
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ComplexCollectionInitializer_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Dictionary<char, string> dict = new()
+            {
+                { 'a', "a" },
+                { 'b', "b" },
+                { 'c', "c" }
+            };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("Dictionary"),
+                        typeArguments: new TypeArgumentsNode([
+                            AstUtils.SimpleNameAsType("char"),
+                            AstUtils.SimpleNameAsType("string")
+                        ])
+                    ),
+                    identifier: "dict",
+                    expression: new NewExpressionNode(
+                        type: null,
+                        initializer: new CollectionInitializerNode([
+                            new ComplexCollectionInitializerNode([
+                                new CharLiteralNode('a'),
+                                new StringLiteralNode("a")
+                            ]),
+                            new ComplexCollectionInitializerNode([
+                                new CharLiteralNode('b'),
+                                new StringLiteralNode("b")
+                            ]),
+                            new ComplexCollectionInitializerNode([
+                                new CharLiteralNode('c'),
+                                new StringLiteralNode("c")
+                            ])
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

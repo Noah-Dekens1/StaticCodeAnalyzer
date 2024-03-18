@@ -439,14 +439,28 @@ public class Parser
         return new IndexedCollectionInitializerNode(indexer, value);
     }
 
-    private CollectionInitializerElementNode ParseComplexCollectionInitializerElement()
+    private ComplexCollectionInitializerNode ParseComplexCollectionInitializerElement()
     {
-        return null!;
+        var values = new List<ExpressionNode>();
+
+        Expect(TokenKind.OpenBrace);
+
+        do
+        {
+            if (Matches(TokenKind.CloseBrace))
+                break;
+
+            values.Add(ParseExpression()!);
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        Expect(TokenKind.CloseBrace);
+
+        return new ComplexCollectionInitializerNode(values);
     }
 
-    private CollectionInitializerElementNode ParseRegularCollectionInitializerElement()
+    private RegularCollectionInitializerNode ParseRegularCollectionInitializerElement()
     {
-        return null!;
+        return new RegularCollectionInitializerNode(ParseExpression()!);
     }
 
     private ExpressionNode? TryParsePrimaryExpression()
@@ -640,8 +654,22 @@ public class Parser
         var token = PeekCurrent();
 
         bool maybeType = IsMaybeType(token, false);
+        bool maybeDeclaration = false;
 
-        return maybeType && PeekSafe(2).Kind == TokenKind.Equals;
+        int pos = Tell();
+
+        if (maybeType)
+        {
+            ParseType();
+            if (ConsumeIfMatch(TokenKind.Identifier) && ConsumeIfMatch(TokenKind.Equals))
+            {
+                maybeDeclaration = true;
+            }
+        }
+
+        Seek(pos);
+
+        return maybeDeclaration;
     }
 
     private readonly List<TokenKind> _disambiguatingTokenList = [

@@ -616,7 +616,7 @@ public abstract class CollectionInitializerElementNode : AstNode
 {
 }
 
-public class RegularCollectionInitializerNode(ExpressionNode value) : AstNode
+public class RegularCollectionInitializerNode(ExpressionNode value) : CollectionInitializerElementNode
 {
     public ExpressionNode Values { get; set; } = value;
     public override List<AstNode> Children => [Values];
