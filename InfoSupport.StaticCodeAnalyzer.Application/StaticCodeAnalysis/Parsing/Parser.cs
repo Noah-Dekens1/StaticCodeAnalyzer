@@ -465,6 +465,7 @@ public class Parser
 
     private ExpressionNode? TryParsePrimaryExpression()
     {
+        // Object creation expression
         if (ConsumeIfMatch(TokenKind.NewKeyword))
         {
             TypeNode? type = null;
@@ -490,7 +491,7 @@ public class Parser
                 // If the current token is { again we can parse as a (list of?) complex initializer expressions
                 // { "a", "b" } and ["a"] = "b" syntax may not be mixed in a collection initializer expression
                 // Indexed can either be Name = "Value" or ["Str"] = "Value"
-                
+
                 var isIndexed = Matches(TokenKind.OpenBracket) ||
                     (Matches(TokenKind.Identifier) && Matches(TokenKind.Equals, 1));
                 var isGrouped = Matches(TokenKind.OpenBrace);
@@ -525,6 +526,29 @@ public class Parser
             }
 
             return new NewExpressionNode(type, args, initializer);
+        }
+        else if (ConsumeIfMatch(TokenKind.OpenBracket))
+        {
+            // collection expression like [1, 2, 3] or [ .. Param, 2, 3, .. SomeList ]
+
+            List<ElementNode> elements = [];
+
+            do
+            {
+                if (Matches(TokenKind.CloseBracket))
+                    break;
+
+                elements.Add(
+                    ConsumeIfMatch(TokenKind.DotDot)
+                        ? new SpreadElementNode(ParseExpression()!)
+                        : new ExpressionElementNode(ParseExpression()!)
+                );
+
+            } while (ConsumeIfMatch(TokenKind.Comma));
+
+            Expect(TokenKind.CloseBracket);
+
+            return new CollectionExpressionNode(elements);
         }
 
         return null;
@@ -565,7 +589,9 @@ public class Parser
             possibleLHS = resolvedIdentifier;
         }
 
-        var primaryExpression = TryParsePrimaryExpression();
+        ExpressionNode? primaryExpression = resolvedIdentifier is null 
+            ? TryParsePrimaryExpression() 
+            : null;
 
         if (primaryExpression is not null)
         {

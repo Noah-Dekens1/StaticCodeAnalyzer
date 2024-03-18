@@ -2255,4 +2255,55 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_CollectionExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            List<char> chars = [..basicChars, ..specialChars, 'a', 'b', 'c', ..getRemainingChars()];
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("List"),
+                        typeArguments: new TypeArgumentsNode([
+                            AstUtils.SimpleNameAsType("char")
+                        ])
+                    ),
+                    identifier: "chars",
+                    expression: new CollectionExpressionNode([
+                        new SpreadElementNode(
+                            expression: new IdentifierExpression("basicChars")
+                        ),
+                        new SpreadElementNode(
+                            expression: new IdentifierExpression("specialChars")
+                        ),
+                        new ExpressionElementNode(
+                            expression: new CharLiteralNode('a')
+                        ),
+                        new ExpressionElementNode(
+                            expression: new CharLiteralNode('b')
+                        ),
+                        new ExpressionElementNode(
+                            expression: new CharLiteralNode('c')
+                        ),
+                        new SpreadElementNode(
+                            expression: new InvocationExpressionNode(
+                                lhs: new IdentifierExpression("getRemainingChars"),
+                                arguments: new ArgumentListNode([])
+                            )
+                        )
+                    ])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

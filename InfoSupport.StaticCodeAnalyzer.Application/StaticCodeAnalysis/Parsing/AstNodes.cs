@@ -904,3 +904,37 @@ public class LocalFunctionDeclarationNode(
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{ReturnType} {Name}({Parameters})";
 }
+
+public abstract class ElementNode : AstNode
+{
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SpreadElementNode(ExpressionNode expression) : ElementNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+
+    public override List<AstNode> Children => [Expression];
+
+    public override string ToString() => $".. {Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ExpressionElementNode(ExpressionNode expression) : ElementNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+
+    public override List<AstNode> Children => [Expression];
+
+    public override string ToString() => $"{Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class CollectionExpressionNode(List<ElementNode> elements) : ExpressionNode
+{
+    public List<ElementNode> Elements { get; set; } = elements;
+
+    public override List<AstNode> Children => [.. Elements];
+
+    public override string ToString() => string.Join(", ", Elements);
+}
