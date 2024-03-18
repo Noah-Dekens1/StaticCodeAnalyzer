@@ -1,22 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Security.Principal;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+
+/// <summary>
+/// https://refactoring.guru/replace-conditional-with-polymorphism 
+/// You're doing a lot with tokenkinds and have a lot of ifs around it
+/// Perhaps you can find a way to have e.g. a "UnaryExpressionToken".
+/// abstract ExpressionToken will be able t have a "ParseExpression" where the unary expresiion token
+/// will be having an implementation based on it's type
+/// </summary>
 public class Parser
 {
+    /// <summary>
+    /// Wouldn't a queue fulfill your needs better?
+    /// This way you won't have to write your own seek, consume, peek etc. logic
+    /// 
+    /// Also perhaps a LinkedList would help. 
+    /// (You'll have a "currentToken" or such, have a pointer to Next and to Previous and be able
+    /// to iterate over your tokens like that)
+    /// </summary>
     private Token[] _input = [];
 
     private int _index = 0;
 
+    /// <summary>
+    /// This is for example something you might want to move to a static class.
+    /// This way when I want to know if the list is complete; I know where to look.
+    /// For looking at the logic of the parser I do not need to know the exact contents.
+    /// </summary>
     private static readonly Dictionary<char, char> EscapeSequences = new()
     {
         { '\\', '\\' },
@@ -35,7 +49,7 @@ public class Parser
     };
 
     [DebuggerHidden]
-    public bool CanPeek(int count = 1)
+    public bool CanPeek(int count)
         => _index + count < _input.Length;
 
     [DebuggerHidden]
@@ -52,20 +66,26 @@ public class Parser
         _index = pos;
     }
 
+    /// <summary>
+    /// You currently always consume one token. 
+    /// You can always make it more complex later.
+    /// </summary>
     [DebuggerHidden]
-    public Token Consume(int count = 1)
+    public Token Consume()
     {
-        var oldIndex = _index;
-        Seek(_index + count);
-        return _input[oldIndex];
+        return _input[_index++];
     }
 
     [DebuggerHidden]
-    public void Expect(TokenKind expected)
+    public void ConsumeAndThrowIfNextTokenIsNot(TokenKind expected)
     {
+        // Consuming the token here gives you side effects on the check.
+        // Looking at the name (expect(..)) I wouldn't .. expect the token to be consumed
         var actual = Consume().Kind;
-        if (actual != expected)
+        if (actual != expected) // Use brackets to avoid (future) bugs
             throw new Exception($"Expected {expected} but got {actual}");
+            // Never throw "Exception". Throw a specific exception instead.
+            // It would probably be a good idea to create your own exception here.
     }
 
     [DebuggerHidden]
@@ -90,15 +110,19 @@ public class Parser
     }
 
     [DebuggerHidden]
-    public bool Matches(TokenKind kind, int peekOffset=0)
+    public bool Matches(TokenKind kind, int peekOffset = 0)
     {
         return PeekSafe(peekOffset).Kind == kind;
     }
 
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
     {
+        // includeConsumed is not really what's happening here I believe?
+        // It more looks to determine if you wish to match the previous (or is it current?) token.
+        // Negative search; same story
         int negativeSearch = includeConsumed ? 1 : 0;
 
+        // Give c a more cleare name
         if (Peek(negativeSearch).Kind == c)
         {
             Consume();
@@ -115,17 +139,15 @@ public class Parser
 
     private static string ParseStringLiteral(string str)
     {
-        // Assume only regular string literals for now
-
+        // Assume only regular string literals for now        
         var sb = new StringBuilder();
 
         for (int i = 1; i < str.Length - 1; i++)
         {
             var c = str[i];
-
             if (c != '\\')
                 sb.Append(str[i]);
-            else
+            else // Wouldn't just adding a backslash to every.. backslah you find suffice? 
                 sb.Append(ResolveEscapeSequence(str[++i]));
         }
 
@@ -134,6 +156,9 @@ public class Parser
 
     private bool PeekLiteralExpression([MaybeNullWhen(false)] out LiteralExpressionNode literal, Token? providedToken = null)
     {
+        // Why not let your calling function always provide the token?
+        // And perhaps you can rename it to something like "TryGetLiteralExpression"
+        // To have it more standard (like .TryGetValue(..))
         var token = providedToken ?? PeekCurrent();
         var kind = token.Kind;
 
@@ -166,6 +191,7 @@ public class Parser
 
     private static bool IsUnaryOperator(TokenKind kind) => kind switch
     {
+        // I'd put this in a "unary operator" list. and use a contains
         TokenKind.PlusPlus or TokenKind.MinusMinus or TokenKind.Exclamation or TokenKind.Minus or TokenKind.Tilde => true,
         _ => false
     };
@@ -184,6 +210,8 @@ public class Parser
             if (PeekLiteralExpression(out var expr, token))
                 return expr;
 
+            // No throw exceptions
+            // Also best to put this outside your if/else. This isn't necesary a condition for the else
             throw new Exception("Neither identifier nor literal was found");
         }
     }
@@ -233,10 +261,13 @@ public class Parser
                     break;
             }
 
+           //Just return in your switch and put the exception as default
             return result ?? throw new Exception("Couldn't resolve unary prefix expression");
         }
         else
         {
+            // This code is now somewhat doubled. Perhaps you can first try parse this
+            // Then Do the prefix specific. And end up with an exception if all else fails
             var identifierOrLiteral = identifier ?? ParseIdentifierOrLiteral();
             var op = Consume();
 
@@ -260,6 +291,8 @@ public class Parser
     {
         var kind = PeekSafe(peekStart + 0).Kind;
 
+        // once again I personally prefer a list called "BinaryOperators"
+        // Also you'll be able to let that live outside of this file.
         switch (kind)
         {
             // Arithmetic operators
@@ -360,6 +393,7 @@ public class Parser
         {
             members.Add(Consume());
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
+        // I've seen you do this before (usings)?
 
         return ResolveMemberAccess(members);
     }
@@ -390,22 +424,22 @@ public class Parser
 
     private InvocationExpressionNode ParseInvocation(ExpressionNode lhs)
     {
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var arguments = ParseArgumentList();
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
         return new InvocationExpressionNode(lhs, arguments);
     }
 
     private ElementAccessExpressionNode ParseElementAccess(ExpressionNode lhs)
     {
-        Expect(TokenKind.OpenBracket);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenBracket);
 
         var expr = ParseExpression();
         var indexExpr = new IndexExpressionNode(expr!);
 
         var args = new BracketedArgumentList([new ArgumentNode(indexExpr, null)]);
 
-        Expect(TokenKind.CloseBracket);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseBracket);
 
         return new ElementAccessExpressionNode(lhs, args);
     }
@@ -415,9 +449,9 @@ public class Parser
         if (ConsumeIfMatch(TokenKind.NewKeyword))
         {
             var type = ParseType();
-            Expect(TokenKind.OpenParen);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
             var args = ParseArgumentList();
-            Expect(TokenKind.CloseParen);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
             return new NewExpressionNode(type, args);
         }
 
@@ -438,6 +472,7 @@ public class Parser
     }
 
     // @note: pretty much everything in C# is an expression so we probably want to split this up
+    // One method to parseExpression would be fine, as long as you split up the calls done inside
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
     {
         var token = PeekCurrent();
@@ -507,7 +542,7 @@ public class Parser
         else if (isLiteral && possibleLHS is null)
         {
             Consume();
-            return literal!;
+            return literal!; // Don't think the `!` is needed? Also generally using the `!` is evil as it'll just disable null checking
         }
 
         return possibleLHS;
@@ -532,6 +567,9 @@ public class Parser
         TokenKind.VoidKeyword
     ];
 
+    /// <summary>
+    /// This sounds a little strange. don't you want to be sure it's a type?
+    /// </summary>
     private static bool IsMaybeType(Token token, bool excludeVar)
     {
         bool maybeType = false;
@@ -543,6 +581,11 @@ public class Parser
         return maybeType;
     }
 
+    /// <summary>
+    /// Also if were to use a linked list; then perhaps you could just create these checks as extensions
+    /// e.g. Token.IsDeclarationStatement(). 
+    /// And then inside the "IsDeclarationStatement" you can just look at the e.g. Token.Next or Token.Next.Next
+    /// </summary>
     private bool IsDeclarationStatement()
     {
         var token = PeekCurrent();
@@ -580,7 +623,7 @@ public class Parser
         TokenKind.AsKeyword
     ];
 
-    private bool PossiblyParseTypeArgumentList(out TypeArgumentsNode? typeArguments, bool isInNamespaceOrTypeName, bool precededByDisambiguatingToken=false)
+    private bool PossiblyParseTypeArgumentList(out TypeArgumentsNode? typeArguments, bool isInNamespaceOrTypeName, bool precededByDisambiguatingToken = false)
     {
         // See section 6.2.5 of C#'s lexical structure specification
         // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure
@@ -663,7 +706,7 @@ public class Parser
 
         if (maybeGeneric && PossiblyParseTypeArgumentList(out typeArguments, true))
         {
-            
+
         }
 
         return new TypeNode(baseType, typeArguments);
@@ -673,9 +716,9 @@ public class Parser
     {
         var type = ParseType();
         var identifier = Consume();
-        Expect(TokenKind.Equals);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Equals);
         var expr = ParseExpression();
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
 
         return new VariableDeclarationStatement(type, identifier.Lexeme, expr!);
     }
@@ -684,16 +727,16 @@ public class Parser
     {
         var expr = ParseExpression();
         if (expectSemicolon)
-            Expect(TokenKind.Semicolon);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
 
         return new ExpressionStatementNode(expr!);
     }
 
     private BlockNode ParseBlock()
     {
-        Expect(TokenKind.OpenBrace);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenBrace);
         var statements = ParseStatementList();
-        Expect(TokenKind.CloseBrace);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseBrace);
 
         return new BlockNode(statements);
     }
@@ -710,7 +753,7 @@ public class Parser
         if (ConsumeIfMatch(TokenKind.EqualsGreaterThan))
         {
             var expr = ParseExpression()!;
-            Expect(TokenKind.Semicolon);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
             return expr;
         }
 
@@ -719,10 +762,10 @@ public class Parser
 
     private IfStatementNode ParseIfStatement()
     {
-        Expect(TokenKind.IfKeyword);
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.IfKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var expr = ParseExpression()!;
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
 
         var body = ParseBody();
 
@@ -740,13 +783,13 @@ public class Parser
 
     private DoStatementNode ParseDoStatement()
     {
-        Expect(TokenKind.DoKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.DoKeyword);
         var body = ParseBody()!;
-        Expect(TokenKind.WhileKeyword);
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.WhileKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var expr = ParseExpression()!;
-        Expect(TokenKind.CloseParen);
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
 
         return new DoStatementNode(expr, body);
     }
@@ -817,7 +860,7 @@ public class Parser
         }
 
         var result = ParseCommaSeperatedExpressionStatements();
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
         return result;
     }
 
@@ -831,14 +874,14 @@ public class Parser
 
     private ForStatementNode ParseForStatement()
     {
-        Expect(TokenKind.ForKeyword);
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.ForKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var initializer = ParseForInitializer();
         //Expect(TokenKind.Semicolon);
         var expression = ParseExpression()!;
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
         var iterationStatement = ParseForIteration()!;
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
 
         var body = ParseBody();
 
@@ -847,13 +890,13 @@ public class Parser
 
     private ForEachStatementNode ParseForEachStatement()
     {
-        Expect(TokenKind.ForeachKeyword);
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.ForeachKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var type = ParseType();
         var identifier = Consume();
-        Expect(TokenKind.InKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.InKeyword);
         var collection = ParseExpression()!;
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
         var body = ParseBody();
 
         return new ForEachStatementNode(type, identifier.Lexeme, collection, body);
@@ -861,10 +904,10 @@ public class Parser
 
     private WhileStatementNode ParseWhileStatement()
     {
-        Expect(TokenKind.WhileKeyword);
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.WhileKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var expr = ParseExpression()!;
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
         var body = ParseBody();
 
         return new WhileStatementNode(expr, body);
@@ -872,6 +915,8 @@ public class Parser
 
     private static AstNode ResolveQualifiedNameRecursive(List<Token> members)
     {
+        // Why use a list here? You acn use a stack and pop every time.
+        // If the initial list is empty you'll get an expcetion
         var member = members[^1];
         var identifier = new IdentifierExpression(member.Lexeme);
 
@@ -889,18 +934,21 @@ public class Parser
     private AstNode ParseQualifiedName()
     {
         List<Token> members = [];
-
         do
         {
             members.Add(Consume());
-        } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
+        } 
+        // It can be a little difficult to follow what is happening in the while loop.
+        // If it would be an incorrect using (e.g. using Foo.Bar. you won't throw an exception)
+        // Wouldn't it make sense to just keep on going untill the semicolumn?
+        while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
         return ResolveQualifiedNameRecursive(members);
     }
 
     private UsingDirectiveNode ParseUsingDirective()
     {
-        Expect(TokenKind.UsingKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.UsingKeyword);
 
         var hasAlias = PeekSafe().Kind == TokenKind.Equals;
         string? alias = null;
@@ -908,25 +956,25 @@ public class Parser
         if (hasAlias)
         {
             alias = Consume().Lexeme;
-            Expect(TokenKind.Equals);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.Equals);
         }
 
         var ns = ParseQualifiedName();
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
 
         return new UsingDirectiveNode(ns, alias);
     }
 
     private ReturnStatementNode ParseReturnStatement()
     {
-        Expect(TokenKind.ReturnKeyword);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.ReturnKeyword);
 
         if (ConsumeIfMatch(TokenKind.Semicolon))
             return new ReturnStatementNode(null);
 
         var expression = ParseExpression();
 
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
 
         return new ReturnStatementNode(expression);
     }
@@ -938,9 +986,9 @@ public class Parser
 
         var type = ParseType();
         var identifier = ResolveMaybeGenericIdentifier(true);
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var parms = ParseParameterList();
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
         var body = ParseMethodBody();
 
         Debug.Assert(body is not null);
@@ -950,7 +998,7 @@ public class Parser
 
     private EmptyStatementNode ParseEmptyStatement()
     {
-        Expect(TokenKind.Semicolon);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
         return new EmptyStatementNode();
     }
 
@@ -983,6 +1031,7 @@ public class Parser
 
         var token = PeekCurrent();
 
+        //Personally not a fan of big switches. More fan of a factory
         switch (token.Kind)
         {
             // Selection statements
@@ -1012,7 +1061,7 @@ public class Parser
         }
 
         // If no matches parse as an expression statement
-        return ParseExpressionStatement();
+        return ParseExpressionStatement(); // So basically the default of your switch?
     }
 
     private List<UsingDirectiveNode> ParseUsingDirectives()
@@ -1272,7 +1321,7 @@ public class Parser
         if (ConsumeIfMatch(TokenKind.EqualsGreaterThan))
         {
             var expr = ParseExpression();
-            Expect(TokenKind.Semicolon);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
 
             return new PropertyAccessorNode(
                 PropertyAccessorType.ExpressionBodied,
@@ -1302,7 +1351,7 @@ public class Parser
 
     private MemberNode ParseProperty(string propertyName, TypeNode propertyType)
     {
-        Expect(TokenKind.OpenBrace);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenBrace);
 
         PropertyAccessorNode? getter = null;
         PropertyAccessorNode? setter = null;
@@ -1321,14 +1370,14 @@ public class Parser
             }
         } while (!IsAtEnd() && accessor is not null);
 
-        Expect(TokenKind.CloseBrace);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseBrace);
 
         var hasValue = ConsumeIfMatch(TokenKind.Equals);
         var value = hasValue ? ParseExpression() : null;
 
         if (hasValue)
         {
-            Expect(TokenKind.Semicolon);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
         }
 
         return new PropertyMemberNode(propertyName, propertyType, getter, setter, value);
@@ -1357,10 +1406,10 @@ public class Parser
 
     private MemberNode ParseConstructor(AccessModifier accessModifier)
     {
-        Expect(TokenKind.Identifier); // ctor name
-        Expect(TokenKind.OpenParen);  // parms
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.Identifier); // ctor name
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);  // parms
         var parms = ParseParameterList();
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
         var body = ParseMethodBody();
 
         return new ConstructorNode(accessModifier, parms, body);
@@ -1368,11 +1417,11 @@ public class Parser
 
     private MemberNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName)
     {
-        Expect(TokenKind.OpenParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenParen);
         var parms = ParseParameterList();
-        Expect(TokenKind.CloseParen);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseParen);
         AstNode? body = null;
-            
+
         if (!ConsumeIfMatch(TokenKind.Semicolon))
             body = ParseMethodBody();
 
@@ -1426,8 +1475,8 @@ public class Parser
         {
             var hasValue = ConsumeIfMatch(TokenKind.Equals);
             var value = hasValue ? ParseExpression() : null;
-            Expect(TokenKind.Semicolon);
-            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers,ResolveNameFromAstNode(identifier), type, value);
+            ConsumeAndThrowIfNextTokenIsNot(TokenKind.Semicolon);
+            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, ResolveNameFromAstNode(identifier), type, value);
         }
         else if (isProperty)
         {
@@ -1449,7 +1498,7 @@ public class Parser
         {
             members.Add(ParseMember(kind, typeName));
         }
-        
+
         return members;
     }
 
@@ -1467,7 +1516,7 @@ public class Parser
             parentName = ResolveMaybeGenericIdentifier(true);
         }
 
-        Expect(TokenKind.OpenBrace);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.OpenBrace);
 
         var kind = type switch
         {
@@ -1480,14 +1529,14 @@ public class Parser
 
         var members = ParseMembers(kind, identifier);
 
-        Expect(TokenKind.CloseBrace);
+        ConsumeAndThrowIfNextTokenIsNot(TokenKind.CloseBrace);
 
         return type switch
         {
-            TokenKind.ClassKeyword     => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
-            TokenKind.EnumKeyword      => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers),
             TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
-            TokenKind.StructKeyword    => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
             _ => throw new NotImplementedException(),
         };
     }
@@ -1538,8 +1587,11 @@ public class Parser
         return parser.ParseInternal(tokens);
     }
 
+    // Why ask for a list if you actually want an array?
     public static AST Parse(List<Token> tokens)
     {
+        // Why did you choose for this instead of directly
+        // constructing a parser with the tokens?
         var parser = new Parser();
         return parser.ParseInternal([.. tokens]); // self parsing will be a pain if I keep using C# 12 features
     }
