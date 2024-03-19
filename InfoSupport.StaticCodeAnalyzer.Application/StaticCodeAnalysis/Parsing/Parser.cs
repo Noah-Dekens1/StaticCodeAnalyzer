@@ -95,6 +95,14 @@ public class Parser
         return PeekSafe(peekOffset).Kind == kind;
     }
 
+    [DebuggerHidden]
+    public bool MatchesLexeme(string lexeme, TokenKind? kind = null, int peekOffset=0)
+    {
+        var token = PeekSafe(peekOffset);
+
+        return token.Lexeme == lexeme && (kind is null || token.Kind == kind);
+    }
+
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
     {
         int negativeSearch = includeConsumed ? 1 : 0;
@@ -242,6 +250,9 @@ public class Parser
                     break;
                 case TokenKind.Exclamation:
                     result = new UnaryLogicalNotNode(expr);
+                    break;
+                case TokenKind.Tilde:
+                    result = new UnaryBitwiseComplementNode(expr);
                     break;
             }
 
@@ -1183,6 +1194,165 @@ public class Parser
         return new LocalFunctionDeclarationNode(modifiers, identifier, type, parms, body);
     }
 
+    private ParenthesizedPatternNode ParseParenthesizedPattern()
+    {
+        Expect(TokenKind.OpenParen);
+        var innerPattern = ParsePattern()!;
+        Expect(TokenKind.CloseParen);
+        return new ParenthesizedPatternNode(innerPattern);
+    }
+
+    private readonly Dictionary<TokenKind, RelationalPatternOperator> _relationalOperators = new()
+    {
+        { TokenKind.GreaterThan, RelationalPatternOperator.GreaterThan },
+        { TokenKind.GreaterThanEquals, RelationalPatternOperator.GreaterThanOrEqual },
+        { TokenKind.LessThan, RelationalPatternOperator.LessThan },
+        { TokenKind.LessThanEquals, RelationalPatternOperator.LessThanOrEqual },
+    };
+
+    private bool IsRelationalPattern(Token token)
+    {
+        return _relationalOperators.ContainsKey(token.Kind);
+    }
+
+    private RelationalPatternNode ParseRelationalPattern()
+    {
+        var token = Consume();
+
+        if (_relationalOperators.TryGetValue(token.Kind, out var value))
+        {
+            return new RelationalPatternNode(value, ParseExpression()!);
+        }
+
+        throw new Exception("Expected relational pattern");
+    }
+
+    private ConstantPatternNode ParseConstantPattern()
+    {
+        var value = ParseExpression()!;
+
+        return new ConstantPatternNode(value);
+    }
+
+    // Parsing patterns is quite similar to parsing expressions
+    private PatternNode? ParsePattern()
+    {
+        PatternNode? possibleLHS = null;
+
+        var isIdentifier = Matches(TokenKind.Identifier);
+        var isLiteral = PeekLiteralExpression(out var literal);
+
+        if (Matches(TokenKind.OpenParen))
+        {
+            possibleLHS = ParseParenthesizedPattern();
+        }
+
+        if (possibleLHS is null && IsRelationalPattern(PeekCurrent()))
+        {
+            possibleLHS = ParseRelationalPattern();
+        }
+
+        var token = PeekCurrent();
+
+        bool isLogicalNot = token.Lexeme == "not";
+        bool isLogicalAnd = token.Lexeme == "and";
+        bool isLogicalOr = token.Lexeme == "or";
+
+        if (isLogicalNot)
+        {
+            Debug.Assert(possibleLHS is null);
+            Consume();
+            return new NotPatternNode(ParsePattern()!);
+        }
+
+        if (isLogicalAnd)
+        {
+            Debug.Assert(possibleLHS is not null);
+            Consume();
+            return new AndPatternNode(possibleLHS!, ParsePattern()!);
+        }
+
+        if (isLogicalOr)
+        {
+            Debug.Assert(possibleLHS is not null);
+            Consume();
+            return new OrPatternNode(possibleLHS!, ParsePattern()!);
+        }
+
+        if (isIdentifier || isLiteral)
+        {
+            // @note: Roslyn doesn't parse this as a constant pattern so I assume this is 'technically wrong'
+            // but for the analyzer this makes things more simple and AFAIK there's little difference between
+            // an old switch case/constant pattern anyways, might need refactoring if this proves to be wrong
+            // in the future
+            return ParseConstantPattern();
+        }
+
+        return possibleLHS;
+    }
+
+    private SwitchStatementNode ParseSwitchStatement()
+    {
+        Expect(TokenKind.SwitchKeyword);
+
+        Expect(TokenKind.OpenParen);
+
+        var expr = ParseExpression()!;
+
+        Expect(TokenKind.CloseParen);
+
+        Expect(TokenKind.OpenBrace);
+
+        var sections = new List<SwitchSectionNode>();
+
+        while (!Matches(TokenKind.CloseBrace))
+        {
+            bool isCase = Matches(TokenKind.CaseKeyword);
+            bool isDefault = Matches(TokenKind.DefaultKeyword);
+
+            if (!isCase && !isDefault)
+            {
+                throw new NotImplementedException();
+            }
+
+            Consume();
+
+            PatternNode? caseValue = isCase ? ParsePattern() : null;
+            ExpressionNode? whenClause = null;
+
+            if (MatchesLexeme("when", TokenKind.Identifier))
+            {
+                Expect(TokenKind.Identifier);
+                whenClause = ParseExpression()!; // binary expr
+            }
+
+            Expect(TokenKind.Colon);
+
+            List<StatementNode> statements = [];
+
+            while (!Matches(TokenKind.CaseKeyword) && !Matches(TokenKind.DefaultKeyword) && !Matches(TokenKind.CloseBrace))
+            {
+                statements.Add(ParseStatement());
+            }
+
+            SwitchSectionNode newSection = isCase
+                ? new SwitchCaseNode(caseValue!, statements, whenClause)
+                : new SwitchDefaultCaseNode(statements);
+
+            sections.Add(newSection);
+        }
+
+        Expect(TokenKind.CloseBrace);
+        return new SwitchStatementNode(expr, sections);
+    }
+
+    private BreakStatementNode ParseBreakStatement()
+    {
+        Expect(TokenKind.BreakKeyword);
+        Expect(TokenKind.Semicolon);
+        return new BreakStatementNode();
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -1213,6 +1383,9 @@ public class Parser
         if (!isEmbeddedStatement && IsDeclarationStatement())
             return ParseDeclarationStatement();
 
+        if (!isEmbeddedStatement && Matches(TokenKind.OpenBrace))
+            return ParseBlock();
+
         if (IsLocalFunctionDeclaration())
             return ParseLocalFunction();
 
@@ -1237,7 +1410,10 @@ public class Parser
                 return ParseWhileStatement();
 
             case TokenKind.SwitchKeyword:
-                throw new NotImplementedException();
+                return ParseSwitchStatement();
+
+            case TokenKind.BreakKeyword:
+                return ParseBreakStatement();
 
             case TokenKind.ReturnKeyword:
                 return ParseReturnStatement();
@@ -1464,6 +1640,13 @@ public class Parser
             if (current.Kind == TokenKind.Identifier && current.Lexeme == "async")
             {
                 modifiers.Add(OptionalModifier.Async);
+                Consume();
+                continue;
+            }
+
+            if (current.Kind == TokenKind.Identifier && current.Lexeme == "required")
+            {
+                modifiers.Add(OptionalModifier.Required);
                 Consume();
                 continue;
             }

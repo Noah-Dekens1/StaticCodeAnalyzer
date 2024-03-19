@@ -2431,4 +2431,292 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_SwitchStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            switch (a)
+            {
+                case 1:
+                    Console.WriteLine("1");
+                case 2:
+                {
+                    b += 1;
+                    Console.WriteLine("2");
+                }
+                default:
+                    Console.WriteLine("Default");
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new SwitchStatementNode(
+                    switchExpression: new IdentifierExpression("a"),
+                    sections: [
+                        new SwitchCaseNode(
+                            casePattern: new ConstantPatternNode(
+                                value: new NumericLiteralNode(1)
+                            ),
+                            statements: [
+                                new ExpressionStatementNode(
+                                    expression: new InvocationExpressionNode(
+                                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                                        arguments: new ArgumentListNode([
+                                            new ArgumentNode(
+                                                expression: new StringLiteralNode("1"),
+                                                name: null
+                                            )
+                                        ])
+                                    )
+                                )
+                            ]
+                        ),
+                        new SwitchCaseNode(
+                            casePattern: new ConstantPatternNode(
+                                value: new NumericLiteralNode(2)
+                            ),
+                            statements: [
+                                new BlockNode(
+                                    statements: [
+                                        new ExpressionStatementNode(
+                                            expression: new AddAssignExpressionNode(
+                                                lhs: new IdentifierExpression("b"),
+                                                rhs: new NumericLiteralNode(1)
+                                            )
+                                        ),
+                                        new ExpressionStatementNode(
+                                            expression: new InvocationExpressionNode(
+                                                lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                                                arguments: new ArgumentListNode([
+                                                    new ArgumentNode(
+                                                        expression: new StringLiteralNode("2"),
+                                                        name: null
+                                                    )
+                                                ])
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                        new SwitchDefaultCaseNode(
+                            statements: [
+                                new ExpressionStatementNode(
+                                    expression: new InvocationExpressionNode(
+                                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                                        arguments: new ArgumentListNode([
+                                            new ArgumentNode(
+                                                expression: new StringLiteralNode("Default"),
+                                                name: null
+                                            )
+                                        ])
+                                    )
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_SwitchStatementWithPatterns_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            switch (a)
+            {
+                case < b:
+                case (>= 50) or < -5 or >999:
+                    break;
+                case not not <= 10:
+                default:
+                    Console.WriteLine("hello world");
+                    break;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new SwitchStatementNode(
+                    switchExpression: new IdentifierExpression("a"),
+                    sections: [
+                        new SwitchCaseNode(
+                            casePattern: new RelationalPatternNode(
+                                op: RelationalPatternOperator.LessThan,
+                                value: new IdentifierExpression("b")
+                            ),
+                            statements: []
+                        ),
+                        new SwitchCaseNode(
+                            casePattern: new OrPatternNode(
+                                lhs: new ParenthesizedPatternNode(
+                                    pattern: new RelationalPatternNode(
+                                        RelationalPatternOperator.GreaterThanOrEqual,
+                                        value: new NumericLiteralNode(50)
+                                    )
+                                ),
+                                rhs: new OrPatternNode(
+                                    lhs: new RelationalPatternNode(
+                                        op: RelationalPatternOperator.LessThan,
+                                        value: new UnaryNegationNode(
+                                            expr: new NumericLiteralNode(5)
+                                        )
+                                    ),
+                                    rhs: new RelationalPatternNode(
+                                        op: RelationalPatternOperator.GreaterThan,
+                                        value: new NumericLiteralNode(999)
+                                    )
+                                )
+                            ),
+                            statements: [
+                                new BreakStatementNode()
+                            ]
+                        ),
+                        new SwitchCaseNode(
+                            casePattern: new NotPatternNode(
+                                pattern: new NotPatternNode(
+                                    pattern: new RelationalPatternNode(
+                                        op: RelationalPatternOperator.LessThanOrEqual,
+                                        value: new NumericLiteralNode(10)
+                                    )
+                                )
+                            ),
+                            statements: []
+                        ),
+                        new SwitchDefaultCaseNode(
+                            statements: [
+                                new ExpressionStatementNode(
+                                    expression: new InvocationExpressionNode(
+                                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                                        arguments: new ArgumentListNode([
+                                            new ArgumentNode(
+                                                expression: new StringLiteralNode("hello world"),
+                                                name: null
+                                            )
+                                        ])
+                                    )
+                                ),
+                                new BreakStatementNode()
+                            ]
+                        )
+                    ]
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_SwitchStatementWithWhenClause_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            switch (a)
+            {
+                case < b when true:
+                case (>= 50) or < -5 or >999:
+                    break;
+                case not not <= 10 when 3 * 3 == 9:
+                default:
+                    Console.WriteLine("hello world");
+                    break;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new SwitchStatementNode(
+                    switchExpression: new IdentifierExpression("a"),
+                    sections: [
+                        new SwitchCaseNode(
+                            casePattern: new RelationalPatternNode(
+                                op: RelationalPatternOperator.LessThan,
+                                value: new IdentifierExpression("b")
+                            ),
+                            statements: [],
+                            whenClause: new BooleanLiteralNode(true)
+                        ),
+                        new SwitchCaseNode(
+                            casePattern: new OrPatternNode(
+                                lhs: new ParenthesizedPatternNode(
+                                    pattern: new RelationalPatternNode(
+                                        RelationalPatternOperator.GreaterThanOrEqual,
+                                        value: new NumericLiteralNode(50)
+                                    )
+                                ),
+                                rhs: new OrPatternNode(
+                                    lhs: new RelationalPatternNode(
+                                        op: RelationalPatternOperator.LessThan,
+                                        value: new UnaryNegationNode(
+                                            expr: new NumericLiteralNode(5)
+                                        )
+                                    ),
+                                    rhs: new RelationalPatternNode(
+                                        op: RelationalPatternOperator.GreaterThan,
+                                        value: new NumericLiteralNode(999)
+                                    )
+                                )
+                            ),
+                            statements: [
+                                new BreakStatementNode()
+                            ]
+                        ),
+                        new SwitchCaseNode(
+                            casePattern: new NotPatternNode(
+                                pattern: new NotPatternNode(
+                                    pattern: new RelationalPatternNode(
+                                        op: RelationalPatternOperator.LessThanOrEqual,
+                                        value: new NumericLiteralNode(10)
+                                    )
+                                )
+                            ),
+                            statements: [],
+                            whenClause: new MultiplyExpressionNode(
+                                lhs: new NumericLiteralNode(3),
+                                rhs: new EqualsExpressionNode(
+                                    lhs: new NumericLiteralNode(3),
+                                    rhs: new NumericLiteralNode(9)
+                                )
+                            )
+                        ),
+                        new SwitchDefaultCaseNode(
+                            statements: [
+                                new ExpressionStatementNode(
+                                    expression: new InvocationExpressionNode(
+                                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                                        arguments: new ArgumentListNode([
+                                            new ArgumentNode(
+                                                expression: new StringLiteralNode("hello world"),
+                                                name: null
+                                            )
+                                        ])
+                                    )
+                                ),
+                                new BreakStatementNode()
+                            ]
+                        )
+                    ]
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

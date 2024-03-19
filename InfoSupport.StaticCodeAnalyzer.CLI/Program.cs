@@ -1,6 +1,15 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Diagnostics;
+
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
+
+{
+    var tokens = Lexer.Lex(File.ReadAllText("C:\\Users\\NoahD\\source\\repos\\DemoApplication\\DemoApplication\\Program.cs"));
+
+    var ast = Parser.Parse(tokens);
+    Debug.Assert(ast != null);
+}
 
 //var lexer = new Lexer(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Parsing\Lexer.cs"));
 var _ = Lexer.Lex(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.CLI\InterpolationTest.cs"));
