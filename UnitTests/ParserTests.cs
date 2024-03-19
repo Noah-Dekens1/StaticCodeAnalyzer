@@ -2719,4 +2719,36 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_Namespace_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            namespace Test
+            {
+                class TestClass
+                {
+                    
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.Namespaces.Add(
+            new NamespaceNode(
+                name: "Test",
+                typeDeclarations: [
+                    new ClassDeclarationNode(
+                        className: new IdentifierExpression("TestClass"),
+                        members: []
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

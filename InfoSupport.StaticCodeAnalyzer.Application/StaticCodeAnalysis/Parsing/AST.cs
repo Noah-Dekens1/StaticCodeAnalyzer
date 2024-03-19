@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 public class AST
 {
-    public required RootNode Root { get; set; }
+    public required GlobalNamespaceNode Root { get; set; }
 
     public static AST Build()
     {
-        return new AST { Root = new RootNode() };
+        return new AST { Root = new GlobalNamespaceNode() };
     }
 }
