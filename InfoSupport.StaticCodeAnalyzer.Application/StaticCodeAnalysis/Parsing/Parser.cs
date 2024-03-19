@@ -243,6 +243,9 @@ public class Parser
                 case TokenKind.Exclamation:
                     result = new UnaryLogicalNotNode(expr);
                     break;
+                case TokenKind.Tilde:
+                    result = new UnaryBitwiseComplementNode(expr);
+                    break;
             }
 
             return result ?? throw new Exception("Couldn't resolve unary prefix expression");
@@ -1621,6 +1624,13 @@ public class Parser
             if (current.Kind == TokenKind.Identifier && current.Lexeme == "async")
             {
                 modifiers.Add(OptionalModifier.Async);
+                Consume();
+                continue;
+            }
+
+            if (current.Kind == TokenKind.Identifier && current.Lexeme == "required")
+            {
+                modifiers.Add(OptionalModifier.Required);
                 Consume();
                 continue;
             }

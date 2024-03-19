@@ -124,7 +124,8 @@ public enum UnaryOperator
     Negation,
     LogicalNot,
     Increment,
-    Decrement
+    Decrement,
+    BitwiseComplement
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -149,6 +150,7 @@ public class UnaryExpressionNode : ExpressionNode
         UnaryOperator.LogicalNot => "!",
         UnaryOperator.Increment => "++",
         UnaryOperator.Decrement => "--",
+        UnaryOperator.BitwiseComplement => "~",
         _ => throw new NotImplementedException()
     };
 
@@ -171,6 +173,11 @@ public class UnaryIncrementNode(ExpressionNode expr, bool isPrefix = true) : Una
 public class UnaryDecrementNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
 {
     public override UnaryOperator Operator => UnaryOperator.Decrement;
+}
+
+public class UnaryBitwiseComplementNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
+{
+    public override UnaryOperator Operator => UnaryOperator.BitwiseComplement;
 }
 
 public class UnaryLogicalNotNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
@@ -715,6 +722,7 @@ public enum OptionalModifier
     Const,
     Volatile,
     Async,
+    Required
 }
 
 public abstract class MemberNode : AstNode
@@ -1049,12 +1057,13 @@ public abstract class SwitchSectionNode : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> statements) : SwitchSectionNode
+public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> statements, ExpressionNode? whenClause = null) : SwitchSectionNode
 {
     PatternNode CasePattern { get; set; } = casePattern;
     public List<StatementNode> Statements {  get; set; } = statements;
+    public ExpressionNode? WhenClause = whenClause;
 
-    public override List<AstNode> Children => [CasePattern, .. Statements];
+    public override List<AstNode> Children => [.. Utils.ParamsToList<AstNode>(CasePattern, WhenClause), .. Statements];
 
     public override string ToString() => $"case {CasePattern}:";
 }
