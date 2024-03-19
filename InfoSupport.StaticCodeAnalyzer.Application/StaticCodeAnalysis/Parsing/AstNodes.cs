@@ -17,13 +17,28 @@ public abstract class AstNode
     public abstract List<AstNode> Children { get; }
 }
 
-public class RootNode : AstNode
+public class GlobalNamespaceNode() : NamespaceNode("global", true)
 {
-    public List<UsingDirectiveNode> UsingDirectives { get; set; } = [];
     public List<GlobalStatementNode> GlobalStatements { get; set; } = [];
-    public List<TypeDeclarationNode> TypeDeclarations { get; set; } = [];
 
-    public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations];
+    public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces];
+}
+
+public class NamespaceNode(
+    string name,
+    bool isFileScoped=false,
+    List<UsingDirectiveNode>? usingDirectives = null, 
+    List<TypeDeclarationNode>? typeDeclarations = null, 
+    List<NamespaceNode>? namespaces = null
+) : AstNode
+{
+    public string Name { get; } = name;
+    public bool IsFileScoped { get; } = isFileScoped;
+    public List<UsingDirectiveNode> UsingDirectives { get; } = usingDirectives ?? [];
+    public List<TypeDeclarationNode> TypeDeclarations { get; } = typeDeclarations ?? [];
+    public List<NamespaceNode> Namespaces { get; } = namespaces ?? [];
+
+    public override List<AstNode> Children => [.. UsingDirectives, .. TypeDeclarations, .. Namespaces];
 }
 
 public class StatementNode : AstNode

@@ -1565,11 +1565,13 @@ public class Parser
 
     }
 
+
+
     private List<StatementNode> ParseTopLevelStatements()
     {
         List<StatementNode> statements = [];
 
-        while (!IsAtEnd() && !IsTypeDeclaration())
+        while (!IsAtEnd() && !IsTypeDeclaration() && !Matches(TokenKind.NamespaceKeyword))
             statements.Add(ParseStatement());
 
         return statements;
@@ -1910,14 +1912,74 @@ public class Parser
         };
     }
 
-    private List<TypeDeclarationNode> ParseTypeDeclarations()
+    private List<AstNode> ParseTypeDeclarationsAndNamespaces()
     {
-        var declarations = new List<TypeDeclarationNode>();
+        var declarationsAndNamespaces = new List<AstNode>();
 
-        while (!IsAtEnd() && IsTypeDeclaration())
-            declarations.Add(ParseTypeDeclaration());
+        while (!IsAtEnd())
+        {
+            if (IsTypeDeclaration())
+                declarationsAndNamespaces.Add(ParseTypeDeclaration());
+            else if (Matches(TokenKind.NamespaceKeyword))
+                declarationsAndNamespaces.Add(ParseNamespace());
+            else break;
+        }
 
-        return declarations;
+        return declarationsAndNamespaces;
+    }
+
+    private string QualifiedNameToString(AstNode qualifiedName)
+    {
+        if (qualifiedName is IdentifierExpression identifierExpression)
+            return identifierExpression.Identifier;
+
+        var qn = (QualifiedNameNode)qualifiedName;
+
+        return $"{QualifiedNameToString(qn.LHS)}.{qn.Identifier}"; 
+    }
+
+    private NamespaceNode ParseNamespace(bool isGlobal=false, bool allowTopLevelStatements=false)
+    {
+        Expect(TokenKind.NamespaceKeyword);
+        var name = ParseQualifiedName(); // @fixme: qualified name or member access?
+        var isFileScoped = ConsumeIfMatch(TokenKind.Semicolon);
+
+        if (!isFileScoped)
+            Expect(TokenKind.OpenBrace);
+
+        var ns = ParseNamespaceContent(QualifiedNameToString(name), isFileScoped, isGlobal, allowTopLevelStatements);
+
+        if (!isFileScoped)
+            Expect(TokenKind.CloseBrace);
+
+        return ns;
+    }
+
+    private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, bool allowTopLevelStatements=false)
+    {
+        var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped);
+        var directives = ParseUsingDirectives();
+
+        // the 'rule' in C# is that top-level statements must precede any type declarations and namespaces
+        // this method stops the moment it encounters a type declaration
+        if (ns is GlobalNamespaceNode globalNamespace && allowTopLevelStatements)
+        {
+            var statements = ParseTopLevelStatements()
+                .Select(s => new GlobalStatementNode(s)).ToList();
+
+            globalNamespace.GlobalStatements.AddRange(statements!);
+        }
+
+        var declarationsAndNamespaces = ParseTypeDeclarationsAndNamespaces();
+
+        var typeDeclarations = declarationsAndNamespaces.OfType<TypeDeclarationNode>().ToList();
+        var namespaces = declarationsAndNamespaces.OfType<NamespaceNode>().ToList();
+
+        ns.UsingDirectives.AddRange(directives);
+        ns.TypeDeclarations.AddRange(typeDeclarations);
+        ns.Namespaces.AddRange(namespaces);
+
+        return ns;
     }
 
     private AST ParseInternal(Token[] tokens)
@@ -1929,23 +1991,7 @@ public class Parser
 
         _input = tokens;
 
-        var directives = ParseUsingDirectives();
-
-        ast.Root.UsingDirectives.AddRange(directives);
-
-        // the 'rule' in C# is that top-level statements must precede any type declarations and namespaces
-        // this method stops the moment it encounters a type declaration
-        var statements = ParseTopLevelStatements();
-
-        //var expr = ParseExpression()!;
-        foreach (var statement in statements)
-        {
-            ast.Root.GlobalStatements.Add(new GlobalStatementNode(statement));
-        }
-
-        var typeDeclarations = ParseTypeDeclarations();
-
-        ast.Root.TypeDeclarations.AddRange(typeDeclarations);
+        ast.Root = (GlobalNamespaceNode)ParseNamespaceContent(string.Empty, true, true, true);
 
         return ast;
     }
