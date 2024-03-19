@@ -2783,4 +2783,55 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_NestedNamespaces_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            namespace Test
+            {
+                class TestClass
+                {
+                    
+                }
+
+                namespace Test2
+                {
+                    class TestClass2
+                    {
+
+                    }
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.Namespaces.Add(
+            new NamespaceNode(
+                name: "Test",
+                typeDeclarations: [
+                    new ClassDeclarationNode(
+                        className: new IdentifierExpression("TestClass"),
+                        members: []
+                    )
+                ],
+                namespaces: [
+                    new NamespaceNode(
+                        name: "Test2",
+                        typeDeclarations: [
+                            new ClassDeclarationNode(
+                                className: new IdentifierExpression("TestClass2"),
+                                members: []
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
