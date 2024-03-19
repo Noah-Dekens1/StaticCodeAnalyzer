@@ -95,6 +95,14 @@ public class Parser
         return PeekSafe(peekOffset).Kind == kind;
     }
 
+    [DebuggerHidden]
+    public bool MatchesLexeme(string lexeme, TokenKind? kind = null, int peekOffset=0)
+    {
+        var token = PeekSafe(peekOffset);
+
+        return token.Lexeme == lexeme && (kind is null || token.Kind == kind);
+    }
+
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
     {
         int negativeSearch = includeConsumed ? 1 : 0;
@@ -1310,6 +1318,14 @@ public class Parser
             Consume();
 
             PatternNode? caseValue = isCase ? ParsePattern() : null;
+            ExpressionNode? whenClause = null;
+
+            if (MatchesLexeme("when", TokenKind.Identifier))
+            {
+                Expect(TokenKind.Identifier);
+                whenClause = ParseExpression()!; // binary expr
+            }
+
             Expect(TokenKind.Colon);
 
             List<StatementNode> statements = [];
@@ -1320,7 +1336,7 @@ public class Parser
             }
 
             SwitchSectionNode newSection = isCase
-                ? new SwitchCaseNode(caseValue!, statements)
+                ? new SwitchCaseNode(caseValue!, statements, whenClause)
                 : new SwitchDefaultCaseNode(statements);
 
             sections.Add(newSection);
