@@ -1947,7 +1947,7 @@ public class Parser
         if (!isFileScoped)
             Expect(TokenKind.OpenBrace);
 
-        var ns = ParseNamespaceContent(QualifiedNameToString(name), isGlobal, allowTopLevelStatements);
+        var ns = ParseNamespaceContent(QualifiedNameToString(name), isFileScoped, isGlobal, allowTopLevelStatements);
 
         if (!isFileScoped)
             Expect(TokenKind.CloseBrace);
@@ -1955,9 +1955,9 @@ public class Parser
         return ns;
     }
 
-    private NamespaceNode ParseNamespaceContent(string name, bool isGlobal, bool allowTopLevelStatements=false)
+    private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, bool allowTopLevelStatements=false)
     {
-        var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name);
+        var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped);
         var directives = ParseUsingDirectives();
 
         // the 'rule' in C# is that top-level statements must precede any type declarations and namespaces
@@ -1991,7 +1991,7 @@ public class Parser
 
         _input = tokens;
 
-        ast.Root = (GlobalNamespaceNode)ParseNamespaceContent(string.Empty, true, true);
+        ast.Root = (GlobalNamespaceNode)ParseNamespaceContent(string.Empty, true, true, true);
 
         return ast;
     }
