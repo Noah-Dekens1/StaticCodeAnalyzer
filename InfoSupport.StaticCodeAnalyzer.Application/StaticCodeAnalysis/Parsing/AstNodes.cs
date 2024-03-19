@@ -417,7 +417,7 @@ public class EmptyStatementNode : StatementNode
 
 }
 
-public class BlockNode(List<StatementNode> statements) : AstNode
+public class BlockNode(List<StatementNode> statements) : StatementNode
 {
     public List<StatementNode> Statements { get; set; } = statements;
     public override List<AstNode> Children => [.. Statements];
@@ -959,4 +959,123 @@ public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode 
     public AstNode Body { get; set; } = body;
 
     public override List<AstNode> Children => [Body];
+}
+
+public abstract class PatternNode : AstNode
+{
+    public override List<AstNode> Children => throw new NotImplementedException();
+}
+
+public enum RelationalPatternOperator
+{
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode value) : PatternNode
+{
+    public RelationalPatternOperator Operator { get; set; } = op;
+    public ExpressionNode Value { get; set; } = value;
+
+    [ExcludeFromCodeCoverage]
+    private string OperatorForDbg => Operator switch
+    {
+        RelationalPatternOperator.GreaterThan => ">",
+        RelationalPatternOperator.GreaterThanOrEqual => ">=",
+        RelationalPatternOperator.LessThan => "<",
+        RelationalPatternOperator.LessThanOrEqual => "<=",
+        _ => throw new NotImplementedException()
+    };
+
+    public override string ToString() => $"{OperatorForDbg} {Value}";
+}
+
+public class ConstantPatternNode(ExpressionNode value) : PatternNode
+{
+    public ExpressionNode Value { get; set; } = value;
+}
+
+public class LogicalPatternNode : PatternNode
+{
+
+}
+
+
+public class AndPatternNode(PatternNode lhs, PatternNode rhs) : LogicalPatternNode
+{
+    public PatternNode LHS { get; set; } = lhs;
+    public PatternNode RHS { get; set; } = rhs;
+
+    public override List<AstNode> Children => [LHS, RHS];
+    public override string ToString() => $"{LHS} and {RHS}";
+}
+
+public class OrPatternNode(PatternNode lhs, PatternNode rhs) : LogicalPatternNode
+{
+    public PatternNode LHS { get; set; } = lhs;
+    public PatternNode RHS { get; set; } = rhs;
+
+    public override List<AstNode> Children => [LHS, RHS];
+    public override string ToString() => $"{LHS} or {RHS}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class NotPatternNode(PatternNode pattern) : LogicalPatternNode
+{
+    public PatternNode Pattern { get; set; } = pattern;
+
+    public override List<AstNode> Children => [Pattern];
+
+    public override string ToString() => $"not {Pattern}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+ public class ParenthesizedPatternNode(PatternNode pattern) : PatternNode
+{
+    public PatternNode InnerPattern { get; set; } = pattern;
+
+    public override string ToString() => $"({InnerPattern})";
+}
+
+public abstract class SwitchSectionNode : AstNode
+{
+    public override List<AstNode> Children => throw new NotImplementedException();
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> statements) : SwitchSectionNode
+{
+    PatternNode CasePattern { get; set; } = casePattern;
+    public List<StatementNode> Statements {  get; set; } = statements;
+
+    public override List<AstNode> Children => [CasePattern, .. Statements];
+
+    public override string ToString() => $"case {CasePattern}:";
+}
+
+[DebuggerDisplay("default:")]
+public class SwitchDefaultCaseNode(List<StatementNode> statements) : SwitchSectionNode
+{
+    public List<StatementNode> Statements { get; set; } = statements;
+
+    public override List<AstNode> Children => [.. Statements];
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SwitchStatementNode(ExpressionNode switchExpression, List<SwitchSectionNode> sections) : StatementNode
+{
+    public ExpressionNode SwitchExpression { get; set; } = switchExpression;
+    public List<SwitchSectionNode> SwitchSectionNodes { get; set; } = sections;
+
+    public override List<AstNode> Children => [SwitchExpression, ..SwitchSectionNodes];
+    public override string ToString() => $"switch {SwitchExpression}";
+}
+
+[DebuggerDisplay("break;")]
+public class BreakStatementNode : StatementNode
+{
+
 }

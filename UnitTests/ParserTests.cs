@@ -2431,4 +2431,60 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_SwitchStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            switch (a)
+            {
+                case 1:
+                    Console.WriteLine("1");
+                case 2:
+                {
+                    b += 1;
+                    Console.WriteLine("2");
+                }
+                default:
+                    Console.WriteLine("Default");
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        int a = 5;
+        const int b = 5;
+
+        switch (a)
+        {
+            case < b:
+                break;
+            case > -4:
+            default:
+                Console.WriteLine("hello world");
+                break;
+        }
+    }
+
+    [TestMethod]
+    public void Parse_SwitchStatementWithPatterns_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            switch (a)
+            {
+                case < b:
+                case (>= 50) or < -5 or <999:
+                    break;
+                default:
+                    Console.WriteLine("hello world");
+                    break;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
