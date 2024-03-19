@@ -963,7 +963,6 @@ public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode 
 
 public abstract class PatternNode : AstNode
 {
-    public override List<AstNode> Children => throw new NotImplementedException();
 }
 
 public enum RelationalPatternOperator
@@ -979,6 +978,8 @@ public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode 
 {
     public RelationalPatternOperator Operator { get; set; } = op;
     public ExpressionNode Value { get; set; } = value;
+
+    public override List<AstNode> Children => [Value];
 
     [ExcludeFromCodeCoverage]
     private string OperatorForDbg => Operator switch
@@ -996,9 +997,10 @@ public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode 
 public class ConstantPatternNode(ExpressionNode value) : PatternNode
 {
     public ExpressionNode Value { get; set; } = value;
+    public override List<AstNode> Children => [Value];
 }
 
-public class LogicalPatternNode : PatternNode
+public abstract class LogicalPatternNode : PatternNode
 {
 
 }
@@ -1037,12 +1039,13 @@ public class NotPatternNode(PatternNode pattern) : LogicalPatternNode
 {
     public PatternNode InnerPattern { get; set; } = pattern;
 
+    public override List<AstNode> Children => [InnerPattern];
+
     public override string ToString() => $"({InnerPattern})";
 }
 
 public abstract class SwitchSectionNode : AstNode
 {
-    public override List<AstNode> Children => throw new NotImplementedException();
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
