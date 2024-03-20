@@ -312,7 +312,7 @@ public class ParserTests
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("SomeClass")),
                     identifier: "a",
-                    expression: new NewExpressionNode(
+                    expression: new ObjectCreationExpressionNode(
                         type: new TypeNode(new IdentifierExpression("SomeClass")),
                         arguments: new ArgumentListNode([])
                     )
@@ -1401,7 +1401,7 @@ public class ParserTests
                             new VariableDeclarationStatement(
                                 type: new TypeNode(new IdentifierExpression("var")),
                                 identifier: "test",
-                                expression: new NewExpressionNode(
+                                expression: new ObjectCreationExpressionNode(
                                     type: new TypeNode(new IdentifierExpression("Test")),
                                     arguments: new ArgumentListNode([])
                                 )
@@ -1613,7 +1613,7 @@ public class ParserTests
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
                 statement: new ExpressionStatementNode(
-                    expression: new NewExpressionNode(
+                    expression: new ObjectCreationExpressionNode(
                         type: new TypeNode(
                             baseType: AstUtils.ResolveMemberAccess("NameSpace.Other.SomeClass"),
                             typeArguments: new TypeArgumentsNode([
@@ -1848,7 +1848,7 @@ public class ParserTests
                                 )
                             ])
                         ),
-                        value: new NewExpressionNode(
+                        value: new ObjectCreationExpressionNode(
                             type: new TypeNode(
                                 baseType: new IdentifierExpression("List"),
                                 typeArguments: new TypeArgumentsNode([
@@ -2134,7 +2134,7 @@ public class ParserTests
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
                     identifier: "thing",
-                    expression: new NewExpressionNode(
+                    expression: new ObjectCreationExpressionNode(
                         type: AstUtils.SimpleNameAsType("IndexersExample"),
                         initializer: new CollectionInitializerNode([
                             new IndexedCollectionInitializerNode(
@@ -2182,7 +2182,7 @@ public class ParserTests
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
                     identifier: "list",
-                    expression: new NewExpressionNode(
+                    expression: new ObjectCreationExpressionNode(
                         type: new TypeNode(
                             baseType: new IdentifierExpression("List"),
                             typeArguments: new TypeArgumentsNode([
@@ -2232,7 +2232,7 @@ public class ParserTests
                         ])
                     ),
                     identifier: "dict",
-                    expression: new NewExpressionNode(
+                    expression: new ObjectCreationExpressionNode(
                         type: null,
                         initializer: new CollectionInitializerNode([
                             new ComplexCollectionInitializerNode([
@@ -2829,6 +2829,38 @@ public class ParserTests
                         ]
                     )
                 ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_RegularArray_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            byte[] buffer = new byte[256];
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("byte"),
+                        arrayType: new ArrayTypeData(rank: null) // omitted
+                    ),
+                    identifier: "buffer",
+                    expression: new ObjectCreationExpressionNode(
+                        type: new TypeNode(
+                            baseType: new IdentifierExpression("byte"),
+                            arrayType: new ArrayTypeData(rank: 256)
+                        )
+                    )
+                )
             )
         );
 

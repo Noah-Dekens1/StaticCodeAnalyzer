@@ -395,11 +395,38 @@ public class TypeArgumentsNode(List<TypeNode> typeArguments) : AstNode
     public override string ToString() => string.Join(", ", TypeArguments);
 }
 
+public struct ArrayTypeData
+{
+    public bool IsArray { get; set; }
+    public int ArrayRank { get; set; }
+    public bool RankOmitted { get; set; }
+
+    public ArrayTypeData()
+    {
+        IsArray = false;
+        ArrayRank = 0;
+        RankOmitted = true;
+    }
+
+    public ArrayTypeData(bool isArray)
+    {
+        IsArray = isArray;
+    }
+
+    public ArrayTypeData(int? rank)
+    {
+        IsArray = true;
+        RankOmitted = !rank.HasValue;
+        ArrayRank = RankOmitted ? 0 : rank!.Value;
+    }
+}
+
 [DebuggerDisplay("{ToString(),nq}")]
-public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments=null) : AstNode
+public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments=null, ArrayTypeData? arrayType=null) : AstNode
 {
     public AstNode BaseType { get; set; } = baseType;
     public TypeArgumentsNode? TypeArgumentsNode { get; set; } = typeArguments;
+    public ArrayTypeData ArrayType { get; set; } = arrayType ?? new();
 
     public override List<AstNode> Children => Utils.ParamsToList(BaseType, TypeArgumentsNode);
 
@@ -668,7 +695,7 @@ public class CollectionInitializerNode(List<CollectionInitializerElementNode> va
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class NewExpressionNode(TypeNode? type, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
+public class ObjectCreationExpressionNode(TypeNode? type, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
 {
     public TypeNode? Type { get; set; } = type;
     public ArgumentListNode Arguments { get; set; } = arguments ?? new ArgumentListNode([]);
