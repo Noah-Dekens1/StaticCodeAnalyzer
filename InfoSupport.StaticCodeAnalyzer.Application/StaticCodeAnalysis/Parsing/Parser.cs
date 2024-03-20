@@ -536,7 +536,7 @@ public class Parser
                 Expect(TokenKind.CloseBrace);
             }
 
-            return new NewExpressionNode(type, args, initializer);
+            return new ObjectCreationExpressionNode(type, args, initializer);
         }
         else if (ConsumeIfMatch(TokenKind.OpenBracket))
         {
@@ -902,7 +902,34 @@ public class Parser
             
         }
 
-        return new TypeNode(baseType, typeArguments);
+        var arrayData = new ArrayTypeData();
+
+        // Array type
+        if (ConsumeIfMatch(TokenKind.OpenBracket))
+        {
+            arrayData.IsArray = true;
+            
+            if (Matches(TokenKind.NumericLiteral))
+            {
+                var literal = Consume();
+                arrayData.ArrayRank = (int)literal.Value!;
+                arrayData.RankOmitted = false;
+
+                if (Matches(TokenKind.Comma))
+                {
+                    throw new NotImplementedException("Multidimensional arrays aren't implemented yet");
+                }
+            }
+
+            Expect(TokenKind.CloseBracket);
+
+            if (Matches(TokenKind.OpenBracket))
+            {
+                throw new NotImplementedException("Jagged arrays aren't implemented yet");
+            }
+        }
+
+        return new TypeNode(baseType, typeArguments, arrayData);
     }
 
     private StatementNode ParseDeclarationStatement()
