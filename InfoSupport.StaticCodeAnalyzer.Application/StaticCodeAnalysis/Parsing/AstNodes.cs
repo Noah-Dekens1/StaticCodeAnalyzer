@@ -24,6 +24,7 @@ public class GlobalNamespaceNode() : NamespaceNode("global", true)
     public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces];
 }
 
+[DebuggerDisplay("namespace {Name,nq}")]
 public class NamespaceNode(
     string name,
     bool isFileScoped=false,
