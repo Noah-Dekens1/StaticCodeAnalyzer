@@ -619,11 +619,11 @@ public class Parser
 
             Expect(TokenKind.OpenParen);
 
-            var expr = ParseExpression();
+            AstNode value = (AstNode?)ParseExpression() ?? ParseType()!;
 
             Expect(TokenKind.CloseParen);
 
-            return new NameofExpressionNode(expr!);
+            return new NameofExpressionNode(value);
         }
 
         if (ConsumeIfMatch(TokenKind.SizeofKeyword))
@@ -635,6 +635,21 @@ public class Parser
             Expect(TokenKind.CloseParen);
 
             return new SizeofExpressionNode(type!);
+        }
+
+        if (ConsumeIfMatch(TokenKind.DefaultKeyword))
+        {
+            // Default operator | default(int)
+            if (ConsumeIfMatch(TokenKind.OpenParen))
+            {
+                var type = ParseType();
+
+                Expect(TokenKind.CloseParen);
+
+                return new DefaultOperatorExpressionNode(type);
+            }
+
+            return new DefaultLiteralNode();
         }
 
         return null;

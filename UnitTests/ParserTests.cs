@@ -3142,6 +3142,7 @@ public class ParserTests
     {
         var tokens = Lexer.Lex("""
             var n1 = nameof(List);
+            var n1 = nameof(int);
             var n2 = nameof(List<int>);
             var n3 = nameof(List<int>.Count);
             """);
@@ -3156,7 +3157,16 @@ public class ParserTests
                     type: AstUtils.SimpleNameAsType("var"),
                     identifier: "n1",
                     expression: new NameofExpressionNode(
-                        expr: new IdentifierExpression("List")
+                        value: new IdentifierExpression("List")
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "n1",
+                    expression: new NameofExpressionNode(
+                        value: AstUtils.SimpleNameAsType("int")
                     )
                 )
             ),
@@ -3165,7 +3175,7 @@ public class ParserTests
                     type: AstUtils.SimpleNameAsType("var"),
                     identifier: "n2",
                     expression: new NameofExpressionNode(
-                        expr: new GenericNameNode(
+                        value: new GenericNameNode(
                             identifier: new IdentifierExpression("List"),
                             typeArguments: new TypeArgumentsNode([
                                 AstUtils.SimpleNameAsType("int")
@@ -3179,7 +3189,7 @@ public class ParserTests
                     type: AstUtils.SimpleNameAsType("var"),
                     identifier: "n3",
                     expression: new NameofExpressionNode(
-                        expr: new MemberAccessExpressionNode(
+                        value: new MemberAccessExpressionNode(
                             lhs: new GenericNameNode(
                                 identifier: new IdentifierExpression("List"),
                                 typeArguments: new TypeArgumentsNode([
@@ -3221,6 +3231,56 @@ public class ParserTests
                             )
                         ])
                     )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_DefaultOperator_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var variable = default(int);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "variable",
+                    expression: new DefaultOperatorExpressionNode(
+                        type: AstUtils.SimpleNameAsType("int")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_DefaultLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            int variable = default;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("int"),
+                    identifier: "variable",
+                    expression: new DefaultLiteralNode()
                 )
             )
         );

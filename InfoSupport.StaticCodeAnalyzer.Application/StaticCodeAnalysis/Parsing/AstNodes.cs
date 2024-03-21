@@ -95,6 +95,12 @@ public class NumericLiteralNode(object? value) : LiteralExpressionNode
     public override string ToString() => $"{Value}";
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class DefaultLiteralNode : LiteralExpressionNode
+{
+    public override string ToString() => "default";
+}
+
 [DebuggerDisplay("{ToString()}")]
 public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 {
@@ -1232,11 +1238,11 @@ public class TypeofExpressionNode(TypeNode type) : ExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class NameofExpressionNode(ExpressionNode expr) : ExpressionNode
+public class NameofExpressionNode(AstNode value) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expr;
-    public override List<AstNode> Children => [Expression];
-    public override string ToString() => $"nameof({Expression})";
+    public AstNode Value { get; set; } = value;
+    public override List<AstNode> Children => [Value];
+    public override string ToString() => $"nameof({Value})";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
@@ -1245,4 +1251,12 @@ public class SizeofExpressionNode(TypeNode type) : ExpressionNode
     public TypeNode Type { get; set; } = type;
     public override List<AstNode> Children => [Type];
     public override string ToString() => $"sizeof({Type})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class DefaultOperatorExpressionNode(TypeNode type) : ExpressionNode
+{
+    public TypeNode Type { get; set; } = type;
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"default({Type})";
 }
