@@ -7,8 +7,8 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 namespace UnitTests;
 
 using TokenList = List<(TokenKind Kind, string Lexeme)>;
-using TokenListWithValues = List<(TokenKind Kind, string Lexeme, object? Value)>;
 using TokenListWithPositions = List<(TokenKind kind, Position start, Position end)>;
+using TokenListWithValues = List<(TokenKind Kind, string Lexeme, object? Value)>;
 
 [TestClass]
 public class LexerTests
@@ -18,7 +18,7 @@ public class LexerTests
     {
         Assert.AreEqual(expectedTokens.Count, actualTokens.Count);
 
-        for (int i =  0; i < expectedTokens.Count; i++)
+        for (int i = 0; i < expectedTokens.Count; i++)
         {
             var (kind, lexeme) = expectedTokens[i];
             var actualToken = actualTokens[i];

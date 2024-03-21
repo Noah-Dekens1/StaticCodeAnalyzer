@@ -22,7 +22,7 @@ namespace UnitTests;
 [TestClass]
 public class ParserTests
 {
-    private static T GetGlobalStatement<T>(AST ast, int index=0) where T : StatementNode
+    private static T GetGlobalStatement<T>(AST ast, int index = 0) where T : StatementNode
     {
         return (T)ast.Root.GlobalStatements[index].Statement;
     }
@@ -76,7 +76,7 @@ public class ParserTests
         var actual = Parser.Parse(tokens);
 
         var expected = AST.Build();
-        
+
         expected.Root.GlobalStatements.Add(new GlobalStatementNode(
             statement: new ExpressionStatementNode(
                 expression: new AddExpressionNode(
@@ -109,7 +109,7 @@ public class ParserTests
                 )
             )
         ));
-        
+
 
         AssertStandardASTEquals(expected, actual);
     }
@@ -440,7 +440,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(expected , actual);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -460,7 +460,7 @@ public class ParserTests
             """);
 
         var actual = Parser.Parse(tokens);
-        
+
         var expected = AST.Build();
 
         expected.Root.GlobalStatements.Add(
@@ -993,7 +993,7 @@ public class ParserTests
             """);
 
         var actual = Parser.Parse(tokens);
-        
+
         var expected = AST.Build();
 
         expected.Root.GlobalStatements.Add(
@@ -1121,6 +1121,8 @@ public class ParserTests
                         )
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "IsValid",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1138,6 +1140,8 @@ public class ParserTests
                         value: new BooleanLiteralNode(true)
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "OtherProperty",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1150,6 +1154,8 @@ public class ParserTests
                         value: new BooleanLiteralNode(false)
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "InitOnly",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1168,6 +1174,8 @@ public class ParserTests
                         value: null
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "ExpressionBodied",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1180,6 +1188,8 @@ public class ParserTests
                         value: null
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "BlockBodied",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1313,6 +1323,8 @@ public class ParserTests
                 modifiers: [],
                 members: [
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "Name",
                         propertyType: new TypeNode(new IdentifierExpression("string")),
                         getter: new PropertyAccessorNode(
@@ -1375,6 +1387,8 @@ public class ParserTests
                 modifiers: [],
                 members: [
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "A",
                         propertyType: new TypeNode(new IdentifierExpression("int")),
                         getter: new PropertyAccessorNode(
@@ -1521,7 +1535,7 @@ public class ParserTests
                 statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "c", new ElementAccessExpressionNode(
                     lhs: new IdentifierExpression("dict"),
                     arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode( "hello")), name: null)
+                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode("hello")), name: null)
                     ])
                 ))
             ),
@@ -1864,6 +1878,8 @@ public class ParserTests
                         )
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "FancyStrings",
                         propertyType: new TypeNode(
                             baseType: new IdentifierExpression("List"),
@@ -1883,6 +1899,8 @@ public class ParserTests
                         value: null
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "IsValid",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1900,6 +1918,8 @@ public class ParserTests
                         value: new BooleanLiteralNode(true)
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "OtherProperty",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1912,6 +1932,8 @@ public class ParserTests
                         value: new BooleanLiteralNode(false)
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "InitOnly",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1930,6 +1952,8 @@ public class ParserTests
                         value: null
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "ExpressionBodied",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -1942,6 +1966,8 @@ public class ParserTests
                         value: null
                     ),
                     new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
                         propertyName: "BlockBodied",
                         propertyType: new TypeNode(new IdentifierExpression("bool")),
                         getter: new PropertyAccessorNode(
@@ -2054,7 +2080,7 @@ public class ParserTests
                                     ),
                                     arguments: new ArgumentListNode([
                                         new ArgumentNode(
-                                            expression: new NumericLiteralNode(7), 
+                                            expression: new NumericLiteralNode(7),
                                             name: null
                                         )
                                     ])
@@ -3353,6 +3379,59 @@ public class ParserTests
                         lhs: new IdentifierExpression("b"),
                         rhs: new NumericLiteralNode(1)
                     )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_AsyncAwait_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            async Task<string> GetTodoList(string url)
+            {
+                return await s_httpClient.GetStringAsync(url);
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [OptionalModifier.Async],
+                    name: new IdentifierExpression("GetTodoList"),
+                    returnType: new TypeNode(
+                        baseType: new IdentifierExpression("Task"),
+                        typeArguments: new TypeArgumentsNode([
+                            AstUtils.SimpleNameAsType("string")
+                        ])
+                    ),
+                    parameters: new ParameterListNode([
+                        new ParameterNode(
+                            type: AstUtils.SimpleNameAsType("string"),
+                            identifier: "url"
+                        )
+                    ]),
+                    body: new BlockNode([
+                        new ReturnStatementNode(
+                            returnExpression: new AwaitExpressionNode(
+                                expression: new InvocationExpressionNode(
+                                    lhs: AstUtils.ResolveMemberAccess("s_httpClient.GetStringAsync"),
+                                    arguments: new ArgumentListNode([
+                                        new ArgumentNode(
+                                            expression: new IdentifierExpression("url"),
+                                            name: null
+                                        )
+                                    ])
+                                )
+                            )
+                        )
+                    ])
                 )
             )
         ]);
