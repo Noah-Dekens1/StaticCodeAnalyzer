@@ -2874,7 +2874,7 @@ public class ParserTests
             var result = 10 switch
             {
                 1 => "1",
-                2 => "2",
+                2 when true => "2",
                 _ => "Invalid"
             };
             """);
@@ -2897,7 +2897,8 @@ public class ParserTests
                             ),
                             new SwitchExpressionArmNode(
                                 condition: new ConstantPatternNode(new NumericLiteralNode(2)),
-                                value: new StringLiteralNode("2")
+                                value: new StringLiteralNode("2"),
+                                whenClause: new BooleanLiteralNode(true)
                             ),
                             new SwitchExpressionArmNode(
                                 condition: new DiscardPatternNode(),
