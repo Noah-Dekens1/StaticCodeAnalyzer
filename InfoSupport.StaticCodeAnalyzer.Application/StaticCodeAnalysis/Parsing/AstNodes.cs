@@ -473,11 +473,6 @@ public class BlockNode(List<StatementNode> statements) : StatementNode
     public override List<AstNode> Children => [.. Statements];
 }
 
-public class TernaryExpressionNode : ExpressionNode
-{
-
-}
-
 // @FIXME is an identifier an expression and not just a part of an expression?
 [DebuggerDisplay("{Identifier,nq}")]
 public class IdentifierExpression(string identifier) : ExpressionNode
@@ -1164,4 +1159,16 @@ public class SwitchExpressionNode(ExpressionNode switchExpression, List<SwitchEx
 public class BreakStatementNode : StatementNode
 {
 
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode trueExpr, ExpressionNode falseExpr) : ExpressionNode
+{
+    public ExpressionNode Condition { get; set; } = condition;
+    public ExpressionNode TrueExpr { get; set; } = trueExpr;
+    public ExpressionNode FalseExpr { get; set; } = falseExpr;
+
+    public override List<AstNode> Children => [Condition, TrueExpr, FalseExpr];
+    public override string ToString()
+        => $"{Condition} ? {TrueExpr} : {FalseExpr}";
 }
