@@ -626,6 +626,17 @@ public class Parser
             return new NameofExpressionNode(expr!);
         }
 
+        if (ConsumeIfMatch(TokenKind.SizeofKeyword))
+        {
+            Expect(TokenKind.OpenParen);
+
+            var type = ParseType();
+
+            Expect(TokenKind.CloseParen);
+
+            return new SizeofExpressionNode(type!);
+        }
+
         return null;
     }
 

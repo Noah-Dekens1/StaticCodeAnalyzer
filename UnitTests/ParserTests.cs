@@ -3195,4 +3195,36 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_Sizeof_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Console.WriteLine(sizeof(int));
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new SizeofExpressionNode(
+                                    AstUtils.SimpleNameAsType("int")
+                                ),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

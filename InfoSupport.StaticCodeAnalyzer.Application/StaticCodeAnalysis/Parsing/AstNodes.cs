@@ -1238,3 +1238,11 @@ public class NameofExpressionNode(ExpressionNode expr) : ExpressionNode
     public override List<AstNode> Children => [Expression];
     public override string ToString() => $"nameof({Expression})";
 }
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SizeofExpressionNode(TypeNode type) : ExpressionNode
+{
+    public TypeNode Type { get; set; } = type;
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"sizeof({Type})";
+}
