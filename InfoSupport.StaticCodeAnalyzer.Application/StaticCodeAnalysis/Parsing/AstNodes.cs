@@ -148,7 +148,7 @@ public enum UnaryOperator
     LogicalNot,
     Increment,
     Decrement,
-    BitwiseComplement
+    BitwiseComplement,
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -181,6 +181,17 @@ public class UnaryExpressionNode : ExpressionNode
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{(IsPrefix ? OperatorForDbg : "")}{Expression}{(!IsPrefix ? OperatorForDbg : "")}";
+}
+
+public class CastExpressionNode(TypeNode type, ExpressionNode expr) : ExpressionNode
+{
+    public ExpressionNode Expression { get; set; } = expr;
+    public TypeNode Type { get; set; } = type;
+
+    public override List<AstNode> Children => [Type, Expression];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"({Type}){Expression}";
 }
 
 public class UnaryNegationNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)

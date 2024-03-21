@@ -3066,4 +3066,39 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_Cast_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var people = (IList<Person>?)result!;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "people",
+                    expression: new CastExpressionNode(
+                        type: new TypeNode(
+                            baseType: AstUtils.SimpleName("IList"),
+                            typeArguments: new TypeArgumentsNode([
+                                new TypeNode(
+                                    baseType: AstUtils.SimpleName("Person")
+                                )
+                            ]),
+                            isNullable: true
+                        ),
+                        expr: new IdentifierExpression("result", true)
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
 }

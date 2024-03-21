@@ -626,7 +626,7 @@ public class Parser
         bool isFirst = true;
         bool isImplicit = true;
 
-        List<LambdaParameterNode> parameters = new List<LambdaParameterNode>();
+        List<LambdaParameterNode> parameters = new();
 
         do
         {
@@ -666,8 +666,23 @@ public class Parser
 
         if (!maybeLambda)
         {
-            // @note: assumes parenthesized expr, may also be tuple?
+            // @note: assumes parenthesized expr or cast, may also be tuple?
             Seek(start);
+
+            var maybeCast = true;
+            {
+                var type = ParseType();
+
+                maybeCast &= type is not null && ConsumeIfMatch(TokenKind.CloseParen);
+                var rhs = ParseExpression(null, true);
+                maybeCast &= rhs is not null;
+
+                if (maybeCast)
+                    return new CastExpressionNode(type!, rhs!);
+                else
+                    Seek(start);
+            }
+
             var expr = new ParenthesizedExpressionNode(ParseExpression()!);
             Expect(TokenKind.CloseParen);
             return expr;
