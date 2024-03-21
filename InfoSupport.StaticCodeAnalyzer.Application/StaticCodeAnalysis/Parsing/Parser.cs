@@ -651,6 +651,41 @@ public class Parser
         return new LambdaExpressionNode(parameters, ParseLambdaBody());
     }
 
+    private SwitchExpressionNode ParseSwitchExpression(ExpressionNode expr)
+    {
+        Expect(TokenKind.SwitchKeyword);
+
+        Expect(TokenKind.OpenBrace);
+
+        List<SwitchExpressionArmNode> arms = [];
+
+        do
+        {
+            if (Matches(TokenKind.CloseBrace))
+                break;
+
+            PatternNode caseValue = ParsePattern()!;
+            ExpressionNode? whenClause = null;
+
+            if (MatchesLexeme("when", TokenKind.Identifier))
+            {
+                Expect(TokenKind.Identifier);
+                whenClause = ParseExpression()!; // binary expr
+            }
+
+            Expect(TokenKind.EqualsGreaterThan);
+
+            var resultExpr = ParseExpression()!;
+
+            arms.Add(new SwitchExpressionArmNode(caseValue, resultExpr, whenClause));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        Expect(TokenKind.CloseBrace);
+
+        return new SwitchExpressionNode(expr, arms);
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
     {
@@ -719,17 +754,22 @@ public class Parser
             ExpressionNode lhs = possibleLHS ?? (ExpressionNode?)literal ?? new IdentifierExpression(token.Lexeme);
             if (possibleLHS is null)
                 Consume();
-            return ParseBinaryExpression(lhs);
+            possibleLHS = ParseBinaryExpression(lhs);
         }
         else if (isCurrentTokenIdentifier && possibleLHS is null)
         {
             Consume();
-            return new IdentifierExpression(token.Lexeme);
+            possibleLHS = new IdentifierExpression(token.Lexeme);
         }
         else if (isLiteral && possibleLHS is null)
         {
             Consume();
-            return literal!;
+            possibleLHS = literal!;
+        }
+
+        if (Matches(TokenKind.SwitchKeyword))
+        {
+            return ParseSwitchExpression(possibleLHS!);
         }
 
         return possibleLHS;
@@ -1261,6 +1301,12 @@ public class Parser
         return new ConstantPatternNode(value);
     }
 
+    private DiscardPatternNode ParseDiscardPattern()
+    {
+        Consume();
+        return new DiscardPatternNode();
+    }
+
     // Parsing patterns is quite similar to parsing expressions
     private PatternNode? ParsePattern()
     {
@@ -1272,6 +1318,11 @@ public class Parser
         if (Matches(TokenKind.OpenParen))
         {
             possibleLHS = ParseParenthesizedPattern();
+        }
+
+        if (MatchesLexeme("_"))
+        {
+            return ParseDiscardPattern();
         }
 
         if (possibleLHS is null && IsRelationalPattern(PeekCurrent()))
