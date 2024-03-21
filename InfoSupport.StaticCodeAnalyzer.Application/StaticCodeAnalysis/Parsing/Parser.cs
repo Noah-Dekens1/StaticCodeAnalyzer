@@ -105,6 +105,18 @@ public class Parser
     }
 
     [DebuggerHidden]
+    public bool ConsumeIfMatchSequence(params TokenKind[] tokenKinds)
+    {
+        for (int i = 0; i < tokenKinds.Length; i++)
+            if (!Matches(tokenKinds[i], i))
+                return false;
+
+        Consume(tokenKinds.Length);
+
+        return true;
+    }
+
+    [DebuggerHidden]
     public bool MatchesLexeme(string lexeme, TokenKind? kind = null, int peekOffset=0)
     {
         var token = PeekSafe(peekOffset);
@@ -296,6 +308,8 @@ public class Parser
     private bool IsBinaryOperator(int peekStart = 0)
     {
         var kind = PeekSafe(peekStart + 0).Kind;
+        var next = PeekSafe(peekStart + 1).Kind;
+        var nextNext = PeekSafe(peekStart + 2).Kind;
 
         switch (kind)
         {
@@ -331,6 +345,7 @@ public class Parser
             case TokenKind.QuestionQuestion:
             case TokenKind.QuestionQuestionEquals:
 
+
                 // ...
                 return true;
             default: return false;
@@ -339,7 +354,20 @@ public class Parser
 
     private BinaryExpressionNode ParseBinaryExpression(ExpressionNode lhs)
     {
-        var binaryOperator = Consume(); // @fixme: deal with multi-token tokens (left shift for example is token LessThan & LessThan)
+        if (ConsumeIfMatchSequence(TokenKind.LessThan, TokenKind.LessThanEquals))
+            return new LeftShiftAssignExpressionNode(lhs, ParseExpression()!);
+
+        if (ConsumeIfMatchSequence(TokenKind.LessThan, TokenKind.LessThan))
+            return new LeftShiftExpressionNode(lhs, ParseExpression()!);
+
+        if (ConsumeIfMatchSequence(TokenKind.GreaterThan, TokenKind.GreaterThanEquals))
+            return new RightShiftAssignExpressionNode(lhs, ParseExpression()!);
+
+        if (ConsumeIfMatchSequence(TokenKind.GreaterThan, TokenKind.GreaterThan))
+            return new RightShiftExpressionNode(lhs, ParseExpression()!);
+
+
+        var binaryOperator = Consume();
 
         var rhs = ParseExpression()!;
 

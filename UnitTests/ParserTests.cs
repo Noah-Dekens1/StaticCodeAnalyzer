@@ -3287,4 +3287,76 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_BitwiseShifts_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var d = 1 << 1;
+            var h = 2 >> 1;
+            var a = 2;
+            var b = 4;
+            a <<= 1;
+            b >>= 1;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "d",
+                    expression: new LeftShiftExpressionNode(
+                        lhs: new NumericLiteralNode(1),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "h",
+                    expression: new RightShiftExpressionNode(
+                        lhs: new NumericLiteralNode(2),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "a",
+                    expression: new NumericLiteralNode(2)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "b",
+                    expression: new NumericLiteralNode(4)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new LeftShiftAssignExpressionNode(
+                        lhs: new IdentifierExpression("a"),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new RightShiftAssignExpressionNode(
+                        lhs: new IdentifierExpression("b"),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

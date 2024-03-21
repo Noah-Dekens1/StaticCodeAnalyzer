@@ -255,7 +255,13 @@ public enum BinaryOperator
 
     Assignment,
     NullCoalescing,
-    NullCoalescingAssignment
+    NullCoalescingAssignment,
+
+    // Bitwise
+    LeftShift,
+    RightShift,
+    LeftShiftAssign,
+    RightShiftAssign,
 
     // ...
 }
@@ -298,6 +304,11 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.Assignment => "=",
         BinaryOperator.NullCoalescing => "??",
         BinaryOperator.NullCoalescingAssignment => "??=",
+
+        BinaryOperator.LeftShift => "<<",
+        BinaryOperator.LeftShiftAssign => "<<=",
+        BinaryOperator.RightShift => ">>",
+        BinaryOperator.RightShiftAssign => ">>=",
 
         _ => throw new NotImplementedException()
     };
@@ -420,6 +431,26 @@ public class NullCoalescingExpressionNode(ExpressionNode lhs, ExpressionNode rhs
 public class NullCoalescingAssignmentExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
     public override BinaryOperator Operator => BinaryOperator.NullCoalescingAssignment;
+}
+
+public class LeftShiftExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LeftShift;
+}
+
+public class LeftShiftAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LeftShiftAssign;
+}
+
+public class RightShiftExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.RightShift;
+}
+
+public class RightShiftAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.RightShiftAssign;
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
