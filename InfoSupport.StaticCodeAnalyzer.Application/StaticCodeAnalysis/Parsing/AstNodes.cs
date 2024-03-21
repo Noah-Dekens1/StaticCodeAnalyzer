@@ -113,13 +113,20 @@ public class CharLiteralNode(char value) : LiteralExpressionNode
     public override string ToString() => $"'{Value}'";
 }
 
-[DebuggerDisplay("{ToString()}")]
+[DebuggerDisplay("{ToString(),nq}")]
 public class StringLiteralNode(string value) : LiteralExpressionNode
 {
     public string Value { get; set; } = value;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"\"{Value}\"";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class NullLiteralNode : LiteralExpressionNode
+{
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => "null";
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -230,6 +237,8 @@ public enum BinaryOperator
     OrAssign,
 
     Assignment,
+    NullCoalescing,
+    NullCoalescingAssignment
 
     // ...
 }
@@ -270,6 +279,8 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.OrAssign => "|=",
 
         BinaryOperator.Assignment => "=",
+        BinaryOperator.NullCoalescing => "??",
+        BinaryOperator.NullCoalescingAssignment => "??=",
 
         _ => throw new NotImplementedException()
     };
@@ -384,6 +395,16 @@ public class OrAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Bi
     public override BinaryOperator Operator => BinaryOperator.OrAssign;
 }
 
+public class NullCoalescingExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.NullCoalescing;
+}
+
+public class NullCoalescingAssignmentExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.NullCoalescingAssignment;
+}
+
 [DebuggerDisplay("{ToString(),nq}")]
 public class TypeArgumentsNode(List<TypeNode> typeArguments) : AstNode
 {
@@ -422,18 +443,19 @@ public struct ArrayTypeData
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments=null, ArrayTypeData? arrayType=null) : AstNode
+public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments=null, ArrayTypeData? arrayType=null, bool isNullable=false) : AstNode
 {
     public AstNode BaseType { get; set; } = baseType;
     public TypeArgumentsNode? TypeArgumentsNode { get; set; } = typeArguments;
     public ArrayTypeData ArrayType { get; set; } = arrayType ?? new();
+    public bool IsNullable { get; set; } = isNullable;
 
     public override List<AstNode> Children => Utils.ParamsToList(BaseType, TypeArgumentsNode);
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => TypeArgumentsNode is not null
-        ? $"{BaseType}<{TypeArgumentsNode}>"
-        : $"{BaseType}";
+        ? $"{BaseType}<{TypeArgumentsNode}>{(IsNullable ? "?" : "")}"
+        : $"{BaseType}{(IsNullable ? "?" : "")}";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
@@ -475,9 +497,10 @@ public class BlockNode(List<StatementNode> statements) : StatementNode
 
 // @FIXME is an identifier an expression and not just a part of an expression?
 [DebuggerDisplay("{Identifier,nq}")]
-public class IdentifierExpression(string identifier) : ExpressionNode
+public class IdentifierExpression(string identifier, bool isNullForgiving=false) : ExpressionNode
 {
     public string Identifier { get; set; } = identifier;
+    public bool IsNullForgiving { get; set; } = isNullForgiving;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => Identifier;
@@ -550,7 +573,7 @@ public class WhileStatementNode(ExpressionNode condition, AstNode body) : Statem
     public override List<AstNode> Children => [Condition, Body];
 }
 
-[DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]
+[DebuggerDisplay("{ToString(),nq}")]
 public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
@@ -560,6 +583,14 @@ public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}.{Identifier}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) 
+    : MemberAccessExpressionNode(lhs, identifier)
+{
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"{LHS}?.{Identifier}";
 }
 
 [DebuggerDisplay("{ToString()}")]

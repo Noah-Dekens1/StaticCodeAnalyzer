@@ -11,6 +11,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+
+readonly struct MemberData(Token token, bool isConditional=false, bool isNullForgiving=false)
+{
+    public readonly Token Token = token;
+    public readonly bool IsConditional = isConditional;
+    public readonly bool IsNullForgiving = isNullForgiving;
+}
+
 public class Parser
 {
     private Token[] _input = [];
@@ -180,6 +188,11 @@ public class Parser
             literal = new BooleanLiteralNode(value);
             return true;
         }
+        else if (kind == TokenKind.NullKeyword)
+        {
+            literal = new NullLiteralNode();
+            return true;
+        }
 
         return false;
     }
@@ -314,6 +327,8 @@ public class Parser
 
             // Special cases
             case TokenKind.Equals: // Assignment expression is technically also a binary expression (LHS/RHS)
+            case TokenKind.QuestionQuestion:
+            case TokenKind.QuestionQuestionEquals:
 
                 // ...
                 return true;
@@ -353,35 +368,57 @@ public class Parser
             { TokenKind.BarEquals,           () => new OrAssignExpressionNode(lhs, rhs) },
 
             { TokenKind.Equals,              () => new AssignmentExpressionNode(lhs, rhs) },
+            { TokenKind.QuestionQuestion,    () => new NullCoalescingExpressionNode(lhs, rhs) },
+
+            { TokenKind.QuestionQuestionEquals, () => new NullCoalescingAssignmentExpressionNode(lhs, rhs) },
         };
 
 
         return operators[binaryOperator.Kind]();
     }
 
-    private static ExpressionNode ResolveMemberAccess(List<Token> members)
+    private static ExpressionNode ResolveMemberAccess(List<MemberData> members)
     {
         var member = members[^1];
-        var identifier = new IdentifierExpression(member.Lexeme);
+        var identifier = new IdentifierExpression(member.Token.Lexeme, member.IsNullForgiving);
 
         if (members.Count == 1)
             return identifier;
 
         members.Remove(member);
 
-        return new MemberAccessExpressionNode(
-            lhs: ResolveMemberAccess(members),
-            identifier: identifier
-        );
+        var prev = members[^1];
+
+        var lhs = ResolveMemberAccess(members);
+
+        return prev.IsConditional
+            ? new ConditionalMemberAccessExpressionNode(lhs, identifier)
+            : new MemberAccessExpressionNode(
+                lhs: lhs,
+                identifier: identifier
+            );
     }
 
     private ExpressionNode ResolveIdentifier()
     {
-        List<Token> members = [];
+        List<MemberData> members = [];
 
         do
         {
-            members.Add(Consume());
+            var token = Consume();
+
+            bool isConditional = false;
+
+            if (Matches(TokenKind.Question) && Matches(TokenKind.Dot, 1))
+            {
+                Consume();
+                isConditional = true;
+            }
+
+            bool isForgiving = ConsumeIfMatch(TokenKind.Exclamation);
+
+            members.Add(new MemberData(token, isConditional, isForgiving));
+
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
         return ResolveMemberAccess(members);
@@ -397,18 +434,6 @@ public class Parser
         }
 
         return identifier;
-    }
-
-    private ExpressionNode PeekIdentifier(ref int peekIndex)
-    {
-        List<Token> members = [];
-
-        do
-        {
-            members.Add(Peek(peekIndex++));
-        } while (!IsAtEnd() && Matches(TokenKind.DoKeyword, peekIndex) && Matches(TokenKind.Identifier, ++peekIndex));
-
-        return ResolveMemberAccess(members);
     }
 
     private InvocationExpressionNode ParseInvocation(ExpressionNode lhs)
@@ -993,7 +1018,9 @@ public class Parser
             }
         }
 
-        return new TypeNode(baseType, typeArguments, arrayData);
+        bool isNullable = ConsumeIfMatch(TokenKind.Question);
+
+        return new TypeNode(baseType, typeArguments, arrayData, isNullable);
     }
 
     private StatementNode ParseDeclarationStatement()

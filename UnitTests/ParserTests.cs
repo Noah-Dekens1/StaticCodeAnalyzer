@@ -2978,4 +2978,92 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_NullableTypes_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Person? person = null;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("Person"),
+                        isNullable: true
+                    ),
+                    identifier: "person",
+                    expression: new NullLiteralNode()
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_NullConditionalMemberAccess_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var name = test!.person?.Name!;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "name",
+                    expression: new ConditionalMemberAccessExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("test", true),
+                            identifier: new IdentifierExpression("person")
+                        ),
+                        identifier: new IdentifierExpression("Name", true)
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_NullCoalescing_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            result ??= a ?? b ?? c;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new NullCoalescingAssignmentExpressionNode(
+                        lhs: new IdentifierExpression("result"),
+                        rhs: new NullCoalescingExpressionNode(
+                            lhs: new IdentifierExpression("a"),
+                            rhs: new NullCoalescingExpressionNode(
+                                lhs: new IdentifierExpression("b"),
+                                rhs: new IdentifierExpression("c")
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
