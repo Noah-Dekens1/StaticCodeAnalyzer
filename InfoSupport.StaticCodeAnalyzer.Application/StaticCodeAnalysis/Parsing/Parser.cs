@@ -686,6 +686,22 @@ public class Parser
         return new SwitchExpressionNode(expr, arms);
     }
 
+    private bool IsTernaryOperator()
+    {
+        // Unary/Binary operators like ?. and ?? should be handled already so don't check for them
+        return Matches(TokenKind.Question);
+    }
+
+    private ExpressionNode ParseTernaryExpression(ExpressionNode lhs)
+    {
+        Expect(TokenKind.Question);
+        var trueExpr = ParseExpression()!;
+        Expect(TokenKind.Colon);
+        var falseExpr = ParseExpression()!;
+
+        return new TernaryExpressionNode(lhs, trueExpr, falseExpr);
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
     {
@@ -745,7 +761,18 @@ public class Parser
             possibleLHS = unaryExpr; // try to see if we're the LHS of a binary or ternary expression
         }
 
-        bool isBinary = !onlyParseSingle && IsBinaryOperator((possibleLHS is null && !isCurrentTokenIdentifier) ? 1 : 0);
+        if (isCurrentTokenIdentifier && possibleLHS is null)
+        {
+            Consume();
+            possibleLHS = new IdentifierExpression(token.Lexeme);
+        }
+        else if (isLiteral && possibleLHS is null)
+        {
+            Consume();
+            possibleLHS = literal!;
+        }
+
+        bool isBinary = !onlyParseSingle && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
         //bool isTernary = false;
 
         if (isBinary)
@@ -756,15 +783,12 @@ public class Parser
                 Consume();
             possibleLHS = ParseBinaryExpression(lhs);
         }
-        else if (isCurrentTokenIdentifier && possibleLHS is null)
+
+        bool isTernary = possibleLHS is not null && IsTernaryOperator();
+
+        if (isTernary)
         {
-            Consume();
-            possibleLHS = new IdentifierExpression(token.Lexeme);
-        }
-        else if (isLiteral && possibleLHS is null)
-        {
-            Consume();
-            possibleLHS = literal!;
+            possibleLHS = ParseTernaryExpression(possibleLHS!);
         }
 
         if (Matches(TokenKind.SwitchKeyword))

@@ -2911,4 +2911,70 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_TernaryExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var result = 5 * 3 < 20 ? 0 : 1;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "result",
+                    expression: new MultiplyExpressionNode(
+                        lhs: new NumericLiteralNode(5),
+                        rhs: new LessThanExpressionNode(
+                            lhs: new NumericLiteralNode(3),
+                            rhs: new TernaryExpressionNode(
+                                condition: new NumericLiteralNode(20),
+                                trueExpr: new NumericLiteralNode(0),
+                                falseExpr: new NumericLiteralNode(1)
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_NestedTernaryExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var result = true ? 1 : isValid ? 2 : 3;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "result",
+                    expression: new TernaryExpressionNode(
+                        condition: new BooleanLiteralNode(true),
+                        trueExpr: new NumericLiteralNode(1),
+                        falseExpr: new TernaryExpressionNode(
+                            condition: new IdentifierExpression("isValid"),
+                            trueExpr: new NumericLiteralNode(2),
+                            falseExpr: new NumericLiteralNode(3)
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
