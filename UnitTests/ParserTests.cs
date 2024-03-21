@@ -3101,4 +3101,36 @@ public class ParserTests
 
         AssertStandardASTEquals(actual, expected);
     }
+
+    [TestMethod]
+    public void Parse_NullableArrayIndex_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var result = array?[5];
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "result",
+                    expression: new ConditionalElementAccessExpressionNode(
+                        lhs: new IdentifierExpression("array"),
+                        arguments: new BracketedArgumentList([
+                            new ArgumentNode(
+                                expression: new IndexExpressionNode(new NumericLiteralNode(5)),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

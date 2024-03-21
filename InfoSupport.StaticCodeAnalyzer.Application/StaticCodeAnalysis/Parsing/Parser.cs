@@ -446,6 +446,7 @@ public class Parser
 
     private ElementAccessExpressionNode ParseElementAccess(ExpressionNode lhs)
     {
+        bool isConditional = ConsumeIfMatch(TokenKind.Question);
         Expect(TokenKind.OpenBracket);
 
         var expr = ParseExpression();
@@ -455,7 +456,9 @@ public class Parser
 
         Expect(TokenKind.CloseBracket);
 
-        return new ElementAccessExpressionNode(lhs, args);
+        return isConditional 
+            ? new ConditionalElementAccessExpressionNode(lhs, args)
+            : new ElementAccessExpressionNode(lhs, args);
     }
 
     private IndexedCollectionInitializerNode ParseIndexedCollectionInitializerElement()
@@ -607,6 +610,9 @@ public class Parser
 
         // Element access
         if (Matches(TokenKind.OpenBracket))
+            return ParseElementAccess(resolvedIdentifier);
+
+        if (Matches(TokenKind.Question) && Matches(TokenKind.OpenBracket, 1))
             return ParseElementAccess(resolvedIdentifier);
 
         if (Matches(TokenKind.EqualsGreaterThan))
