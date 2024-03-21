@@ -1045,10 +1045,17 @@ public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode 
     public override string ToString() => $"{OperatorForDbg} {Value}";
 }
 
+[DebuggerDisplay("{Value,nq}")]
 public class ConstantPatternNode(ExpressionNode value) : PatternNode
 {
     public ExpressionNode Value { get; set; } = value;
     public override List<AstNode> Children => [Value];
+}
+
+[DebuggerDisplay("_")]
+public class DiscardPatternNode : PatternNode
+{
+    public override List<AstNode> Children => [];
 }
 
 public abstract class LogicalPatternNode : PatternNode
@@ -1127,6 +1134,30 @@ public class SwitchStatementNode(ExpressionNode switchExpression, List<SwitchSec
 
     public override List<AstNode> Children => [SwitchExpression, ..SwitchSectionNodes];
     public override string ToString() => $"switch {SwitchExpression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SwitchExpressionArmNode(PatternNode condition, ExpressionNode value, ExpressionNode? whenClause = null) : AstNode
+{
+    public PatternNode Condition { get; set; } = condition;
+    public ExpressionNode Value { get; set; } = value;
+    public ExpressionNode? WhenClause { get; set; } = whenClause;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Condition, Value, WhenClause);
+
+    public override string ToString() => WhenClause is not null
+        ? $"{Condition} => {Value} when {WhenClause}"
+        : $"{Condition} => {Value}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SwitchExpressionNode(ExpressionNode switchExpression, List<SwitchExpressionArmNode> arms) : ExpressionNode
+{
+    public ExpressionNode SwitchExpression { get; set; } = switchExpression;
+    public List<SwitchExpressionArmNode> SwitchArmNodes { get; set; } = arms;
+
+    public override List<AstNode> Children => [SwitchExpression, .. SwitchArmNodes];
+    public override string ToString() => $"{SwitchExpression} switch";
 }
 
 [DebuggerDisplay("break;")]

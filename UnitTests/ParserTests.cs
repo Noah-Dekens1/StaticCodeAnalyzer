@@ -2866,4 +2866,49 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_SwitchExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var result = 10 switch
+            {
+                1 => "1",
+                2 => "2",
+                _ => "Invalid"
+            };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "result",
+                    expression: new SwitchExpressionNode(
+                        switchExpression: new NumericLiteralNode(10),
+                        arms: [
+                            new SwitchExpressionArmNode(
+                                condition: new ConstantPatternNode(new NumericLiteralNode(1)),
+                                value: new StringLiteralNode("1")
+                            ),
+                            new SwitchExpressionArmNode(
+                                condition: new ConstantPatternNode(new NumericLiteralNode(2)),
+                                value: new StringLiteralNode("2")
+                            ),
+                            new SwitchExpressionArmNode(
+                                condition: new DiscardPatternNode(),
+                                value: new StringLiteralNode("Invalid")
+                            ),
+                        ]
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
