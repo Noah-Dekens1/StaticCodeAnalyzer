@@ -585,10 +585,10 @@ public class WhileStatementNode(ExpressionNode condition, AstNode body) : Statem
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) : ExpressionNode
+public class MemberAccessExpressionNode(ExpressionNode lhs, ExpressionNode identifier) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
-    public IdentifierExpression Identifier { get; set; } = identifier;
+    public ExpressionNode Identifier { get; set; } = identifier;
 
     public override List<AstNode> Children => [LHS, Identifier];
 
@@ -597,7 +597,7 @@ public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) 
+public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, ExpressionNode identifier) 
     : MemberAccessExpressionNode(lhs, identifier)
 {
     [ExcludeFromCodeCoverage]
@@ -1220,4 +1220,21 @@ public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode true
     public override List<AstNode> Children => [Condition, TrueExpr, FalseExpr];
     public override string ToString()
         => $"{Condition} ? {TrueExpr} : {FalseExpr}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TypeofExpressionNode(TypeNode type) : ExpressionNode
+{
+    public TypeNode Type { get; set; } = type;
+
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"typeof({Type})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class NameofExpressionNode(ExpressionNode expr) : ExpressionNode
+{
+    public ExpressionNode Expression { get; set; } = expr;
+    public override List<AstNode> Children => [Expression];
+    public override string ToString() => $"nameof({Expression})";
 }

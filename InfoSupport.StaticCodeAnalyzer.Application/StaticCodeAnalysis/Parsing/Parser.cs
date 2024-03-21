@@ -12,9 +12,10 @@ using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
-readonly struct MemberData(Token token, bool isConditional=false, bool isNullForgiving=false)
+readonly struct MemberData(Token token, TypeArgumentsNode? typeArguments=null, bool isConditional=false, bool isNullForgiving=false)
 {
     public readonly Token Token = token;
+    public readonly TypeArgumentsNode? TypeArguments = typeArguments;
     public readonly bool IsConditional = isConditional;
     public readonly bool IsNullForgiving = isNullForgiving;
 }
@@ -380,7 +381,11 @@ public class Parser
     private static ExpressionNode ResolveMemberAccess(List<MemberData> members)
     {
         var member = members[^1];
-        var identifier = new IdentifierExpression(member.Token.Lexeme, member.IsNullForgiving);
+        ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme, member.IsNullForgiving);
+
+        identifier = member.TypeArguments is null 
+            ? identifier 
+            : new GenericNameNode(identifier, member.TypeArguments);
 
         if (members.Count == 1)
             return identifier;
@@ -399,7 +404,7 @@ public class Parser
             );
     }
 
-    private ExpressionNode ResolveIdentifier()
+    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric=false, bool isInNamespaceOrType=false)
     {
         List<MemberData> members = [];
 
@@ -407,7 +412,13 @@ public class Parser
         {
             var token = Consume();
 
+            TypeArgumentsNode? typeArguments = null;
             bool isConditional = false;
+
+            if (isMaybeGeneric && Matches(TokenKind.LessThan) && PossiblyParseTypeArgumentList(out typeArguments, isInNamespaceOrType))
+            {
+
+            }
 
             if (Matches(TokenKind.Question) && Matches(TokenKind.Dot, 1))
             {
@@ -417,13 +428,14 @@ public class Parser
 
             bool isForgiving = ConsumeIfMatch(TokenKind.Exclamation);
 
-            members.Add(new MemberData(token, isConditional, isForgiving));
+            members.Add(new MemberData(token, typeArguments, isConditional, isForgiving));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
         return ResolveMemberAccess(members);
     }
 
+    [Obsolete]
     private ExpressionNode ResolveMaybeGenericIdentifier(bool isInNamespaceOrType)
     {
         var identifier = ResolveIdentifier();
@@ -589,6 +601,30 @@ public class Parser
 
             return new CollectionExpressionNode(elements);
         }
+        
+        if (ConsumeIfMatch(TokenKind.TypeofKeyword))
+        {
+            Expect(TokenKind.OpenParen);
+
+            var type = ParseType()!;
+
+            Expect(TokenKind.CloseParen);
+
+            return new TypeofExpressionNode(type);
+        }
+
+        if (MatchesLexeme("nameof"))
+        {
+            Consume();
+
+            Expect(TokenKind.OpenParen);
+
+            var expr = ParseExpression();
+
+            Expect(TokenKind.CloseParen);
+
+            return new NameofExpressionNode(expr!);
+        }
 
         return null;
     }
@@ -738,6 +774,10 @@ public class Parser
         return Matches(TokenKind.Question);
     }
 
+    private readonly List<string> _contextualKeywords = [
+        "nameof"
+    ];
+
     private ExpressionNode ParseTernaryExpression(ExpressionNode lhs)
     {
         Expect(TokenKind.Question);
@@ -767,12 +807,12 @@ public class Parser
             possibleLHS = expr; // @todo: only if it isn't a lambda
         }
 
-        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier;
+        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
         ExpressionNode? resolvedIdentifier = null;
 
         if (isCurrentTokenIdentifier && possibleLHS is null)
         {
-            resolvedIdentifier = ResolveMaybeGenericIdentifier(false);
+            resolvedIdentifier = ResolveIdentifier(true, false);
             possibleLHS = resolvedIdentifier;
         }
 
@@ -1322,7 +1362,7 @@ public class Parser
         Debug.Assert(accessModifier is null);
 
         var type = ParseType();
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
@@ -1696,7 +1736,7 @@ public class Parser
 
         ParseType();
 
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
 
         if (identifier is null)
         {
@@ -1987,7 +2027,7 @@ public class Parser
             return ParseConstructor(accessModifier ?? AccessModifier.Private);
 
         var type = ParseType();
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         var isMethod = Matches(TokenKind.OpenParen);
         var isProperty = Matches(TokenKind.OpenBrace);
         var isField = !isMethod && !isProperty; // @todo: events?
@@ -2029,12 +2069,12 @@ public class Parser
 
         var type = Consume().Kind;
 
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         AstNode? parentName = null;
 
         if (ConsumeIfMatch(TokenKind.Colon))
         {
-            parentName = ResolveMaybeGenericIdentifier(true);
+            parentName = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         }
 
         Expect(TokenKind.OpenBrace);
