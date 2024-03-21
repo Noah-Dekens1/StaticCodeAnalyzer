@@ -1646,17 +1646,20 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new ExpressionStatementNode(
                     expression: new InvocationExpressionNode(
-                        lhs: new GenericNameNode(
-                            identifier: AstUtils.ResolveMemberAccess("SomeClass.SomeMethod"),
-                            typeArguments: new TypeArgumentsNode([
-                                new TypeNode(
-                                    baseType: new IdentifierExpression("Dictionary"),
-                                    typeArguments: new TypeArgumentsNode([
-                                        AstUtils.SimpleNameAsType("T2"),
-                                        AstUtils.SimpleNameAsType("T3")
-                                    ])
-                                )
-                            ])
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("SomeClass"),
+                            identifier: new GenericNameNode(
+                                identifier: new IdentifierExpression("SomeMethod"),
+                                typeArguments: new TypeArgumentsNode([
+                                    new TypeNode(
+                                        baseType: new IdentifierExpression("Dictionary"),
+                                        typeArguments: new TypeArgumentsNode([
+                                            AstUtils.SimpleNameAsType("T2"),
+                                            AstUtils.SimpleNameAsType("T3")
+                                        ])
+                                    )
+                                ])
+                            )
                         ),
                         arguments: new ArgumentListNode([
                             new ArgumentNode(
@@ -3063,6 +3066,296 @@ public class ParserTests
                 )
             )
         );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_Cast_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var people = (IList<Person>?)result!;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "people",
+                    expression: new CastExpressionNode(
+                        type: new TypeNode(
+                            baseType: AstUtils.SimpleName("IList"),
+                            typeArguments: new TypeArgumentsNode([
+                                new TypeNode(
+                                    baseType: AstUtils.SimpleName("Person")
+                                )
+                            ]),
+                            isNullable: true
+                        ),
+                        expr: new IdentifierExpression("result", true)
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
+
+    [TestMethod]
+    public void Parse_NullableArrayIndex_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var result = array?[5];
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "result",
+                    expression: new ConditionalElementAccessExpressionNode(
+                        lhs: new IdentifierExpression("array"),
+                        arguments: new BracketedArgumentList([
+                            new ArgumentNode(
+                                expression: new IndexExpressionNode(new NumericLiteralNode(5)),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_NameofExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var n1 = nameof(List);
+            var n1 = nameof(int);
+            var n2 = nameof(List<int>);
+            var n3 = nameof(List<int>.Count);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "n1",
+                    expression: new NameofExpressionNode(
+                        value: new IdentifierExpression("List")
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "n1",
+                    expression: new NameofExpressionNode(
+                        value: AstUtils.SimpleNameAsType("int")
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "n2",
+                    expression: new NameofExpressionNode(
+                        value: new GenericNameNode(
+                            identifier: new IdentifierExpression("List"),
+                            typeArguments: new TypeArgumentsNode([
+                                AstUtils.SimpleNameAsType("int")
+                            ])
+                        )
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "n3",
+                    expression: new NameofExpressionNode(
+                        value: new MemberAccessExpressionNode(
+                            lhs: new GenericNameNode(
+                                identifier: new IdentifierExpression("List"),
+                                typeArguments: new TypeArgumentsNode([
+                                    AstUtils.SimpleNameAsType("int")
+                                ])
+                            ),
+                            identifier: new IdentifierExpression("Count")
+                        )
+                    )
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_Sizeof_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Console.WriteLine(sizeof(int));
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new SizeofExpressionNode(
+                                    AstUtils.SimpleNameAsType("int")
+                                ),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_DefaultOperator_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var variable = default(int);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "variable",
+                    expression: new DefaultOperatorExpressionNode(
+                        type: AstUtils.SimpleNameAsType("int")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_DefaultLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            int variable = default;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("int"),
+                    identifier: "variable",
+                    expression: new DefaultLiteralNode()
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BitwiseShifts_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var d = 1 << 1;
+            var h = 2 >> 1;
+            var a = 2;
+            var b = 4;
+            a <<= 1;
+            b >>= 1;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "d",
+                    expression: new LeftShiftExpressionNode(
+                        lhs: new NumericLiteralNode(1),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "h",
+                    expression: new RightShiftExpressionNode(
+                        lhs: new NumericLiteralNode(2),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "a",
+                    expression: new NumericLiteralNode(2)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "b",
+                    expression: new NumericLiteralNode(4)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new LeftShiftAssignExpressionNode(
+                        lhs: new IdentifierExpression("a"),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new RightShiftAssignExpressionNode(
+                        lhs: new IdentifierExpression("b"),
+                        rhs: new NumericLiteralNode(1)
+                    )
+                )
+            )
+        ]);
 
         AssertStandardASTEquals(expected, actual);
     }

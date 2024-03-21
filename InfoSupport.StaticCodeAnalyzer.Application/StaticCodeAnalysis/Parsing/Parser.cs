@@ -12,9 +12,10 @@ using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
-readonly struct MemberData(Token token, bool isConditional=false, bool isNullForgiving=false)
+readonly struct MemberData(Token token, TypeArgumentsNode? typeArguments=null, bool isConditional=false, bool isNullForgiving=false)
 {
     public readonly Token Token = token;
+    public readonly TypeArgumentsNode? TypeArguments = typeArguments;
     public readonly bool IsConditional = isConditional;
     public readonly bool IsNullForgiving = isNullForgiving;
 }
@@ -101,6 +102,18 @@ public class Parser
     public bool Matches(TokenKind kind, int peekOffset=0)
     {
         return PeekSafe(peekOffset).Kind == kind;
+    }
+
+    [DebuggerHidden]
+    public bool ConsumeIfMatchSequence(params TokenKind[] tokenKinds)
+    {
+        for (int i = 0; i < tokenKinds.Length; i++)
+            if (!Matches(tokenKinds[i], i))
+                return false;
+
+        Consume(tokenKinds.Length);
+
+        return true;
     }
 
     [DebuggerHidden]
@@ -295,6 +308,8 @@ public class Parser
     private bool IsBinaryOperator(int peekStart = 0)
     {
         var kind = PeekSafe(peekStart + 0).Kind;
+        var next = PeekSafe(peekStart + 1).Kind;
+        var nextNext = PeekSafe(peekStart + 2).Kind;
 
         switch (kind)
         {
@@ -330,6 +345,7 @@ public class Parser
             case TokenKind.QuestionQuestion:
             case TokenKind.QuestionQuestionEquals:
 
+
                 // ...
                 return true;
             default: return false;
@@ -338,7 +354,20 @@ public class Parser
 
     private BinaryExpressionNode ParseBinaryExpression(ExpressionNode lhs)
     {
-        var binaryOperator = Consume(); // @fixme: deal with multi-token tokens (left shift for example is token LessThan & LessThan)
+        if (ConsumeIfMatchSequence(TokenKind.LessThan, TokenKind.LessThanEquals))
+            return new LeftShiftAssignExpressionNode(lhs, ParseExpression()!);
+
+        if (ConsumeIfMatchSequence(TokenKind.LessThan, TokenKind.LessThan))
+            return new LeftShiftExpressionNode(lhs, ParseExpression()!);
+
+        if (ConsumeIfMatchSequence(TokenKind.GreaterThan, TokenKind.GreaterThanEquals))
+            return new RightShiftAssignExpressionNode(lhs, ParseExpression()!);
+
+        if (ConsumeIfMatchSequence(TokenKind.GreaterThan, TokenKind.GreaterThan))
+            return new RightShiftExpressionNode(lhs, ParseExpression()!);
+
+
+        var binaryOperator = Consume();
 
         var rhs = ParseExpression()!;
 
@@ -380,7 +409,11 @@ public class Parser
     private static ExpressionNode ResolveMemberAccess(List<MemberData> members)
     {
         var member = members[^1];
-        var identifier = new IdentifierExpression(member.Token.Lexeme, member.IsNullForgiving);
+        ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme, member.IsNullForgiving);
+
+        identifier = member.TypeArguments is null 
+            ? identifier 
+            : new GenericNameNode(identifier, member.TypeArguments);
 
         if (members.Count == 1)
             return identifier;
@@ -399,7 +432,7 @@ public class Parser
             );
     }
 
-    private ExpressionNode ResolveIdentifier()
+    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric=false, bool isInNamespaceOrType=false)
     {
         List<MemberData> members = [];
 
@@ -407,7 +440,13 @@ public class Parser
         {
             var token = Consume();
 
+            TypeArgumentsNode? typeArguments = null;
             bool isConditional = false;
+
+            if (isMaybeGeneric && Matches(TokenKind.LessThan) && PossiblyParseTypeArgumentList(out typeArguments, isInNamespaceOrType))
+            {
+
+            }
 
             if (Matches(TokenKind.Question) && Matches(TokenKind.Dot, 1))
             {
@@ -417,13 +456,14 @@ public class Parser
 
             bool isForgiving = ConsumeIfMatch(TokenKind.Exclamation);
 
-            members.Add(new MemberData(token, isConditional, isForgiving));
+            members.Add(new MemberData(token, typeArguments, isConditional, isForgiving));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
         return ResolveMemberAccess(members);
     }
 
+    [Obsolete]
     private ExpressionNode ResolveMaybeGenericIdentifier(bool isInNamespaceOrType)
     {
         var identifier = ResolveIdentifier();
@@ -446,6 +486,7 @@ public class Parser
 
     private ElementAccessExpressionNode ParseElementAccess(ExpressionNode lhs)
     {
+        bool isConditional = ConsumeIfMatch(TokenKind.Question);
         Expect(TokenKind.OpenBracket);
 
         var expr = ParseExpression();
@@ -455,7 +496,9 @@ public class Parser
 
         Expect(TokenKind.CloseBracket);
 
-        return new ElementAccessExpressionNode(lhs, args);
+        return isConditional 
+            ? new ConditionalElementAccessExpressionNode(lhs, args)
+            : new ElementAccessExpressionNode(lhs, args);
     }
 
     private IndexedCollectionInitializerNode ParseIndexedCollectionInitializerElement()
@@ -586,6 +629,56 @@ public class Parser
 
             return new CollectionExpressionNode(elements);
         }
+        
+        if (ConsumeIfMatch(TokenKind.TypeofKeyword))
+        {
+            Expect(TokenKind.OpenParen);
+
+            var type = ParseType()!;
+
+            Expect(TokenKind.CloseParen);
+
+            return new TypeofExpressionNode(type);
+        }
+
+        if (MatchesLexeme("nameof"))
+        {
+            Consume();
+
+            Expect(TokenKind.OpenParen);
+
+            AstNode value = (AstNode?)ParseExpression() ?? ParseType()!;
+
+            Expect(TokenKind.CloseParen);
+
+            return new NameofExpressionNode(value);
+        }
+
+        if (ConsumeIfMatch(TokenKind.SizeofKeyword))
+        {
+            Expect(TokenKind.OpenParen);
+
+            var type = ParseType();
+
+            Expect(TokenKind.CloseParen);
+
+            return new SizeofExpressionNode(type!);
+        }
+
+        if (ConsumeIfMatch(TokenKind.DefaultKeyword))
+        {
+            // Default operator | default(int)
+            if (ConsumeIfMatch(TokenKind.OpenParen))
+            {
+                var type = ParseType();
+
+                Expect(TokenKind.CloseParen);
+
+                return new DefaultOperatorExpressionNode(type);
+            }
+
+            return new DefaultLiteralNode();
+        }
 
         return null;
     }
@@ -609,6 +702,9 @@ public class Parser
         if (Matches(TokenKind.OpenBracket))
             return ParseElementAccess(resolvedIdentifier);
 
+        if (Matches(TokenKind.Question) && Matches(TokenKind.OpenBracket, 1))
+            return ParseElementAccess(resolvedIdentifier);
+
         if (Matches(TokenKind.EqualsGreaterThan))
             return ParseLambdaExpressionSingleParam(resolvedIdentifier);
 
@@ -626,7 +722,7 @@ public class Parser
         bool isFirst = true;
         bool isImplicit = true;
 
-        List<LambdaParameterNode> parameters = new List<LambdaParameterNode>();
+        List<LambdaParameterNode> parameters = new();
 
         do
         {
@@ -666,8 +762,23 @@ public class Parser
 
         if (!maybeLambda)
         {
-            // @note: assumes parenthesized expr, may also be tuple?
+            // @note: assumes parenthesized expr or cast, may also be tuple?
             Seek(start);
+
+            var maybeCast = true;
+            {
+                var type = ParseType();
+
+                maybeCast &= type is not null && ConsumeIfMatch(TokenKind.CloseParen);
+                var rhs = ParseExpression(null, true);
+                maybeCast &= rhs is not null;
+
+                if (maybeCast)
+                    return new CastExpressionNode(type!, rhs!);
+                else
+                    Seek(start);
+            }
+
             var expr = new ParenthesizedExpressionNode(ParseExpression()!);
             Expect(TokenKind.CloseParen);
             return expr;
@@ -717,6 +828,10 @@ public class Parser
         return Matches(TokenKind.Question);
     }
 
+    private readonly List<string> _contextualKeywords = [
+        "nameof"
+    ];
+
     private ExpressionNode ParseTernaryExpression(ExpressionNode lhs)
     {
         Expect(TokenKind.Question);
@@ -746,12 +861,12 @@ public class Parser
             possibleLHS = expr; // @todo: only if it isn't a lambda
         }
 
-        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier;
+        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
         ExpressionNode? resolvedIdentifier = null;
 
         if (isCurrentTokenIdentifier && possibleLHS is null)
         {
-            resolvedIdentifier = ResolveMaybeGenericIdentifier(false);
+            resolvedIdentifier = ResolveIdentifier(true, false);
             possibleLHS = resolvedIdentifier;
         }
 
@@ -1301,7 +1416,7 @@ public class Parser
         Debug.Assert(accessModifier is null);
 
         var type = ParseType();
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
@@ -1675,7 +1790,7 @@ public class Parser
 
         ParseType();
 
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
 
         if (identifier is null)
         {
@@ -1966,7 +2081,7 @@ public class Parser
             return ParseConstructor(accessModifier ?? AccessModifier.Private);
 
         var type = ParseType();
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         var isMethod = Matches(TokenKind.OpenParen);
         var isProperty = Matches(TokenKind.OpenBrace);
         var isField = !isMethod && !isProperty; // @todo: events?
@@ -2008,12 +2123,12 @@ public class Parser
 
         var type = Consume().Kind;
 
-        var identifier = ResolveMaybeGenericIdentifier(true);
+        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         AstNode? parentName = null;
 
         if (ConsumeIfMatch(TokenKind.Colon))
         {
-            parentName = ResolveMaybeGenericIdentifier(true);
+            parentName = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         }
 
         Expect(TokenKind.OpenBrace);

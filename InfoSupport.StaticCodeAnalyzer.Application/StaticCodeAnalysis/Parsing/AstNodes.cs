@@ -95,6 +95,12 @@ public class NumericLiteralNode(object? value) : LiteralExpressionNode
     public override string ToString() => $"{Value}";
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class DefaultLiteralNode : LiteralExpressionNode
+{
+    public override string ToString() => "default";
+}
+
 [DebuggerDisplay("{ToString()}")]
 public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 {
@@ -148,7 +154,7 @@ public enum UnaryOperator
     LogicalNot,
     Increment,
     Decrement,
-    BitwiseComplement
+    BitwiseComplement,
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -181,6 +187,17 @@ public class UnaryExpressionNode : ExpressionNode
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{(IsPrefix ? OperatorForDbg : "")}{Expression}{(!IsPrefix ? OperatorForDbg : "")}";
+}
+
+public class CastExpressionNode(TypeNode type, ExpressionNode expr) : ExpressionNode
+{
+    public ExpressionNode Expression { get; set; } = expr;
+    public TypeNode Type { get; set; } = type;
+
+    public override List<AstNode> Children => [Type, Expression];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"({Type}){Expression}";
 }
 
 public class UnaryNegationNode(ExpressionNode expr, bool isPrefix = true) : UnaryExpressionNode(expr, isPrefix)
@@ -238,7 +255,13 @@ public enum BinaryOperator
 
     Assignment,
     NullCoalescing,
-    NullCoalescingAssignment
+    NullCoalescingAssignment,
+
+    // Bitwise
+    LeftShift,
+    RightShift,
+    LeftShiftAssign,
+    RightShiftAssign,
 
     // ...
 }
@@ -281,6 +304,11 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.Assignment => "=",
         BinaryOperator.NullCoalescing => "??",
         BinaryOperator.NullCoalescingAssignment => "??=",
+
+        BinaryOperator.LeftShift => "<<",
+        BinaryOperator.LeftShiftAssign => "<<=",
+        BinaryOperator.RightShift => ">>",
+        BinaryOperator.RightShiftAssign => ">>=",
 
         _ => throw new NotImplementedException()
     };
@@ -403,6 +431,26 @@ public class NullCoalescingExpressionNode(ExpressionNode lhs, ExpressionNode rhs
 public class NullCoalescingAssignmentExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
     public override BinaryOperator Operator => BinaryOperator.NullCoalescingAssignment;
+}
+
+public class LeftShiftExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LeftShift;
+}
+
+public class LeftShiftAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LeftShiftAssign;
+}
+
+public class RightShiftExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.RightShift;
+}
+
+public class RightShiftAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.RightShiftAssign;
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
@@ -574,10 +622,10 @@ public class WhileStatementNode(ExpressionNode condition, AstNode body) : Statem
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) : ExpressionNode
+public class MemberAccessExpressionNode(ExpressionNode lhs, ExpressionNode identifier) : ExpressionNode
 {
     public ExpressionNode LHS { get; set; } = lhs;
-    public IdentifierExpression Identifier { get; set; } = identifier;
+    public ExpressionNode Identifier { get; set; } = identifier;
 
     public override List<AstNode> Children => [LHS, Identifier];
 
@@ -586,7 +634,7 @@ public class MemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, IdentifierExpression identifier) 
+public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, ExpressionNode identifier) 
     : MemberAccessExpressionNode(lhs, identifier)
 {
     [ExcludeFromCodeCoverage]
@@ -665,7 +713,6 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentListNode argum
     public override string ToString() => $"{LHS}({Arguments})";
 }
 
-// @todo: maybe add new class BracketedArgumentList that inherits from ArgumentList instead
 [DebuggerDisplay("{ToString(),nq}")]
 public class ElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentList arguments) : ExpressionNode
 {
@@ -676,6 +723,14 @@ public class ElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentLi
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}[{Arguments}]";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ConditionalElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentList arguments)
+    : ElementAccessExpressionNode(lhs, arguments)
+{
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"{LHS}?[{Arguments}]";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
@@ -1202,4 +1257,37 @@ public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode true
     public override List<AstNode> Children => [Condition, TrueExpr, FalseExpr];
     public override string ToString()
         => $"{Condition} ? {TrueExpr} : {FalseExpr}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TypeofExpressionNode(TypeNode type) : ExpressionNode
+{
+    public TypeNode Type { get; set; } = type;
+
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"typeof({Type})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class NameofExpressionNode(AstNode value) : ExpressionNode
+{
+    public AstNode Value { get; set; } = value;
+    public override List<AstNode> Children => [Value];
+    public override string ToString() => $"nameof({Value})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class SizeofExpressionNode(TypeNode type) : ExpressionNode
+{
+    public TypeNode Type { get; set; } = type;
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"sizeof({Type})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class DefaultOperatorExpressionNode(TypeNode type) : ExpressionNode
+{
+    public TypeNode Type { get; set; } = type;
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"default({Type})";
 }
