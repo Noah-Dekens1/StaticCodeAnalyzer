@@ -18,7 +18,7 @@ public class AstComparator
 
     [DebuggerHidden]
     public static AstComparator Create()
-    { 
+    {
         return new AstComparator();
     }
 
@@ -75,7 +75,7 @@ public class AstComparator
 
             foreach (var (classType, name) in _ignoredProperties)
             {
-                if (classType.IsAssignableFrom(type) && property.Name == name) 
+                if (classType.IsAssignableFrom(type) && property.Name == name)
                 {
                     exclude = true;
                     break;
@@ -108,8 +108,8 @@ public class AstComparator
 
             if (expectedValue is IEnumerable enumerable && actualValue is IEnumerable actualEnumerable)
             {
-                List<object> expectedList = [..enumerable];
-                List<object> actualList = [..actualEnumerable];
+                List<object> expectedList = [.. enumerable];
+                List<object> actualList = [.. actualEnumerable];
 
                 var expectedCount = expectedList.Count;
                 var actualCount = actualList.Count;
