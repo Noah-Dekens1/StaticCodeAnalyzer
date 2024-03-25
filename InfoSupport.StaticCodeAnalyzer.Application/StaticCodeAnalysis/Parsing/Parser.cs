@@ -197,9 +197,15 @@ public class Parser
                     leading++;
                 }
 
+                // Parse string starting from beginning
+                // (i may be after $/@ already which is why we look back for j)
                 var inner = ParseStringLiteral(str[(j+1)..]);
+
                 interpolationBuilder.Append(str[i..(j+1+inner.Consumed-inner.QuoteCount)]);
                 interpolationBuilder.Append('"', inner.QuoteCount);
+
+                // Skip over consumed content besides the leading values which we've
+                // already consume
                 i += inner.Consumed-leading;
                 continue;
             }
