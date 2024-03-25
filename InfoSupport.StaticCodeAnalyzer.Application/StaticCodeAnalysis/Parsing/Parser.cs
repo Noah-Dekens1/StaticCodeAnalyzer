@@ -298,7 +298,7 @@ public class Parser
             i += 1;
         }
 
-        return new StringLiteralData(str.ToString(), isInterpolated, interpolations, i);
+        return new StringLiteralData(sb.ToString(), isInterpolated, interpolations, i);
     }
 
     private bool PeekLiteralExpression([MaybeNullWhen(false)] out LiteralExpressionNode literal, Token? providedToken = null)

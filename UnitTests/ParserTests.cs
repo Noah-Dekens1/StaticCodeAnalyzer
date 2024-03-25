@@ -3462,7 +3462,7 @@ public class ParserTests
                             arguments: [
                                 new ArgumentNode(
                                     new InterpolatedStringLiteralNode(
-                                        value: """$@"Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} ""world""!" """[..^1],
+                                        value: """Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} "world"!""",
                                         interpolations: [
                                             new StringInterpolationNode(
                                                 expression: new AddExpressionNode(
@@ -3474,7 +3474,7 @@ public class ParserTests
                                                             arguments: new ArgumentListNode([
                                                                 new ArgumentNode(
                                                                     expression: new InterpolatedStringLiteralNode(
-                                                                        value: """$"{4 - 2}" """[..^1],
+                                                                        value: """{4 - 2}""",
                                                                         interpolations: [
                                                                             new StringInterpolationNode(
                                                                                 expression: new SubtractExpressionNode(
