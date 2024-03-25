@@ -205,7 +205,7 @@ public class Parser
                 interpolationBuilder.Append('"', inner.QuoteCount);
 
                 // Skip over consumed content besides the leading values which we've
-                // already consume
+                // already consumed
                 i += inner.Consumed-leading;
                 continue;
             }
