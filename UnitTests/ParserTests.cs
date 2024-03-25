@@ -3446,10 +3446,62 @@ public class ParserTests
             Console.WriteLine($@"Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} ""world""!");
             """);
 
-
-
         var actual = Parser.Parse(tokens);
 
-        Debug.Assert(false);
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("Console"),
+                            identifier: new IdentifierExpression("WriteLine")
+                        ),
+                        arguments: new ArgumentListNode(
+                            arguments: [
+                                new ArgumentNode(
+                                    new InterpolatedStringLiteralNode(
+                                        value: """$@"Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} ""world""!" """[..^1],
+                                        interpolations: [
+                                            new StringInterpolationNode(
+                                                expression: new AddExpressionNode(
+                                                    lhs: new NumericLiteralNode(2),
+                                                    rhs: new AddExpressionNode(
+                                                        lhs: new NumericLiteralNode(3),
+                                                        rhs: new InvocationExpressionNode(
+                                                            lhs: AstUtils.ResolveMemberAccess("Convert.ToInt32"),
+                                                            arguments: new ArgumentListNode([
+                                                                new ArgumentNode(
+                                                                    expression: new InterpolatedStringLiteralNode(
+                                                                        value: """$"{4 - 2}" """[..^1],
+                                                                        interpolations: [
+                                                                            new StringInterpolationNode(
+                                                                                expression: new SubtractExpressionNode(
+                                                                                    lhs: new NumericLiteralNode(4),
+                                                                                    rhs: new NumericLiteralNode(2)
+                                                                                )
+                                                                            )
+                                                                        ]
+                                                                    ),
+                                                                    name: null
+                                                                )
+                                                            ])
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        ]
+                                    ), 
+                                    name: null
+                                )
+                            ]
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
     }
 }
