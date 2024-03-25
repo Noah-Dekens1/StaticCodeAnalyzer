@@ -3438,4 +3438,18 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_InterpolatedStringLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Console.WriteLine($@"Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} ""world""!");
+            """);
+
+
+
+        var actual = Parser.Parse(tokens);
+
+        Debug.Assert(false);
+    }
 }

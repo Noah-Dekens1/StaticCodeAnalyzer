@@ -129,6 +129,27 @@ public class StringLiteralNode(string value) : LiteralExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
+public class StringInterpolationNode(ExpressionNode expression) : AstNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+
+    public override List<AstNode> Children => [Expression];
+    public override string ToString() => $"{Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class InterpolatedStringLiteralNode(string value, List<StringInterpolationNode> interpolations) : LiteralExpressionNode
+{
+    public string Value { get; } = value;
+    public List<StringInterpolationNode> Interpolations { get; } = interpolations;
+
+    public override List<AstNode> Children => [.. Interpolations];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"\"{Value}\"";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
 public class NullLiteralNode : LiteralExpressionNode
 {
     [ExcludeFromCodeCoverage]
