@@ -20,12 +20,13 @@ readonly struct MemberData(Token token, TypeArgumentsNode? typeArguments = null,
     public readonly bool IsNullForgiving = isNullForgiving;
 }
 
-readonly struct StringLiteralData(string content, bool isInterpolated, List<StringInterpolationNode> interpolations, int consumed)
+readonly struct StringLiteralData(string content, bool isInterpolated, List<StringInterpolationNode> interpolations, int consumed, int quoteCount)
 {
     public readonly string Content = content;
     public readonly bool IsInterpolated = isInterpolated;
     public readonly List<StringInterpolationNode> Interpolations = interpolations;
     public readonly int Consumed = consumed;
+    public readonly int QuoteCount = quoteCount;
 }
 
 public class Parser
@@ -186,17 +187,21 @@ public class Parser
             if (c == '"')
             {
                 int j;
+                int leading = 0;
 
                 for (j = i - 1; j >= 0; j--) // iterate backwards to ignore $/@
                 {
                     if (str[j] != '$' && str[j] != '@')
                         break;
+
+                    leading++;
                 }
 
                 var inner = ParseStringLiteral(str[(j+1)..]);
-                interpolationBuilder.Append(str[i..(j+1+inner.Consumed)]);
-                interpolationBuilder.Append('"'); // @fixme: this is bad, won't work for raw string literals!!
-                i += inner.Consumed;
+                interpolationBuilder.Append(str[i..(j+1+inner.Consumed-inner.QuoteCount)]);
+                interpolationBuilder.Append('"', inner.QuoteCount);
+                i += inner.Consumed-leading;
+                continue;
             }
 
             if (c == '}')
@@ -248,7 +253,12 @@ public class Parser
             i++;
         }
 
+        bool isRaw = quotes >= 3;
+
         var sb = new StringBuilder();
+
+        int bracesSeen = 0;
+        int quotesSeen = 1;
 
         while (i < str.Length)
         {
@@ -259,7 +269,7 @@ public class Parser
             {
                 if (c == '{')
                 {
-                    if (n == '{')
+                    if (n == '{' && !isRaw)
                     {
                         i += 2;
                         sb.Append(c);
@@ -267,14 +277,26 @@ public class Parser
                     }
                     else
                     {
+                        bracesSeen++;
+
                         i += 1;
-                        var target = str[i..];
-                        interpolations.Add(ParseInterpolation(target, out var read, expectedBraces: 1));
-                        i += read;
                         sb.Append(c);
-                        sb.Append(target[..read]);
+
+                        if (isInterpolated && bracesSeen == dollarSigns)
+                        {
+                            var target = str[i..];
+                            interpolations.Add(ParseInterpolation(target, out var read, expectedBraces: 1));
+                            i += read;
+                            sb.Append(target[..read]);
+                            bracesSeen = 0;
+                        }
+
                         continue;
                     }
+                }
+                else
+                {
+                    bracesSeen = 0;
                 }
             }
 
@@ -286,8 +308,25 @@ public class Parser
                 continue;
             }
 
-            if (c == '"')
+            if (c == '"' && !isRaw)
                 break;
+
+            if (c == '"' && isRaw)
+            {
+                quotesSeen = 1;
+                int j;
+
+                for (j = i+1; j < str.Length; j++)
+                {
+                    if (str[j] == '"' && quotesSeen <= quotes)
+                        quotesSeen++;
+                    else 
+                        break;
+                }
+
+                if (quotesSeen == quotes)
+                    break;
+            }
 
             // Escape sequences in non-verbatim/raw strings
             if (c != '\\' || isVerbatim)
@@ -298,7 +337,9 @@ public class Parser
             i += 1;
         }
 
-        return new StringLiteralData(sb.ToString(), isInterpolated, interpolations, i);
+        i += quotesSeen;
+
+        return new StringLiteralData(sb.ToString(), isInterpolated, interpolations, i, quotesSeen);
     }
 
     private bool PeekLiteralExpression([MaybeNullWhen(false)] out LiteralExpressionNode literal, Token? providedToken = null)

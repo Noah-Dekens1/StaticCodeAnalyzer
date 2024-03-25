@@ -3504,4 +3504,35 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_RawStringLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""""
+            var a = $$""""Hello world! {{"""Test"""}}"""";
+            """"");
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "a",
+                    expression: new InterpolatedStringLiteralNode(
+                        value: """"Hello world! {{"""Test"""}}"""",
+                        interpolations: [
+                            new StringInterpolationNode(
+                                expression: new StringLiteralNode("Test")
+                            )
+                        ]
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
