@@ -755,14 +755,27 @@ public class ConditionalElementAccessExpressionNode(ExpressionNode lhs, Brackete
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class IndexExpressionNode(ExpressionNode expression) : ExpressionNode
+public class IndexExpressionNode(ExpressionNode expression, bool fromEnd=false) : ExpressionNode
 {
     public ExpressionNode Expression { get; set; } = expression;
+    public bool FromEnd { get; set; } = fromEnd;
 
     public override List<AstNode> Children => [Expression];
 
     [ExcludeFromCodeCoverage]
-    public override string ToString() => $"{Expression}";
+    public override string ToString() => $"{(FromEnd ? "^" : "")}{Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class RangeExpressionNode(IndexExpressionNode? lhs, IndexExpressionNode? rhs) : ExpressionNode
+{
+    public IndexExpressionNode? LHS { get; set; } = lhs;
+    public IndexExpressionNode? RHS { get; set; } = rhs;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(LHS, RHS);
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"{LHS}..{RHS}";
 }
 
 public abstract class CollectionInitializerElementNode : AstNode

@@ -3561,4 +3561,88 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_IndexFromEndExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = list[^1];
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "a", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("list"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true), name: null)
+                    ])
+                ))
+            )
+        );
+
+        AssertStandardASTEquals(expected, ast);
+    }
+
+    [TestMethod]
+    public void Parse_RangeExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var a = list[..^1];
+            var b = list[2..4];
+            var c = list[^1..3];
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "a", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("list"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(
+                            expression: new RangeExpressionNode(
+                                lhs: null,
+                                rhs: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true)
+                            ), 
+                            name: null
+                        )
+                    ])
+                ))
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "b", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("list"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(
+                            expression: new RangeExpressionNode(
+                                lhs: new IndexExpressionNode(new NumericLiteralNode(2)),
+                                rhs: new IndexExpressionNode(new NumericLiteralNode(4))
+                            ),
+                            name: null
+                        )
+                    ])
+                ))
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "c", new ElementAccessExpressionNode(
+                    lhs: new IdentifierExpression("list"),
+                    arguments: new BracketedArgumentList([
+                        new ArgumentNode(
+                            expression: new RangeExpressionNode(
+                                lhs: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true),
+                                rhs: new IndexExpressionNode(new NumericLiteralNode(3))
+                            ),
+                            name: null
+                        )
+                    ])
+                ))
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, ast);
+    }
 }
