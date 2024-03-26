@@ -3438,4 +3438,127 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_InterpolatedStringLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Console.WriteLine($@"Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} ""world""!");
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new IdentifierExpression("Console"),
+                            identifier: new IdentifierExpression("WriteLine")
+                        ),
+                        arguments: new ArgumentListNode(
+                            arguments: [
+                                new ArgumentNode(
+                                    new InterpolatedStringLiteralNode(
+                                        value: """Hello {2 + 3 + Convert.ToInt32($"{4 - 2}")} "world"!""",
+                                        interpolations: [
+                                            new StringInterpolationNode(
+                                                expression: new AddExpressionNode(
+                                                    lhs: new NumericLiteralNode(2),
+                                                    rhs: new AddExpressionNode(
+                                                        lhs: new NumericLiteralNode(3),
+                                                        rhs: new InvocationExpressionNode(
+                                                            lhs: AstUtils.ResolveMemberAccess("Convert.ToInt32"),
+                                                            arguments: new ArgumentListNode([
+                                                                new ArgumentNode(
+                                                                    expression: new InterpolatedStringLiteralNode(
+                                                                        value: """{4 - 2}""",
+                                                                        interpolations: [
+                                                                            new StringInterpolationNode(
+                                                                                expression: new SubtractExpressionNode(
+                                                                                    lhs: new NumericLiteralNode(4),
+                                                                                    rhs: new NumericLiteralNode(2)
+                                                                                )
+                                                                            )
+                                                                        ]
+                                                                    ),
+                                                                    name: null
+                                                                )
+                                                            ])
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        ]
+                                    ), 
+                                    name: null
+                                )
+                            ]
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_RawStringLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""""
+            var a = $$""""Hello world! {{"""Test"""}}"""";
+            """"");
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "a",
+                    expression: new InterpolatedStringLiteralNode(
+                        value: """"Hello world! {{"""Test"""}}"""",
+                        interpolations: [
+                            new StringInterpolationNode(
+                                expression: new StringLiteralNode("Test")
+                            )
+                        ]
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_VerbatimStringLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex(""""
+            var literal = @"""Hello world!""";
+            """");
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "literal",
+                    expression: new StringLiteralNode(
+                        value: "\"Hello world!\""
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
