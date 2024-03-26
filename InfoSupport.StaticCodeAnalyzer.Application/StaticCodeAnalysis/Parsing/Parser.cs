@@ -674,9 +674,11 @@ public class Parser
         Expect(TokenKind.OpenBracket);
 
         var expr = ParseExpression();
-        var indexExpr = new IndexExpressionNode(expr!);
+        expr = expr is RangeExpressionNode 
+            ? expr 
+            : ToIndexExpression(expr)!;
 
-        var args = new BracketedArgumentList([new ArgumentNode(indexExpr, null)]);
+        var args = new BracketedArgumentList([new ArgumentNode(expr, null)]);
 
         Expect(TokenKind.CloseBracket);
 
@@ -872,6 +874,11 @@ public class Parser
             return new AwaitExpressionNode(expression);
         }
 
+        if (Matches(TokenKind.Caret))
+        {
+            return ParseIndexExpressionFromEnd();
+        }
+
         return null;
     }
 
@@ -1035,8 +1042,35 @@ public class Parser
         return new TernaryExpressionNode(lhs, trueExpr, falseExpr);
     }
 
+    private IndexExpressionNode ParseIndexExpressionFromEnd()
+    {
+        Expect(TokenKind.Caret);
+        return new IndexExpressionNode(expression: ParseExpression(isParsingIndex: true)!, fromEnd: true);
+    }
+
+    private static IndexExpressionNode? ToIndexExpression(ExpressionNode? expression)
+    {
+        return expression is IndexExpressionNode indexExpression
+            ? indexExpression
+            : expression is not null
+                ? new IndexExpressionNode(expression)
+                : null;
+    }
+
+    private RangeExpressionNode? ParseRangeExpression(ExpressionNode? lhs)
+    {
+        Expect(TokenKind.DotDot);
+
+        var rhs = ParseExpression();
+
+        var lhsIndex = ToIndexExpression(lhs);
+        var rhsIndex = ToIndexExpression(rhs);
+
+        return new RangeExpressionNode(lhsIndex, rhsIndex);
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
-    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false)
+    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false, bool isParsingIndex = false)
     {
         var token = PeekCurrent();
 
@@ -1127,6 +1161,11 @@ public class Parser
         if (Matches(TokenKind.SwitchKeyword))
         {
             return ParseSwitchExpression(possibleLHS!);
+        }
+
+        if (Matches(TokenKind.DotDot) && !isParsingIndex)
+        {
+            return ParseRangeExpression(possibleLHS);
         }
 
         return possibleLHS;
