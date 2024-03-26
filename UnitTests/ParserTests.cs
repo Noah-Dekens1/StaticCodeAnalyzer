@@ -3535,4 +3535,30 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_VerbatimStringLiteral_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex(""""
+            var literal = @"""Hello world!""";
+            """");
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "literal",
+                    expression: new StringLiteralNode(
+                        value: "\"Hello world!\""
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

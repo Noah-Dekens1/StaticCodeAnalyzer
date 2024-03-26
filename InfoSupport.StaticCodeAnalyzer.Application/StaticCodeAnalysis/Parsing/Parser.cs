@@ -257,6 +257,9 @@ public class Parser
         {
             quotes++;
             i++;
+
+            if (isVerbatim)
+                break;
         }
 
         bool isRaw = quotes >= 3;
