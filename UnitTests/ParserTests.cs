@@ -3645,4 +3645,133 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, ast);
     }
+
+    [TestMethod]
+    public void Parse_ClassAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            [TestClass]
+            class Example
+            {
+                
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                attribute: new AttributeNode(
+                    arguments: [
+                        new AttributeArgumentNode(
+                            expression: new IdentifierExpression("TestClass")
+                        )
+                    ]
+                ),
+                members: []
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_InterfaceAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            [TestClass]
+            interface Example
+            {
+                
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new InterfaceDeclarationNode(
+                name: AstUtils.SimpleName("Example"),
+                attribute: new AttributeNode(
+                    arguments: [
+                        new AttributeArgumentNode(
+                            expression: new IdentifierExpression("TestClass")
+                        )
+                    ]
+                ),
+                members: []
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_StructAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            [TestClass]
+            struct Example
+            {
+                
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new StructDeclarationNode(
+                name: AstUtils.SimpleName("Example"),
+                attribute: new AttributeNode(
+                    arguments: [
+                        new AttributeArgumentNode(
+                            expression: new IdentifierExpression("TestClass")
+                        )
+                    ]
+                ),
+                members: []
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_EnumAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            [TestClass]
+            enum Example
+            {
+                
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new EnumDeclarationNode(
+                enumName: AstUtils.SimpleName("Example"),
+                attribute: new AttributeNode(
+                    arguments: [
+                        new AttributeArgumentNode(
+                            expression: new IdentifierExpression("TestClass")
+                        )
+                    ]
+                ),
+                members: [],
+                parentType: null
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

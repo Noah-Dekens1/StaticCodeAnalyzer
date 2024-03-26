@@ -1982,6 +1982,10 @@ public class Parser
     private bool IsTypeDeclaration()
     {
         var idx = 0;
+        
+        // Skip over possible attribute
+        if (Matches(TokenKind.OpenBracket))
+            TryParseAttribute(out idx, true);
 
         // Skip over all (access) modifiers
         while (IsValidTypeModifier(PeekSafe(idx)))
@@ -2041,7 +2045,66 @@ public class Parser
 
     }
 
+    private AttributeNode? TryParseAttribute(out int consumed, bool alwaysBacktrack=false)
+    {
+        var start = Tell();
+        Expect(TokenKind.OpenBracket);
 
+        List<AttributeArgumentNode> arguments = [];
+        string? target = null;
+
+        bool maybeAttribute = true;
+
+        consumed = 0;
+
+        // At this point it's no longer safe to expect anything
+
+        // Argument target (like assembly: ..., module: ...)
+        // see https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/
+        if (Matches(TokenKind.Identifier) && Matches(TokenKind.Colon, 1))
+        {
+            target = Consume().Lexeme;
+            Expect(TokenKind.Colon);
+        }
+
+        do
+        {
+            string? name = null;
+
+            // Named argument
+            if (Matches(TokenKind.Identifier) && Matches(TokenKind.Equals, 1))
+            {
+                name = Consume().Lexeme;
+                Expect(TokenKind.Equals);
+            }
+
+            var expr = ParseExpression();
+
+            if (expr is null)
+            {
+                maybeAttribute = false;
+                break;
+            }
+
+            arguments.Add(new AttributeArgumentNode(expr, name));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseBracket) || !maybeAttribute)
+        {
+            Seek(start);
+            return null;
+        }
+
+        consumed = Tell() - start;
+
+        if (alwaysBacktrack)
+        {
+            Seek(start);
+        }
+
+        return new AttributeNode(arguments, target);
+    }
 
     private List<StatementNode> ParseTopLevelStatements()
     {
@@ -2361,6 +2424,11 @@ public class Parser
 
     private TypeDeclarationNode ParseTypeDeclaration()
     {
+        AttributeNode? attribute = null;
+
+        if (Matches(TokenKind.OpenBracket))
+            attribute = TryParseAttribute(out _);
+            
         ParseModifiers(out var accessModifier, out var modifiers);
 
         var type = Consume().Kind;
@@ -2390,10 +2458,10 @@ public class Parser
 
         return type switch
         {
-            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
-            TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers),
-            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
-            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attribute),
+            TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attribute),
+            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attribute),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attribute),
             _ => throw new NotImplementedException(),
         };
     }

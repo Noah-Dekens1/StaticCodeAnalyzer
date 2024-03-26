@@ -851,9 +851,9 @@ public class UsingDirectiveNode(AstNode ns, string? alias) : AstNode
     }
 }
 
-public abstract class TypeDeclarationNode : AstNode
+public abstract class TypeDeclarationNode(AttributeNode? attribute) : AstNode
 {
-
+    public AttributeNode? Attribute { get; set; } = attribute;
 }
 
 public enum AccessModifier
@@ -1003,7 +1003,10 @@ public class MethodNode(
     public override List<AstNode> Children => Utils.ParamsToList(ReturnType, MethodName, Parameters, Body);
 }
 
-public class BasicDeclarationNode(AstNode name, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
+public class BasicDeclarationNode(
+    AstNode name, List<MemberNode> members, AstNode? parentName = null, 
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
+    AttributeNode? attribute = null) : TypeDeclarationNode(attribute)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
@@ -1015,28 +1018,37 @@ public class BasicDeclarationNode(AstNode name, List<MemberNode> members, AstNod
 }
 
 [DebuggerDisplay("class {Name,nq}")]
-public class ClassDeclarationNode(AstNode className, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
-    : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers)
+public class ClassDeclarationNode(
+    AstNode className, List<MemberNode> members, AstNode? parentName = null, 
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
+    AttributeNode? attribute = null) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attribute)
 {
 
 }
 
 [DebuggerDisplay("interface {Name,nq}")]
-public class InterfaceDeclarationNode(AstNode name, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
-    : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers)
+public class InterfaceDeclarationNode(
+    AstNode name, List<MemberNode> members, AstNode? parentName = null, 
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
+    AttributeNode? attribute = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attribute)
 {
 
 }
 
 [DebuggerDisplay("struct {Name,nq}")]
-public class StructDeclarationNode(AstNode name, List<MemberNode> members, AstNode? parentName = null, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null)
-    : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers)
+public class StructDeclarationNode(
+    AstNode name, List<MemberNode> members, AstNode? parentName = null, 
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
+    AttributeNode? attribute = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attribute)
 {
 
 }
 
 [DebuggerDisplay("enum {EnumName,nq}")]
-public class EnumDeclarationNode(AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null) : TypeDeclarationNode
+public class EnumDeclarationNode(
+    AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, 
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
+    AttributeNode? attribute = null) : TypeDeclarationNode(attribute)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
@@ -1291,6 +1303,8 @@ public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode true
     public ExpressionNode FalseExpr { get; set; } = falseExpr;
 
     public override List<AstNode> Children => [Condition, TrueExpr, FalseExpr];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString()
         => $"{Condition} ? {TrueExpr} : {FalseExpr}";
 }
@@ -1301,6 +1315,8 @@ public class TypeofExpressionNode(TypeNode type) : ExpressionNode
     public TypeNode Type { get; set; } = type;
 
     public override List<AstNode> Children => [Type];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"typeof({Type})";
 }
 
@@ -1309,6 +1325,8 @@ public class NameofExpressionNode(AstNode value) : ExpressionNode
 {
     public AstNode Value { get; set; } = value;
     public override List<AstNode> Children => [Value];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"nameof({Value})";
 }
 
@@ -1317,6 +1335,8 @@ public class SizeofExpressionNode(TypeNode type) : ExpressionNode
 {
     public TypeNode Type { get; set; } = type;
     public override List<AstNode> Children => [Type];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"sizeof({Type})";
 }
 
@@ -1325,6 +1345,8 @@ public class DefaultOperatorExpressionNode(TypeNode type) : ExpressionNode
 {
     public TypeNode Type { get; set; } = type;
     public override List<AstNode> Children => [Type];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"default({Type})";
 }
 
@@ -1333,5 +1355,33 @@ public class AwaitExpressionNode(ExpressionNode expression) : ExpressionNode
 {
     public ExpressionNode Expression { get; set; } = expression;
     public override List<AstNode> Children => [Expression];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"await {Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class AttributeArgumentNode(ExpressionNode expression, string? name = null) : AstNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+    public string? Name { get; set; } = name;
+
+    public override List<AstNode> Children => [Expression];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => Name is null
+        ? $"{Expression}"
+        : $"{Name}: {Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class AttributeNode(List<AttributeArgumentNode> arguments, string? target=null) : AstNode
+{
+    public List<AttributeArgumentNode> Arguments { get; set; } = arguments;
+    public string? Target { get; set; } = target;
+
+    public override List<AstNode> Children => [.. Arguments];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"[{string.Join(", ", Arguments)}]";
 }
