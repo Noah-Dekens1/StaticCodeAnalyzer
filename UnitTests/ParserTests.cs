@@ -4166,4 +4166,158 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ThrowException_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            throw new Exception();
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ThrowStatementNode(
+                    expression: new ObjectCreationExpressionNode(
+                        type: AstUtils.SimpleNameAsType("Exception")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_TryCatchFinally_ReturnsValidAST()
+    {
+        // Code snippet from https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/exception-handling-statements
+        var tokens = Lexer.Lex("""
+            async Task ProcessRequest(int itemId, CancellationToken ct)
+            {
+                Busy = true;
+
+                try
+                {
+                    await ProcessAsync(itemId, ct);
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    LogError(e, $"Failed to process request for item ID {itemId}.");
+                    throw;
+                }
+                finally
+                {
+                    Busy = false;
+                }
+
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [OptionalModifier.Async],
+                    name: AstUtils.SimpleName("ProcessRequest"),
+                    returnType: AstUtils.SimpleNameAsType("Task"),
+                    parameters: new ParameterListNode([
+                        new ParameterNode(
+                            type: AstUtils.SimpleNameAsType("int"),
+                            identifier: "itemId"
+                        ),
+                        new ParameterNode(
+                            type: AstUtils.SimpleNameAsType("CancellationToken"),
+                            identifier: "ct"
+                        )
+                    ]),
+                    body: new BlockNode([
+                        new ExpressionStatementNode(
+                            expression: new AssignmentExpressionNode(
+                                lhs: new IdentifierExpression("Busy"),
+                                rhs: new BooleanLiteralNode(true)
+                            )
+                        ),
+                        new TryStatementNode(
+                            block: new BlockNode([
+                                new ExpressionStatementNode(
+                                    expression: new AwaitExpressionNode(
+                                        expression: new InvocationExpressionNode(
+                                            lhs: new IdentifierExpression("ProcessAsync"),
+                                            arguments: new ArgumentListNode([
+                                                new ArgumentNode(
+                                                    expression: new IdentifierExpression("itemId"),
+                                                    name: null
+                                                ),
+                                                new ArgumentNode(
+                                                    expression: new IdentifierExpression("ct"),
+                                                    name: null
+                                                )
+                                            ])
+                                        )
+                                    )
+                                )
+                            ]),
+                            catchClauses: [
+                                new CatchClauseNode(
+                                    exceptionType: AstUtils.SimpleNameAsType("Exception"),
+                                    identifier: "e",
+                                    block: new BlockNode([
+                                        new ExpressionStatementNode(
+                                            expression: new InvocationExpressionNode(
+                                                lhs: new IdentifierExpression("LogError"),
+                                                arguments: new ArgumentListNode([
+                                                    new ArgumentNode(
+                                                        expression: new IdentifierExpression("e"),
+                                                        name: null
+                                                    ),
+                                                    new ArgumentNode(
+                                                        expression: new InterpolatedStringLiteralNode(
+                                                            value: "Failed to process request for item ID {itemId}.",
+                                                            interpolations: [
+                                                                new StringInterpolationNode(
+                                                                    expression: new IdentifierExpression("itemId")
+                                                                )
+                                                            ]
+                                                        ),
+                                                        name: null
+                                                    )
+                                                ])
+                                            )
+                                        ),
+                                        new ThrowStatementNode(null)
+                                    ]),
+                                    whenClause: new IsExpressionNode(
+                                        pattern: new NotPatternNode(
+                                            pattern: new ConstantPatternNode(
+                                                value: new IdentifierExpression("OperationCanceledException")
+                                            )
+                                        )
+                                    )
+                                )
+                            ],
+                            finallyClause: new FinallyClauseNode(
+                                block: new BlockNode([
+                                    new ExpressionStatementNode(
+                                        expression: new AssignmentExpressionNode(
+                                            lhs: new IdentifierExpression("Busy"),
+                                            rhs: new BooleanLiteralNode(false)
+                                        )
+                                    )
+                                ])
+                            )
+                        )
+                    ])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
 }

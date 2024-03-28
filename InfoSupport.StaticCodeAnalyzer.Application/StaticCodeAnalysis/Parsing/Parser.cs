@@ -909,6 +909,15 @@ public class Parser
 
         return null;
     }
+    
+    private ExpressionNode? ParseIsPatternExpression(ExpressionNode lhs)
+    {
+        Expect(TokenKind.IsKeyword);
+
+        var pattern = ParsePattern()!;
+
+        return new IsExpressionNode(pattern);
+    }
 
     private ExpressionNode? ParseStartParenthesisExpression()
     {
@@ -1139,6 +1148,11 @@ public class Parser
             possibleLHS = literal!;
         }
 
+        if (Matches(TokenKind.IsKeyword) && possibleLHS is not null)
+        {
+            possibleLHS = ParseIsPatternExpression(possibleLHS!);
+        }
+
         bool isBinary = !onlyParseSingle && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
         //bool isTernary = false;
 
@@ -1190,13 +1204,13 @@ public class Parser
         TokenKind.VoidKeyword
     ];
 
-    private static bool IsMaybeType(Token token, bool excludeVar)
+    private bool IsMaybeType(Token token, bool excludeVar)
     {
         bool maybeType = false;
 
         maybeType |= !excludeVar && (token.Kind == TokenKind.Identifier && token.Lexeme == "var");
         maybeType |= TypeList.Contains(token.Kind);
-        maybeType |= token.Kind == TokenKind.Identifier;
+        maybeType |= token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
 
         return maybeType;
     }
@@ -1829,6 +1843,52 @@ public class Parser
         return new BreakStatementNode();
     }
 
+    private ThrowStatementNode ParseThrowStatement()
+    {
+        Expect(TokenKind.ThrowKeyword);
+        var expression = ParseExpression();
+        Expect(TokenKind.Semicolon);
+        return new ThrowStatementNode(expression);
+    }
+
+    private TryStatementNode ParseTryStatement()
+    {
+        Expect(TokenKind.TryKeyword);
+        var block = ParseBlock();
+
+        List<CatchClauseNode> catchClauses = [];
+        FinallyClauseNode? finallyClause = null;
+
+        while (ConsumeIfMatch(TokenKind.CatchKeyword))
+        {
+            Expect(TokenKind.OpenParen);
+            var type = ParseType();
+            var identifier = Consume().Lexeme;
+            ExpressionNode? whenClause = null;
+            Expect(TokenKind.CloseParen);
+
+            if (MatchesLexeme("when"))
+            {
+                Consume();
+                Expect(TokenKind.OpenParen);
+                whenClause = ParseExpression();
+                Expect(TokenKind.CloseParen);
+            }
+
+            var catchBlock = ParseBlock();
+
+            catchClauses.Add(new CatchClauseNode(type, identifier, catchBlock, whenClause));
+        }
+
+        if (ConsumeIfMatch(TokenKind.FinallyKeyword))
+        {
+            var finallyBlock = ParseBlock();
+            finallyClause = new FinallyClauseNode(finallyBlock);
+        }
+
+        return new TryStatementNode(block, catchClauses, finallyClause);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -1867,39 +1927,23 @@ public class Parser
 
         var token = PeekCurrent();
 
-        switch (token.Kind)
+        return token.Kind switch
         {
             // Selection statements
-            case TokenKind.IfKeyword:
-                return ParseIfStatement();
-
-            case TokenKind.DoKeyword:
-                return ParseDoStatement();
-
-            case TokenKind.ForKeyword:
-                return ParseForStatement();
-
-            case TokenKind.ForeachKeyword:
-                return ParseForEachStatement();
-
-            case TokenKind.WhileKeyword:
-                return ParseWhileStatement();
-
-            case TokenKind.SwitchKeyword:
-                return ParseSwitchStatement();
-
-            case TokenKind.BreakKeyword:
-                return ParseBreakStatement();
-
-            case TokenKind.ReturnKeyword:
-                return ParseReturnStatement();
-
-            case TokenKind.Semicolon:
-                return ParseEmptyStatement();
-        }
-
-        // If no matches parse as an expression statement
-        return ParseExpressionStatement();
+            TokenKind.IfKeyword => ParseIfStatement(),
+            TokenKind.DoKeyword => ParseDoStatement(),
+            TokenKind.ForKeyword => ParseForStatement(),
+            TokenKind.ForeachKeyword => ParseForEachStatement(),
+            TokenKind.WhileKeyword => ParseWhileStatement(),
+            TokenKind.SwitchKeyword => ParseSwitchStatement(),
+            TokenKind.BreakKeyword => ParseBreakStatement(),
+            TokenKind.ReturnKeyword => ParseReturnStatement(),
+            TokenKind.Semicolon => ParseEmptyStatement(),
+            TokenKind.ThrowKeyword => ParseThrowStatement(),
+            TokenKind.TryKeyword => ParseTryStatement(),
+            // If no matches parse as an expression statement
+            _ => ParseExpressionStatement(),
+        };
     }
 
     private List<UsingDirectiveNode> ParseUsingDirectives()
