@@ -566,10 +566,9 @@ public class BlockNode(List<StatementNode> statements) : StatementNode
 
 // @FIXME is an identifier an expression and not just a part of an expression?
 [DebuggerDisplay("{Identifier,nq}")]
-public class IdentifierExpression(string identifier, bool isNullForgiving = false) : ExpressionNode
+public class IdentifierExpression(string identifier) : ExpressionNode
 {
     public string Identifier { get; set; } = identifier;
-    public bool IsNullForgiving { get; set; } = isNullForgiving;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => Identifier;
@@ -660,6 +659,15 @@ public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, Expressio
 {
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{LHS}?.{Identifier}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class NullForgivingExpressionNode(ExpressionNode expression) : ExpressionNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+
+    public override List<AstNode> Children => [Expression];
+    public override string ToString() => $"{Expression}!";
 }
 
 [DebuggerDisplay("{ToString()}")]

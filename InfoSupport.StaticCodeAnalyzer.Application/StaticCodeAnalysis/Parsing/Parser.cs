@@ -593,11 +593,15 @@ public class Parser
     private static ExpressionNode ResolveMemberAccess(List<MemberData> members)
     {
         var member = members[^1];
-        ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme, member.IsNullForgiving);
+        ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme);
 
         identifier = member.TypeArguments is null
             ? identifier
             : new GenericNameNode(identifier, member.TypeArguments);
+
+        identifier = member.IsNullForgiving
+            ? new NullForgivingExpressionNode(identifier)
+            : identifier;
 
         if (members.Count == 1)
             return identifier;
@@ -891,6 +895,12 @@ public class Parser
         return new LambdaExpressionNode([new LambdaParameterNode(paramIdentifier)], ParseLambdaBody());
     }
 
+    private NullForgivingExpressionNode ParseNullForgivingExpression(ExpressionNode lhs)
+    {
+        Expect(TokenKind.Exclamation);
+        return new NullForgivingExpressionNode(lhs);
+    }
+
     private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier)
     {
         // Invocation
@@ -1155,6 +1165,11 @@ public class Parser
 
         bool isBinary = !onlyParseSingle && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
         //bool isTernary = false;
+
+        if (possibleLHS is not null && Matches(TokenKind.Exclamation) && !isBinary)
+        {
+            possibleLHS = ParseNullForgivingExpression(possibleLHS!);
+        }
 
         if (isBinary)
         {

@@ -3036,6 +3036,32 @@ public class ParserTests
     }
 
     [TestMethod]
+    public void Parse_NullForgivingOperator_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Person person = null!;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("Person")
+                    ),
+                    identifier: "person",
+                    expression: new NullForgivingExpressionNode(new NullLiteralNode())
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
     public void Parse_NullConditionalMemberAccess_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
@@ -3053,10 +3079,10 @@ public class ParserTests
                     identifier: "name",
                     expression: new ConditionalMemberAccessExpressionNode(
                         lhs: new MemberAccessExpressionNode(
-                            lhs: new IdentifierExpression("test", true),
+                            lhs: new NullForgivingExpressionNode(new IdentifierExpression("test")),
                             identifier: new IdentifierExpression("person")
                         ),
-                        identifier: new IdentifierExpression("Name", true)
+                        identifier: new NullForgivingExpressionNode(new IdentifierExpression("Name"))
                     )
                 )
             )
@@ -3122,7 +3148,7 @@ public class ParserTests
                             ]),
                             isNullable: true
                         ),
-                        expr: new IdentifierExpression("result", true)
+                        expr: new NullForgivingExpressionNode(new IdentifierExpression("result"))
                     )
                 )
             )
