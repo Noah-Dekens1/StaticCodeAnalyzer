@@ -4546,4 +4546,44 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ExpressionBodiedProperty_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public class Example
+            {
+                public string Content => "Hello world!";
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        propertyName: "Content",
+                        propertyType: AstUtils.SimpleNameAsType("string"),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.ExpressionBodied,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: new StringLiteralNode("Hello world!"),
+                            blockBody: null
+                        ),
+                        setter: null,
+                        value: null
+                    )
+                ],
+                accessModifier: AccessModifier.Public
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
 }

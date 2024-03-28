@@ -2377,7 +2377,25 @@ public class Parser
 
     private MemberNode ParseProperty(string propertyName, AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode propertyType, List<AttributeNode> attributes)
     {
-        Expect(TokenKind.OpenBrace);
+        ConsumeIfMatch(TokenKind.OpenBrace);
+
+        bool isOnlyGetter = ConsumeIfMatch(TokenKind.EqualsGreaterThan);
+
+        if (isOnlyGetter)
+        {
+            var expr = ParseExpression();
+            Expect(TokenKind.Semicolon);
+
+            var autoGetter = new PropertyAccessorNode(
+                PropertyAccessorType.ExpressionBodied,
+                AccessModifier.Public,
+                expr,
+                null,
+                false
+            );
+
+            return new PropertyMemberNode(accessModifier, modifiers, propertyName, propertyType, autoGetter, null, null, attributes);
+        }
 
         PropertyAccessorNode? getter = null;
         PropertyAccessorNode? setter = null;
@@ -2524,7 +2542,7 @@ public class Parser
         var type = ParseType();
         var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         var isMethod = Matches(TokenKind.OpenParen);
-        var isProperty = Matches(TokenKind.OpenBrace);
+        var isProperty = Matches(TokenKind.OpenBrace) || Matches(TokenKind.EqualsGreaterThan);
         var isField = !isMethod && !isProperty; // @todo: events?
 
         if (isField)
