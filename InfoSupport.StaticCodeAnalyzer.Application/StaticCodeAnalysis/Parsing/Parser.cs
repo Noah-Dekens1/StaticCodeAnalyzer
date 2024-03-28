@@ -1399,12 +1399,15 @@ public class Parser
 
         }
 
+        bool maybeArrayNullable = ConsumeIfMatch(TokenKind.Question);
+
         var arrayData = new ArrayTypeData();
 
         // Array type
         if (ConsumeIfMatch(TokenKind.OpenBracket))
         {
             arrayData.IsArray = true;
+            arrayData.IsInnerTypeNullable = maybeArrayNullable;
 
             if (Matches(TokenKind.NumericLiteral))
             {
@@ -1428,7 +1431,7 @@ public class Parser
 
         bool isNullable = ConsumeIfMatch(TokenKind.Question);
 
-        return new TypeNode(baseType, typeArguments, arrayData, isNullable);
+        return new TypeNode(baseType, typeArguments, arrayData, isNullable || (maybeArrayNullable && !arrayData.IsArray));
     }
 
     private StatementNode ParseDeclarationStatement()

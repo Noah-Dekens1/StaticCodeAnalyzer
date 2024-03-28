@@ -490,17 +490,20 @@ public struct ArrayTypeData
     public bool IsArray { get; set; }
     public int ArrayRank { get; set; }
     public bool RankOmitted { get; set; } = true;
+    public bool IsInnerTypeNullable { get; set; } = false;
 
     public ArrayTypeData()
     {
         IsArray = false;
         ArrayRank = 0;
         RankOmitted = true;
+        IsInnerTypeNullable = false;
     }
 
-    public ArrayTypeData(bool isArray)
+    public ArrayTypeData(bool isArray, bool innerTypeNullable=false)
     {
         IsArray = isArray;
+        IsInnerTypeNullable = innerTypeNullable;
     }
 
     public ArrayTypeData(int? rank)

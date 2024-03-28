@@ -4652,7 +4652,7 @@ public class ParserTests
     public void Parse_Params_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
-            void Example(params string[] a)
+            void Example(params string?[] a)
             {
 
             }
@@ -4669,7 +4669,7 @@ public class ParserTests
                     name: new IdentifierExpression("Example"),
                     returnType: new TypeNode(new IdentifierExpression("void")),
                     parameters: new ParameterListNode([
-                        new ParameterNode(new TypeNode(new IdentifierExpression("string"), arrayType: new ArrayTypeData(true)), "a", parameterType: ParameterType.Params),
+                        new ParameterNode(new TypeNode(new IdentifierExpression("string"), arrayType: new ArrayTypeData(true, innerTypeNullable: true)), "a", parameterType: ParameterType.Params),
                     ]),
                     body: new BlockNode([])
                 )
