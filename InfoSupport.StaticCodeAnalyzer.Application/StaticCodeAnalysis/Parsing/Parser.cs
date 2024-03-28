@@ -2515,9 +2515,24 @@ public class Parser
         var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         AstNode? parentName = null;
 
+        ParameterListNode? parameters = null;
+        ArgumentListNode? baseArguments = null;
+
+        if (ConsumeIfMatch(TokenKind.OpenParen))
+        {
+            parameters = ParseParameterList();
+            Expect(TokenKind.CloseParen);
+        }
+
         if (ConsumeIfMatch(TokenKind.Colon))
         {
             parentName = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
+
+            if (ConsumeIfMatch(TokenKind.OpenParen))
+            {
+                baseArguments = ParseArgumentList();
+                Expect(TokenKind.CloseParen);
+            }
         }
 
         Expect(TokenKind.OpenBrace);
@@ -2537,10 +2552,10 @@ public class Parser
 
         return type switch
         {
-            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments),
             TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attributes),
             TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
-            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments),
             _ => throw new NotImplementedException(),
         };
     }

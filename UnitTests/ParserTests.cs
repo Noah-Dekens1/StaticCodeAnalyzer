@@ -4320,4 +4320,74 @@ public class ParserTests
 
         AssertStandardASTEquals(actual, expected);
     }
+
+    [TestMethod]
+    public void Parse_ClassPrimaryConstructor_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public class Example(int a, int b) : ExampleBase(a, b, optional: true)
+            {
+
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [],
+                parentName: AstUtils.SimpleName("ExampleBase"),
+                accessModifier: AccessModifier.Public,
+                parameters: new ParameterListNode([
+                    new ParameterNode(AstUtils.SimpleNameAsType("int"), "a"),
+                    new ParameterNode(AstUtils.SimpleNameAsType("int"), "b"),
+                ]),
+                baseArguments: new ArgumentListNode([
+                    new ArgumentNode(new IdentifierExpression("a"), null),
+                    new ArgumentNode(new IdentifierExpression("b"), null),
+                    new ArgumentNode(new BooleanLiteralNode(true), "optional"),
+                ])
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
+
+    [TestMethod]
+    public void Parse_StructPrimaryConstructor_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public struct Example(int a, int b) : ExampleBase(a, b, optional: true)
+            {
+
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new StructDeclarationNode(
+                name: AstUtils.SimpleName("Example"),
+                members: [],
+                parentName: AstUtils.SimpleName("ExampleBase"),
+                accessModifier: AccessModifier.Public,
+                parameters: new ParameterListNode([
+                    new ParameterNode(AstUtils.SimpleNameAsType("int"), "a"),
+                    new ParameterNode(AstUtils.SimpleNameAsType("int"), "b"),
+                ]),
+                baseArguments: new ArgumentListNode([
+                    new ArgumentNode(new IdentifierExpression("a"), null),
+                    new ArgumentNode(new IdentifierExpression("b"), null),
+                    new ArgumentNode(new BooleanLiteralNode(true), "optional"),
+                ])
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
 }
