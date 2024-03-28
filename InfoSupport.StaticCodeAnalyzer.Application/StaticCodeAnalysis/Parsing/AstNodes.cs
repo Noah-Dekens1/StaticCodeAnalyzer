@@ -1150,6 +1150,24 @@ public abstract class PatternNode : AstNode
 {
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class IsExpressionNode(PatternNode pattern) : ExpressionNode
+{
+    public PatternNode Pattern { get; set; } = pattern;
+
+    public override List<AstNode> Children => [Pattern];
+    public override string ToString() => $"is {Pattern}";
+}
+
+public class DeclarationPatternNode(TypeNode type, string identifier) : PatternNode
+{
+    public TypeNode Type { get; set; } = type;
+    public string Identifier { get; set; } = identifier;
+
+    public override List<AstNode> Children => [Type];
+    public override string ToString() => $"{Type} {Identifier}";
+}
+
 public enum RelationalPatternOperator
 {
     GreaterThan,
@@ -1389,11 +1407,42 @@ public class AttributeNode(List<AttributeArgumentNode> arguments, string? target
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ThrowStatementNode(ExpressionNode expression) : StatementNode
+public class ThrowStatementNode(ExpressionNode? expression) : StatementNode
 {
-    public ExpressionNode Expression { get; } = expression;
+    public ExpressionNode? Expression { get; } = expression;
 
-    public override List<AstNode> Children => [Expression];
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Expression);
 
     public override string ToString() => $"throw {Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class CatchClauseNode(TypeNode exceptionType, string identifier, BlockNode block, ExpressionNode? whenClause=null) : AstNode
+{
+    public TypeNode ExceptionType { get; set; } = exceptionType;
+    public string Identifier { get; set; } = identifier;
+    public BlockNode Block { get; set; } = block;
+    public ExpressionNode? WhenClause { get; set; } = whenClause;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ExceptionType, Block, WhenClause);
+    public override string ToString() => $"catch ({ExceptionType} {Identifier})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class FinallyClauseNode(BlockNode block) : AstNode
+{
+    public BlockNode Block { get; set; } = block;
+
+    public override List<AstNode> Children => [Block];
+    public override string ToString() => "finally";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TryStatementNode(BlockNode block, List<CatchClauseNode>? catchClauses=null, FinallyClauseNode? finallyClause=null) : StatementNode
+{
+    public BlockNode Block { get; set; } = block;
+    public List<CatchClauseNode> CatchClauses { get; set; } = catchClauses ?? [];
+    public FinallyClauseNode? FinallyClause { get; set; } = finallyClause;
+
+    public override string ToString() => $"try";
 }
