@@ -2045,6 +2045,18 @@ public class Parser
 
     }
 
+    private readonly string[] _attributeTargets = [
+        "assembly",
+        "module",
+        "field",
+        "event",
+        "method",
+        "param",
+        "property",
+        "return",
+        "type"
+    ];
+
     private bool TryParseSingleAttribute([NotNullWhen(true)] out AttributeNode? attribute)
     {
         Expect(TokenKind.OpenBracket);
@@ -2059,7 +2071,7 @@ public class Parser
 
         // Argument target (like assembly: ..., module: ...)
         // see https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/
-        if (Matches(TokenKind.Identifier) && Matches(TokenKind.Colon, 1))
+        if (_attributeTargets.Contains(PeekCurrent().Lexeme) && Matches(TokenKind.Colon, 1))
         {
             target = Consume().Lexeme;
             Expect(TokenKind.Colon);

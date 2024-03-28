@@ -4059,4 +4059,51 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ReturnMethodAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                [return: Test]
+                public void ExampleMethod()
+                {
+
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        returnType: AstUtils.SimpleNameAsType("void"),
+                        methodName: AstUtils.SimpleName("ExampleMethod"),
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode(statements: []),
+                        attributes: [
+                            new AttributeNode(
+                                arguments: [
+                                    new AttributeArgumentNode(
+                                        expression: new IdentifierExpression("Test")
+                                    )
+                                ],
+                                target: "return"
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
