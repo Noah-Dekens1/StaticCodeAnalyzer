@@ -1387,3 +1387,13 @@ public class AttributeNode(List<AttributeArgumentNode> arguments, string? target
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"[{string.Join(", ", Arguments)}]";
 }
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ThrowStatementNode(ExpressionNode expression) : StatementNode
+{
+    public ExpressionNode Expression { get; } = expression;
+
+    public override List<AstNode> Children => [Expression];
+
+    public override string ToString() => $"throw {Expression}";
+}

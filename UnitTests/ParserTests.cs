@@ -4166,4 +4166,28 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ThrowException_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            throw new Exception();
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ThrowStatementNode(
+                    expression: new ObjectCreationExpressionNode(
+                        type: AstUtils.SimpleNameAsType("Exception")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

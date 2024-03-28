@@ -1829,6 +1829,14 @@ public class Parser
         return new BreakStatementNode();
     }
 
+    private ThrowStatementNode ParseThrowStatement()
+    {
+        Expect(TokenKind.ThrowKeyword);
+        var expression = ParseExpression()!;
+        Expect(TokenKind.Semicolon);
+        return new ThrowStatementNode(expression);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -1896,6 +1904,9 @@ public class Parser
 
             case TokenKind.Semicolon:
                 return ParseEmptyStatement();
+
+            case TokenKind.ThrowKeyword:
+                return ParseThrowStatement();
         }
 
         // If no matches parse as an expression statement
