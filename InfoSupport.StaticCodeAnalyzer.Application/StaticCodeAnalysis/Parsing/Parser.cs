@@ -2466,7 +2466,14 @@ public class Parser
             var type = ParseType();
             var identifier = Consume();
 
-            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes, parameterType));
+            ExpressionNode? defaultValue = null;
+
+            if (ConsumeIfMatch(TokenKind.Equals))
+            {
+                defaultValue = ParseExpression();
+            }
+
+            parameters.Add(new ParameterNode(type, identifier.Lexeme, defaultValue, attributes, parameterType));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 

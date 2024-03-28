@@ -714,14 +714,15 @@ public enum ParameterType
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ParameterNode(TypeNode type, string identifier, List<AttributeNode>? attributes = null, ParameterType parameterType = ParameterType.Regular) : AstNode
+public class ParameterNode(TypeNode type, string identifier, ExpressionNode? defaultValue = null, List<AttributeNode>? attributes = null, ParameterType parameterType = ParameterType.Regular) : AstNode
 {
     public TypeNode Type { get; set; } = type;
     public string Identifier { get; set; } = identifier;
     public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
-    public ParameterType ParameterType = parameterType;
+    public ParameterType ParameterType { get; set; } = parameterType;
+    public ExpressionNode? DefaultValue { get; set; } = defaultValue;
 
-    public override List<AstNode> Children => [Type];
+    public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList<AstNode>(Type, DefaultValue)];
 
     [ExcludeFromCodeCoverage]
     public override string ToString()
