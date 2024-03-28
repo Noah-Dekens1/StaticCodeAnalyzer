@@ -1472,3 +1472,13 @@ public class TryStatementNode(BlockNode block, List<CatchClauseNode>? catchClaus
 
     public override string ToString() => $"try";
 }
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class AsExpressionNode(ExpressionNode lhs, TypeNode targetType) : ExpressionNode
+{
+    public ExpressionNode LHS { get; set; } = lhs;
+    public TypeNode TargetType { get; set; } = targetType;
+
+    public override List<AstNode> Children => [LHS, TargetType];
+    public override string ToString() => $"{LHS} {TargetType}";
+}

@@ -4519,4 +4519,31 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_AsExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var admin = user as Admin;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "admin",
+                    expression: new AsExpressionNode(
+                        lhs: new IdentifierExpression("user"),
+                        targetType: AstUtils.SimpleNameAsType("Admin")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

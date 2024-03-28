@@ -1090,6 +1090,14 @@ public class Parser
         return new RangeExpressionNode(lhsIndex, rhsIndex);
     }
 
+    private AsExpressionNode ParseAsExpression(ExpressionNode lhs)
+    {
+        Expect(TokenKind.AsKeyword);
+        var type = ParseType();
+
+        return new AsExpressionNode(lhs, type);
+    }
+
     // @note: pretty much everything in C# is an expression so we probably want to split this up
     private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false, bool isParsingIndex = false)
     {
@@ -1163,6 +1171,11 @@ public class Parser
         if (Matches(TokenKind.IsKeyword) && possibleLHS is not null)
         {
             possibleLHS = ParseIsPatternExpression(possibleLHS!);
+        }
+
+        if (Matches(TokenKind.AsKeyword) && possibleLHS is not null)
+        {
+            possibleLHS = ParseAsExpression(possibleLHS!);
         }
 
         bool isBinary = !onlyParseSingle && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
