@@ -710,7 +710,8 @@ public enum ParameterType
     RefReadonly,
     In,
     Out,
-    This
+    This,
+    Params
 }
 
 [DebuggerDisplay("{ToString(),nq}")]

@@ -2441,6 +2441,7 @@ public class Parser
         { "in", ParameterType.In },
         { "out", ParameterType.Out },
         { "this", ParameterType.This },
+        { "params", ParameterType.Params }
     };
 
     private ParameterListNode ParseParameterList()

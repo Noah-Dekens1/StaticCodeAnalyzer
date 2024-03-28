@@ -4647,4 +4647,35 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_Params_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            void Example(params string[] a)
+            {
+
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+             new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [],
+                    name: new IdentifierExpression("Example"),
+                    returnType: new TypeNode(new IdentifierExpression("void")),
+                    parameters: new ParameterListNode([
+                        new ParameterNode(new TypeNode(new IdentifierExpression("string"), arrayType: new ArrayTypeData(true)), "a", parameterType: ParameterType.Params),
+                    ]),
+                    body: new BlockNode([])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
