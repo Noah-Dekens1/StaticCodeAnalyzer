@@ -590,7 +590,7 @@ public class Parser
         return operators[binaryOperator.Kind]();
     }
 
-    private static ExpressionNode ResolveMemberAccess(List<MemberData> members)
+    private static ExpressionNode ResolveMemberAccess(List<MemberData> members, ExpressionNode? lhsExpr = null)
     {
         var member = members[^1];
         ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme);
@@ -603,8 +603,10 @@ public class Parser
             ? new NullForgivingExpressionNode(identifier)
             : identifier;
 
-        if (members.Count == 1)
+        if (members.Count == 1 && lhsExpr is null)
             return identifier;
+        else if (members.Count == 1 && lhsExpr is not null)
+            return new MemberAccessExpressionNode(lhsExpr, identifier);
 
         members.Remove(member);
 
@@ -620,7 +622,7 @@ public class Parser
             );
     }
 
-    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false)
+    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null)
     {
         List<MemberData> members = [];
 
@@ -648,7 +650,7 @@ public class Parser
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
-        return ResolveMemberAccess(members);
+        return ResolveMemberAccess(members, lhs);
     }
 
     [Obsolete]
@@ -1185,6 +1187,13 @@ public class Parser
         if (isTernary)
         {
             possibleLHS = ParseTernaryExpression(possibleLHS!);
+        }
+
+        if (possibleLHS is not null && Matches(TokenKind.Dot) && Matches(TokenKind.Identifier, 1))
+        {
+            // Resolve member access
+            Expect(TokenKind.Dot);
+            possibleLHS = ResolveIdentifier(isMaybeGeneric: true, lhs: possibleLHS);
         }
 
         if (Matches(TokenKind.SwitchKeyword))
@@ -2403,10 +2412,12 @@ public class Parser
             if (Matches(TokenKind.OpenBracket))
                 attributes = TryParseAttributes(out _);
 
+            bool hasThisModifier = ConsumeIfMatch(TokenKind.ThisKeyword);
+
             var type = ParseType();
             var identifier = Consume();
 
-            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes));
+            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes, hasThisModifier));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 

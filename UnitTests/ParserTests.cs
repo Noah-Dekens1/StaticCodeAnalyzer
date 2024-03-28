@@ -4416,4 +4416,72 @@ public class ParserTests
 
         AssertStandardASTEquals(actual, expected);
     }
+
+    [TestMethod]
+    public void Parse_ExtensionMethod_ReturnsValidAST()
+    {
+        // Code snippet from https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods
+        var tokens = Lexer.Lex("""
+            public static class MyExtensions
+            {
+                public static int WordCount(this string str)
+                {
+                    return str.Split(new char[] { ' ', '.', '?' },
+                                     StringSplitOptions.RemoveEmptyEntries).Length;
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("MyExtensions"),
+                members: [
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [OptionalModifier.Static],
+                        returnType: AstUtils.SimpleNameAsType("int"),
+                        methodName: AstUtils.SimpleName("WordCount"),
+                        parameters: new ParameterListNode([
+                            new ParameterNode(AstUtils.SimpleNameAsType("string"), "str", hasThisModifier: true)
+                        ]),
+                        body: new BlockNode([
+                            new ReturnStatementNode(
+                                returnExpression: new MemberAccessExpressionNode(
+                                    lhs: new InvocationExpressionNode(
+                                        lhs: AstUtils.ResolveMemberAccess("str.Split"),
+                                        arguments: new ArgumentListNode([
+                                            new ArgumentNode(
+                                                expression: new ObjectCreationExpressionNode(
+                                                    type: new TypeNode(new IdentifierExpression("char"), arrayType: new ArrayTypeData(isArray: true)),
+                                                    initializer: new CollectionInitializerNode([
+                                                        new RegularCollectionInitializerNode(new CharLiteralNode(' ')),
+                                                        new RegularCollectionInitializerNode(new CharLiteralNode('.')),
+                                                        new RegularCollectionInitializerNode(new CharLiteralNode('?')),
+                                                    ])
+                                                ),
+                                                name: null
+                                            ),
+                                            new ArgumentNode(
+                                                expression: AstUtils.ResolveMemberAccess("StringSplitOptions.RemoveEmptyEntries"),
+                                                name: null
+                                            )
+                                        ])
+                                    ),
+                                    identifier: new IdentifierExpression("Length")
+                                )
+                            )
+                        ])
+                    )
+                ],
+                accessModifier: AccessModifier.Public,
+                modifiers: [OptionalModifier.Static]
+            )
+        );
+
+        AssertStandardASTEquals(actual, expected);
+    }
 }

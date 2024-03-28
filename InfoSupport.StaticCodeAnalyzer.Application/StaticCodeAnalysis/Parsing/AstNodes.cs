@@ -489,7 +489,7 @@ public struct ArrayTypeData
 {
     public bool IsArray { get; set; }
     public int ArrayRank { get; set; }
-    public bool RankOmitted { get; set; }
+    public bool RankOmitted { get; set; } = true;
 
     public ArrayTypeData()
     {
@@ -704,11 +704,12 @@ public class BracketedArgumentList(List<ArgumentNode> arguments) : ArgumentListN
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ParameterNode(TypeNode type, string identifier, List<AttributeNode>? attributes = null) : AstNode
+public class ParameterNode(TypeNode type, string identifier, List<AttributeNode>? attributes = null, bool hasThisModifier = false) : AstNode
 {
     public TypeNode Type { get; set; } = type;
     public string Identifier { get; set; } = identifier;
     public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
+    public bool HasThisModifier { get; set; } = hasThisModifier;
 
     public override List<AstNode> Children => [Type];
 
