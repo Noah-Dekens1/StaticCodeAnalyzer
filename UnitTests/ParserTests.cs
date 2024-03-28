@@ -4206,9 +4206,11 @@ public class ParserTests
 
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
-                statement: new ThrowStatementNode(
-                    expression: new ObjectCreationExpressionNode(
-                        type: AstUtils.SimpleNameAsType("Exception")
+                statement: new ExpressionStatementNode(
+                    new ThrowExpressionNode(
+                        expression: new ObjectCreationExpressionNode(
+                            type: AstUtils.SimpleNameAsType("Exception")
+                        )
                     )
                 )
             )
@@ -4317,7 +4319,7 @@ public class ParserTests
                                                 ])
                                             )
                                         ),
-                                        new ThrowStatementNode(null)
+                                        new ExpressionStatementNode(new ThrowExpressionNode(null))
                                     ]),
                                     whenClause: new IsExpressionNode(
                                         pattern: new NotPatternNode(

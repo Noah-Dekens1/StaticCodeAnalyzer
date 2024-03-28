@@ -1434,7 +1434,7 @@ public class AttributeNode(List<AttributeArgumentNode> arguments, string? target
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ThrowStatementNode(ExpressionNode? expression) : StatementNode
+public class ThrowExpressionNode(ExpressionNode? expression) : ExpressionNode
 {
     public ExpressionNode? Expression { get; } = expression;
 

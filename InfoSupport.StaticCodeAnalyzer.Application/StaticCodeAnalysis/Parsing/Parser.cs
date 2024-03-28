@@ -885,6 +885,11 @@ public class Parser
             return ParseIndexExpressionFromEnd();
         }
 
+        if (Matches(TokenKind.ThrowKeyword))
+        {
+            return ParseThrowExpression();
+        }
+
         return null;
     }
 
@@ -903,7 +908,7 @@ public class Parser
         return new NullForgivingExpressionNode(lhs);
     }
 
-    private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier)
+    private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier, bool isParsingPattern)
     {
         // Invocation
         if (Matches(TokenKind.OpenParen))
@@ -916,7 +921,7 @@ public class Parser
         if (Matches(TokenKind.Question) && Matches(TokenKind.OpenBracket, 1))
             return ParseElementAccess(resolvedIdentifier);
 
-        if (Matches(TokenKind.EqualsGreaterThan))
+        if (Matches(TokenKind.EqualsGreaterThan) && !isParsingPattern)
             return ParseLambdaExpressionSingleParam(resolvedIdentifier);
 
         return null;
@@ -1099,7 +1104,7 @@ public class Parser
     }
 
     // @note: pretty much everything in C# is an expression so we probably want to split this up
-    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false, bool isParsingIndex = false)
+    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false, bool isParsingIndex = false, bool isParsingPattern = false)
     {
         var token = PeekCurrent();
 
@@ -1136,7 +1141,7 @@ public class Parser
         }
         else if (resolvedIdentifier is not null)
         {
-            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(resolvedIdentifier);
+            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(resolvedIdentifier, isParsingPattern);
             if (primaryPostfixExpression is not null)
             {
                 possibleLHS = primaryPostfixExpression;
@@ -1745,7 +1750,7 @@ public class Parser
 
     private ConstantPatternNode ParseConstantPattern()
     {
-        var value = ParseExpression()!;
+        var value = ParseExpression(isParsingPattern: true)!;
 
         return new ConstantPatternNode(value);
     }
@@ -1880,12 +1885,11 @@ public class Parser
         return new BreakStatementNode();
     }
 
-    private ThrowStatementNode ParseThrowStatement()
+    private ThrowExpressionNode ParseThrowExpression()
     {
         Expect(TokenKind.ThrowKeyword);
         var expression = ParseExpression();
-        Expect(TokenKind.Semicolon);
-        return new ThrowStatementNode(expression);
+        return new ThrowExpressionNode(expression);
     }
 
     private TryStatementNode ParseTryStatement()
@@ -1976,7 +1980,6 @@ public class Parser
             TokenKind.BreakKeyword => ParseBreakStatement(),
             TokenKind.ReturnKeyword => ParseReturnStatement(),
             TokenKind.Semicolon => ParseEmptyStatement(),
-            TokenKind.ThrowKeyword => ParseThrowStatement(),
             TokenKind.TryKeyword => ParseTryStatement(),
             // If no matches parse as an expression statement
             _ => ParseExpressionStatement(),
