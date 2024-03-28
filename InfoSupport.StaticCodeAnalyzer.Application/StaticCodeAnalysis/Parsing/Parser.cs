@@ -171,7 +171,7 @@ public class Parser
         return subParser.ParseExpression()!;
     }
 
-    private static StringInterpolationNode ParseInterpolation(string str, out int read, int expectedBraces=1)
+    private static StringInterpolationNode ParseInterpolation(string str, out int read, int expectedBraces = 1)
     {
         read = 0;
 
@@ -199,14 +199,14 @@ public class Parser
 
                 // Parse string starting from beginning
                 // (i may be after $/@ already which is why we look back for j)
-                var inner = ParseStringLiteral(str[(j+1)..]);
+                var inner = ParseStringLiteral(str[(j + 1)..]);
 
-                interpolationBuilder.Append(str[i..(j+1+inner.Consumed-inner.QuoteCount)]);
+                interpolationBuilder.Append(str[i..(j + 1 + inner.Consumed - inner.QuoteCount)]);
                 interpolationBuilder.Append('"', inner.QuoteCount);
 
                 // Skip over consumed content besides the leading values which we've
                 // already consumed
-                i += inner.Consumed-leading;
+                i += inner.Consumed - leading;
                 continue;
             }
 
@@ -325,11 +325,11 @@ public class Parser
                 quotesSeen = 1;
                 int j;
 
-                for (j = i+1; j < str.Length; j++)
+                for (j = i + 1; j < str.Length; j++)
                 {
                     if (str[j] == '"' && quotesSeen <= quotes)
                         quotesSeen++;
-                    else 
+                    else
                         break;
                 }
 
@@ -680,8 +680,8 @@ public class Parser
         Expect(TokenKind.OpenBracket);
 
         var expr = ParseExpression();
-        expr = expr is RangeExpressionNode 
-            ? expr 
+        expr = expr is RangeExpressionNode
+            ? expr
             : ToIndexExpression(expr)!;
 
         var args = new BracketedArgumentList([new ArgumentNode(expr, null)]);
@@ -921,7 +921,7 @@ public class Parser
 
         return null;
     }
-    
+
     private ExpressionNode? ParseIsPatternExpression(ExpressionNode lhs)
     {
         Expect(TokenKind.IsKeyword);
@@ -2050,7 +2050,7 @@ public class Parser
     private bool IsTypeDeclaration()
     {
         var idx = 0;
-        
+
         // Skip over possible attribute
         if (Matches(TokenKind.OpenBracket))
             TryParseAttributes(out idx, true);
@@ -2168,7 +2168,7 @@ public class Parser
         return false;
     }
 
-    private List<AttributeNode> TryParseAttributes(out int consumed, bool alwaysBacktrack=false)
+    private List<AttributeNode> TryParseAttributes(out int consumed, bool alwaysBacktrack = false)
     {
         var start = Tell();
         var attributes = new List<AttributeNode>();
@@ -2396,6 +2396,14 @@ public class Parser
         return new PropertyMemberNode(accessModifier, modifiers, propertyName, propertyType, getter, setter, value, attributes);
     }
 
+    private readonly Dictionary<string, ParameterType> _parameterTypes = new()
+    {
+        { "ref", ParameterType.Ref },
+        { "in", ParameterType.In },
+        { "out", ParameterType.Out },
+        { "this", ParameterType.This },
+    };
+
     private ParameterListNode ParseParameterList()
     {
         var parameters = new List<ParameterNode>();
@@ -2412,12 +2420,22 @@ public class Parser
             if (Matches(TokenKind.OpenBracket))
                 attributes = TryParseAttributes(out _);
 
-            bool hasThisModifier = ConsumeIfMatch(TokenKind.ThisKeyword);
+            ParameterType parameterType = ParameterType.Regular;
+
+            if (ConsumeIfMatchSequence(TokenKind.RefKeyword, TokenKind.ReadonlyKeyword))
+            {
+                parameterType = ParameterType.RefReadonly;
+            }
+            else if (_parameterTypes.TryGetValue(PeekCurrent().Lexeme, out var value))
+            {
+                Consume();
+                parameterType = value;
+            }
 
             var type = ParseType();
             var identifier = Consume();
 
-            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes, hasThisModifier));
+            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes, parameterType));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 

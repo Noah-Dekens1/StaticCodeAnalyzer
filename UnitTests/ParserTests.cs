@@ -4446,7 +4446,7 @@ public class ParserTests
                         returnType: AstUtils.SimpleNameAsType("int"),
                         methodName: AstUtils.SimpleName("WordCount"),
                         parameters: new ParameterListNode([
-                            new ParameterNode(AstUtils.SimpleNameAsType("string"), "str", hasThisModifier: true)
+                            new ParameterNode(AstUtils.SimpleNameAsType("string"), "str", parameterType: ParameterType.This)
                         ]),
                         body: new BlockNode([
                             new ReturnStatementNode(
@@ -4483,5 +4483,40 @@ public class ParserTests
         );
 
         AssertStandardASTEquals(actual, expected);
+    }
+
+    [TestMethod]
+    public void Parse_ParameterTypes_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            void Example(ref string a, ref readonly string b, in int c, out int d, int e)
+            {
+
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+             new GlobalStatementNode(
+                statement: new LocalFunctionDeclarationNode(
+                    modifiers: [],
+                    name: new IdentifierExpression("Example"),
+                    returnType: new TypeNode(new IdentifierExpression("void")),
+                    parameters: new ParameterListNode([
+                        new ParameterNode(AstUtils.SimpleNameAsType("string"), "a", parameterType: ParameterType.Ref),
+                        new ParameterNode(AstUtils.SimpleNameAsType("string"), "b", parameterType: ParameterType.RefReadonly),
+                        new ParameterNode(AstUtils.SimpleNameAsType("int"), "c", parameterType: ParameterType.In),
+                        new ParameterNode(AstUtils.SimpleNameAsType("int"), "d", parameterType: ParameterType.Out),
+                        new ParameterNode(AstUtils.SimpleNameAsType("int"), "e", parameterType: ParameterType.Regular),
+                    ]),
+                    body: new BlockNode([])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
     }
 }
