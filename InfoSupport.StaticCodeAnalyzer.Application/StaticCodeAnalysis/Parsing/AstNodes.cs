@@ -703,13 +703,23 @@ public class BracketedArgumentList(List<ArgumentNode> arguments) : ArgumentListN
 
 }
 
+public enum ParameterType
+{
+    Regular,
+    Ref,
+    RefReadonly,
+    In,
+    Out,
+    This
+}
+
 [DebuggerDisplay("{ToString(),nq}")]
-public class ParameterNode(TypeNode type, string identifier, List<AttributeNode>? attributes = null, bool hasThisModifier = false) : AstNode
+public class ParameterNode(TypeNode type, string identifier, List<AttributeNode>? attributes = null, ParameterType parameterType = ParameterType.Regular) : AstNode
 {
     public TypeNode Type { get; set; } = type;
     public string Identifier { get; set; } = identifier;
     public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
-    public bool HasThisModifier { get; set; } = hasThisModifier;
+    public ParameterType ParameterType = parameterType;
 
     public override List<AstNode> Children => [Type];
 
