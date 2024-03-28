@@ -1011,13 +1011,17 @@ public class MethodNode(
 public class BasicDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    List<AttributeNode>? attributes = null) : TypeDeclarationNode(attributes)
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, ArgumentListNode? baseArguments = null) : TypeDeclarationNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
     public AstNode? ParentName { get; set; } = parentName;
     public AstNode Name { get; set; } = name;
     public List<MemberNode> Members { get; set; } = members;
+
+    // Primary Constructor parameters
+    public ParameterListNode Parameters { get; set; } = parameters ?? new([]);
+    public ArgumentListNode BaseArguments { get; set; } = baseArguments ?? new([]);
 
     public override List<AstNode> Children => [.. Members];
 }
@@ -1026,7 +1030,8 @@ public class BasicDeclarationNode(
 public class ClassDeclarationNode(
     AstNode className, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    List<AttributeNode>? attributes = null) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attributes)
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, ArgumentListNode? baseArguments = null
+    ) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments)
 {
 
 }
@@ -1035,7 +1040,8 @@ public class ClassDeclarationNode(
 public class InterfaceDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    List<AttributeNode>? attributes = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes)
+    List<AttributeNode>? attributes = null
+    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes)
 {
 
 }
@@ -1044,7 +1050,8 @@ public class InterfaceDeclarationNode(
 public class StructDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
-    List<AttributeNode>? attributes = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes)
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, ArgumentListNode? baseArguments = null
+    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments)
 {
 
 }
