@@ -258,8 +258,13 @@ public class Parser
             quotes++;
             i++;
 
-            if (isVerbatim)
+            if (isVerbatim || i >= str.Length)
                 break;
+        }
+
+        if (quotes == 2) // immediately closing string
+        {
+            return new StringLiteralData("", isInterpolated, interpolations, i, 1);
         }
 
         bool isRaw = quotes >= 3;
@@ -1122,7 +1127,7 @@ public class Parser
             possibleLHS = expr; // @todo: only if it isn't a lambda
         }
 
-        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
+        bool isCurrentTokenIdentifier = (token.Kind == TokenKind.Identifier || TypeList.Contains(token.Kind)) && !_contextualKeywords.Contains(token.Lexeme);
         ExpressionNode? resolvedIdentifier = null;
 
         if (isCurrentTokenIdentifier && possibleLHS is null)

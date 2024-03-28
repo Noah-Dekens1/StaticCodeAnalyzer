@@ -4619,4 +4619,32 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_MemberAccessOnType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            string.Join(", ", someList);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: AstUtils.ResolveMemberAccess("string.Join"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(new StringLiteralNode(", "), null),
+                            new ArgumentNode(new IdentifierExpression("someList"), null),
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

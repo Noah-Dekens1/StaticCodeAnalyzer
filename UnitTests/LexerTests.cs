@@ -274,6 +274,7 @@ public class LexerTests
     }
 
     [DataTestMethod]
+    [DataRow("""$"{(IsPrefix ? OperatorForDbg : "")}{Expression}{(!IsPrefix ? OperatorForDbg : "")}";""")]
     [DataRow(""""$$"""Hello world! {{"interpolated!"}}""";"""")]
     [DataRow("""""$$$$$"""" Hello {{{{{@$"multiline {"world!" + """}}""" + $"""{"Test!" + @" ""abc"" "}"""}"}}}}} """;"""";""""")]
     [DataRow("""$"t \" {"simple"} {{ }}\"\"";""")]

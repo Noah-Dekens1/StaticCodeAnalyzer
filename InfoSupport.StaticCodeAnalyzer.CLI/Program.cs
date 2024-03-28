@@ -23,6 +23,7 @@ using var timer = new ScopedTimer("Parser timer");
 foreach (string path in paths)
 {
     counter++;
+    Console.WriteLine($"Parsing {Path.GetFileName(path)} ({counter}/{paths.Length})");
     var file = File.ReadAllText(path);
     var tokens = Lexer.Lex(file);
     var ast = Parser.Parse(tokens);
