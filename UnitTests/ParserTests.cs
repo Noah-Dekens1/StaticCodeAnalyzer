@@ -3826,4 +3826,237 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ConstructorAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                [Test]
+                public Example()
+                {
+
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new ConstructorNode(
+                        accessModifier: AccessModifier.Public,
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode(statements: []),
+                        attributes: [
+                            new AttributeNode(
+                                arguments: [
+                                    new AttributeArgumentNode(
+                                        expression: new IdentifierExpression("Test")
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_MethodAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                [Test]
+                public void ExampleMethod()
+                {
+
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        returnType: AstUtils.SimpleNameAsType("void"),
+                        methodName: AstUtils.SimpleName("ExampleMethod"),
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode(statements: []),
+                        attributes: [
+                            new AttributeNode(
+                                arguments: [
+                                    new AttributeArgumentNode(
+                                        expression: new IdentifierExpression("Test")
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_FieldAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                [Test] private int _counter = 0;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        fieldName: "_counter",
+                        fieldType: AstUtils.SimpleNameAsType("int"),
+                        value: new NumericLiteralNode(0),
+                        attributes: [
+                            new AttributeNode(
+                                arguments: [
+                                    new AttributeArgumentNode(
+                                        expression: new IdentifierExpression("Test")
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_PropertyAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                [Test] public int Counter { get; private set; } = 0;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        propertyName: "Counter",
+                        propertyType: AstUtils.SimpleNameAsType("int"),
+                        value: new NumericLiteralNode(0),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Private,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        attributes: [
+                            new AttributeNode(
+                                arguments: [
+                                    new AttributeArgumentNode(
+                                        expression: new IdentifierExpression("Test")
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_EnumMemberAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            enum Example
+            {
+                [Description("Test Value")]
+                Value
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new EnumDeclarationNode(
+                enumName: AstUtils.SimpleName("Example"),
+                parentType: null,
+                members: [
+                    new EnumMemberNode(
+                        identifier: "Value",
+                        value: null,
+                        attributes: [
+                            new AttributeNode(
+                                arguments: [
+                                    new AttributeArgumentNode(
+                                        expression: new InvocationExpressionNode(
+                                            lhs: new IdentifierExpression("Description"),
+                                            arguments: new ArgumentListNode(
+                                                arguments: [
+                                                    new ArgumentNode(
+                                                        expression: new StringLiteralNode("Test Value"),
+                                                        name: null
+                                                    )
+                                                ]
+                                            )
+                                        )
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

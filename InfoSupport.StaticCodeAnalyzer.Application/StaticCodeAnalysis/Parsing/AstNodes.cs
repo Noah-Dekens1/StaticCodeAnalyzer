@@ -1365,17 +1365,14 @@ public class AwaitExpressionNode(ExpressionNode expression) : ExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class AttributeArgumentNode(ExpressionNode expression, string? name = null) : AstNode
+public class AttributeArgumentNode(ExpressionNode expression) : AstNode
 {
     public ExpressionNode Expression { get; set; } = expression;
-    public string? Name { get; set; } = name;
 
     public override List<AstNode> Children => [Expression];
 
     [ExcludeFromCodeCoverage]
-    public override string ToString() => Name is null
-        ? $"{Expression}"
-        : $"{Name}: {Expression}";
+    public override string ToString() => $"{Expression}";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]

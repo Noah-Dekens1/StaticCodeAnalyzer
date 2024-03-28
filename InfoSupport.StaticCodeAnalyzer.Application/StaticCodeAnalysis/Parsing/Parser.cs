@@ -2067,15 +2067,6 @@ public class Parser
 
         do
         {
-            string? name = null;
-
-            // Named argument
-            if (Matches(TokenKind.Identifier) && Matches(TokenKind.Equals, 1))
-            {
-                name = Consume().Lexeme;
-                Expect(TokenKind.Equals);
-            }
-
             var expr = ParseExpression();
 
             if (expr is null)
@@ -2084,7 +2075,7 @@ public class Parser
                 break;
             }
 
-            arguments.Add(new AttributeArgumentNode(expr, name));
+            arguments.Add(new AttributeArgumentNode(expr));
 
         } while (ConsumeIfMatch(TokenKind.Comma));
 
@@ -2291,7 +2282,7 @@ public class Parser
         return null;
     }
 
-    private MemberNode ParseProperty(string propertyName, AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode propertyType)
+    private MemberNode ParseProperty(string propertyName, AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode propertyType, List<AttributeNode> attributes)
     {
         Expect(TokenKind.OpenBrace);
 
@@ -2322,7 +2313,7 @@ public class Parser
             Expect(TokenKind.Semicolon);
         }
 
-        return new PropertyMemberNode(accessModifier, modifiers, propertyName, propertyType, getter, setter, value);
+        return new PropertyMemberNode(accessModifier, modifiers, propertyName, propertyType, getter, setter, value, attributes);
     }
 
     private ParameterListNode ParseParameterList()
@@ -2346,7 +2337,7 @@ public class Parser
         return new ParameterListNode(parameters);
     }
 
-    private MemberNode ParseConstructor(AccessModifier accessModifier)
+    private ConstructorNode ParseConstructor(AccessModifier accessModifier, List<AttributeNode> attributes)
     {
         Expect(TokenKind.Identifier); // ctor name
         Expect(TokenKind.OpenParen);  // parms
@@ -2354,10 +2345,10 @@ public class Parser
         Expect(TokenKind.CloseParen);
         var body = ParseMethodBody();
 
-        return new ConstructorNode(accessModifier, parms, body);
+        return new ConstructorNode(accessModifier, parms, body, attributes);
     }
 
-    private MemberNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName)
+    private MethodNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName, List<AttributeNode> attributes)
     {
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
@@ -2367,10 +2358,10 @@ public class Parser
         if (!ConsumeIfMatch(TokenKind.Semicolon))
             body = ParseMethodBody();
 
-        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body);
+        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body, attributes);
     }
 
-    private EnumMemberNode ParseEnumMember()
+    private EnumMemberNode ParseEnumMember(List<AttributeNode> attributes)
     {
         var identifier = Consume();
         ExpressionNode? value = null;
@@ -2382,7 +2373,7 @@ public class Parser
 
         ConsumeIfMatch(TokenKind.Comma);
 
-        return new EnumMemberNode(identifier.Lexeme, value);
+        return new EnumMemberNode(identifier.Lexeme, value, attributes);
     }
 
     private static string ResolveNameFromAstNode(AstNode node)
@@ -2402,7 +2393,7 @@ public class Parser
             attributes = TryParseAttributes(out _);
 
         if (kind == TypeKind.Enum)
-            return ParseEnumMember();
+            return ParseEnumMember(attributes);
 
         var name = ResolveNameFromAstNode(typeName);
 
@@ -2410,7 +2401,7 @@ public class Parser
         var isCtor = PeekCurrent().Lexeme == name && PeekSafe().Kind == TokenKind.OpenParen;
 
         if (isCtor)
-            return ParseConstructor(accessModifier ?? AccessModifier.Private);
+            return ParseConstructor(accessModifier ?? AccessModifier.Private, attributes);
 
         var type = ParseType();
         var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
@@ -2423,15 +2414,15 @@ public class Parser
             var hasValue = ConsumeIfMatch(TokenKind.Equals);
             var value = hasValue ? ParseExpression() : null;
             Expect(TokenKind.Semicolon);
-            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, ResolveNameFromAstNode(identifier), type, value);
+            return new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, ResolveNameFromAstNode(identifier), type, value, attributes);
         }
         else if (isProperty)
         {
-            return ParseProperty(ResolveNameFromAstNode(identifier), accessModifier ?? AccessModifier.Private, modifiers, type);
+            return ParseProperty(ResolveNameFromAstNode(identifier), accessModifier ?? AccessModifier.Private, modifiers, type, attributes);
         }
         else if (isMethod)
         {
-            return ParseMethod(accessModifier ?? AccessModifier.Private, modifiers, type, identifier);
+            return ParseMethod(accessModifier ?? AccessModifier.Private, modifiers, type, identifier, attributes);
         }
 
         throw new NotImplementedException();
