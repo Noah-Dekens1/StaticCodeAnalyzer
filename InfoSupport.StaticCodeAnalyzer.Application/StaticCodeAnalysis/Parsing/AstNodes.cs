@@ -696,10 +696,11 @@ public class BracketedArgumentList(List<ArgumentNode> arguments) : ArgumentListN
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ParameterNode(TypeNode type, string identifier) : AstNode
+public class ParameterNode(TypeNode type, string identifier, List<AttributeNode>? attributes = null) : AstNode
 {
     public TypeNode Type { get; set; } = type;
     public string Identifier { get; set; } = identifier;
+    public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
 
     public override List<AstNode> Children => [Type];
 

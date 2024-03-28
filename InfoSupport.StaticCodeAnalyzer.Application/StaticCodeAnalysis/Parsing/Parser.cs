@@ -2339,10 +2339,15 @@ public class Parser
             if (Matches(TokenKind.CloseParen))
                 return new ParameterListNode(parameters);
 
+            List<AttributeNode> attributes = [];
+
+            if (Matches(TokenKind.OpenBracket))
+                attributes = TryParseAttributes(out _);
+
             var type = ParseType();
             var identifier = Consume();
 
-            parameters.Add(new ParameterNode(type, identifier.Lexeme));
+            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 

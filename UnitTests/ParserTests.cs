@@ -4106,4 +4106,64 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_MethodParameterAttribute_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                public void ExampleMethod([In][Out,Test] string param1)
+                {
+
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        returnType: AstUtils.SimpleNameAsType("void"),
+                        methodName: AstUtils.SimpleName("ExampleMethod"),
+                        parameters: new ParameterListNode([
+                            new ParameterNode(
+                                type: AstUtils.SimpleNameAsType("string"),
+                                identifier: "param1",
+                                attributes: [
+                                    new AttributeNode(
+                                        arguments: [
+                                            new AttributeArgumentNode(
+                                                expression: new IdentifierExpression("In")
+                                            )
+                                        ]
+                                    ),
+                                     new AttributeNode(
+                                        arguments: [
+                                            new AttributeArgumentNode(
+                                                expression: new IdentifierExpression("Out")
+                                            ),
+                                            new AttributeArgumentNode(
+                                                expression: new IdentifierExpression("Test")
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+                        body: new BlockNode(statements: [])
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
