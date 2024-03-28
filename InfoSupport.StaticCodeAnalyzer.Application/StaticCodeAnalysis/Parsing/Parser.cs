@@ -1985,7 +1985,7 @@ public class Parser
         
         // Skip over possible attribute
         if (Matches(TokenKind.OpenBracket))
-            TryParseAttribute(out idx, true);
+            TryParseAttributes(out idx, true);
 
         // Skip over all (access) modifiers
         while (IsValidTypeModifier(PeekSafe(idx)))
@@ -2045,17 +2045,15 @@ public class Parser
 
     }
 
-    private AttributeNode? TryParseAttribute(out int consumed, bool alwaysBacktrack=false)
+    private bool TryParseSingleAttribute([NotNullWhen(true)] out AttributeNode? attribute)
     {
-        var start = Tell();
         Expect(TokenKind.OpenBracket);
 
         List<AttributeArgumentNode> arguments = [];
         string? target = null;
 
         bool maybeAttribute = true;
-
-        consumed = 0;
+        attribute = null;
 
         // At this point it's no longer safe to expect anything
 
@@ -2090,10 +2088,34 @@ public class Parser
 
         } while (ConsumeIfMatch(TokenKind.Comma));
 
-        if (!ConsumeIfMatch(TokenKind.CloseBracket) || !maybeAttribute)
+        if (maybeAttribute && ConsumeIfMatch(TokenKind.CloseBracket))
         {
-            Seek(start);
-            return null;
+            attribute = new AttributeNode(arguments, target);
+            return true;
+        }
+
+        return false;
+    }
+
+    private List<AttributeNode> TryParseAttributes(out int consumed, bool alwaysBacktrack=false)
+    {
+        var start = Tell();
+        var attributes = new List<AttributeNode>();
+
+        consumed = 0;
+
+        while (Matches(TokenKind.OpenBracket))
+        {
+            if (TryParseSingleAttribute(out var attribute))
+            {
+                attributes.Add(attribute);
+            }
+            else
+            {
+                // If malformed backtrack
+                Seek(start);
+                return [];
+            }
         }
 
         consumed = Tell() - start;
@@ -2103,7 +2125,7 @@ public class Parser
             Seek(start);
         }
 
-        return new AttributeNode(arguments, target);
+        return attributes;
     }
 
     private List<StatementNode> ParseTopLevelStatements()
@@ -2374,6 +2396,11 @@ public class Parser
 
     private MemberNode ParseMember(TypeKind kind, AstNode typeName)
     {
+        List<AttributeNode> attributes = [];
+
+        if (Matches(TokenKind.OpenBracket))
+            attributes = TryParseAttributes(out _);
+
         if (kind == TypeKind.Enum)
             return ParseEnumMember();
 
@@ -2424,10 +2451,10 @@ public class Parser
 
     private TypeDeclarationNode ParseTypeDeclaration()
     {
-        AttributeNode? attribute = null;
+        List<AttributeNode> attributes = [];
 
         if (Matches(TokenKind.OpenBracket))
-            attribute = TryParseAttribute(out _);
+            attributes = TryParseAttributes(out _);
             
         ParseModifiers(out var accessModifier, out var modifiers);
 
@@ -2458,10 +2485,10 @@ public class Parser
 
         return type switch
         {
-            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attribute),
-            TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attribute),
-            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attribute),
-            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attribute),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
+            TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attributes),
+            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
             _ => throw new NotImplementedException(),
         };
     }

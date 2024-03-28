@@ -851,9 +851,9 @@ public class UsingDirectiveNode(AstNode ns, string? alias) : AstNode
     }
 }
 
-public abstract class TypeDeclarationNode(AttributeNode? attribute) : AstNode
+public abstract class TypeDeclarationNode(List<AttributeNode>? attributes = null) : AstNode
 {
-    public AttributeNode? Attribute { get; set; } = attribute;
+    public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
 }
 
 public enum AccessModifier
@@ -883,13 +883,13 @@ public enum OptionalModifier
     Required
 }
 
-public abstract class MemberNode : AstNode
+public abstract class MemberNode(List<AttributeNode>? attributes = null) : AstNode
 {
-
+    public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifier> modifiers, string fieldName, TypeNode fieldType, ExpressionNode? value) : MemberNode
+public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifier> modifiers, string fieldName, TypeNode fieldType, ExpressionNode? value, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier = accessModifier;
     public List<OptionalModifier> Modifiers = modifiers;
@@ -944,7 +944,9 @@ public class PropertyAccessorNode(
 }
 
 
-public class PropertyMemberNode(AccessModifier accessModifier, List<OptionalModifier> modifiers, string propertyName, TypeNode propertyType, PropertyAccessorNode? getter, PropertyAccessorNode? setter, ExpressionNode? value) : MemberNode
+public class PropertyMemberNode(
+    AccessModifier accessModifier, List<OptionalModifier> modifiers, string propertyName, TypeNode propertyType, 
+    PropertyAccessorNode? getter, PropertyAccessorNode? setter, ExpressionNode? value, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers;
@@ -961,7 +963,7 @@ public class PropertyMemberNode(AccessModifier accessModifier, List<OptionalModi
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class EnumMemberNode(string identifier, ExpressionNode? value) : MemberNode
+public class EnumMemberNode(string identifier, ExpressionNode? value, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
     public string Identifier { get; set; } = identifier;
     public ExpressionNode? Value { get; set; } = value;
@@ -975,7 +977,7 @@ public class EnumMemberNode(string identifier, ExpressionNode? value) : MemberNo
 }
 
 [DebuggerDisplay("{AccessModifier,nq} Constructor({Parameters,nq})")]
-public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, AstNode body) : MemberNode
+public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, AstNode body, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier;
     public ParameterListNode Parameters { get; set; } = parameters;
@@ -991,7 +993,9 @@ public class MethodNode(
     TypeNode returnType,
     AstNode methodName,
     ParameterListNode parameters,
-    AstNode? body) : MemberNode
+    AstNode? body, 
+    List<AttributeNode>? attributes = null
+    ) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier { set; get; } = accessModifier;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers;
@@ -1006,7 +1010,7 @@ public class MethodNode(
 public class BasicDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    AttributeNode? attribute = null) : TypeDeclarationNode(attribute)
+    List<AttributeNode>? attributes = null) : TypeDeclarationNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
@@ -1021,7 +1025,7 @@ public class BasicDeclarationNode(
 public class ClassDeclarationNode(
     AstNode className, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    AttributeNode? attribute = null) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attribute)
+    List<AttributeNode>? attributes = null) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attributes)
 {
 
 }
@@ -1030,7 +1034,7 @@ public class ClassDeclarationNode(
 public class InterfaceDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    AttributeNode? attribute = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attribute)
+    List<AttributeNode>? attributes = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes)
 {
 
 }
@@ -1039,7 +1043,7 @@ public class InterfaceDeclarationNode(
 public class StructDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
-    AttributeNode? attribute = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attribute)
+    List<AttributeNode>? attributes = null) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes)
 {
 
 }
@@ -1048,7 +1052,7 @@ public class StructDeclarationNode(
 public class EnumDeclarationNode(
     AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    AttributeNode? attribute = null) : TypeDeclarationNode(attribute)
+    List<AttributeNode>? attributes = null) : TypeDeclarationNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
