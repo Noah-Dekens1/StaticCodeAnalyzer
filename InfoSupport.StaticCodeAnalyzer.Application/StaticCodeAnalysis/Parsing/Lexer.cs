@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
-using ObservingStringType = (bool IsInterpolated, bool IsVerbatim);
-
 struct StringData
 {
     public bool IsInterpolated { get; set; }
