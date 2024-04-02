@@ -1460,10 +1460,10 @@ public class ThrowExpressionNode(ExpressionNode? expression) : ExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class CatchClauseNode(TypeNode exceptionType, string identifier, BlockNode block, ExpressionNode? whenClause=null) : AstNode
+public class CatchClauseNode(TypeNode? exceptionType, string? identifier, BlockNode block, ExpressionNode? whenClause=null) : AstNode
 {
-    public TypeNode ExceptionType { get; set; } = exceptionType;
-    public string Identifier { get; set; } = identifier;
+    public TypeNode? ExceptionType { get; set; } = exceptionType;
+    public string? Identifier { get; set; } = identifier;
     public BlockNode Block { get; set; } = block;
     public ExpressionNode? WhenClause { get; set; } = whenClause;
 

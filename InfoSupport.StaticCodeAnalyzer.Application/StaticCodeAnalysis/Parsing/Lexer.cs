@@ -617,7 +617,7 @@ public class Lexer(string fileContent)
         return result;
     }
 
-    private (string lexeme, object? value) ReadNumericLiteral()
+    private void ReadNumericLiteral(out string lexeme, out object? value)
     {
         bool isHexadecimal = false;
         bool isBinary = false;
@@ -703,9 +703,8 @@ public class Lexer(string fileContent)
         if (numericLiteral.Last() == '_')
             throw new Exception("Invalid trailing underscore in numeric literal");
 
-        var value = ParseNumericLiteral(numericLiteral);
-
-        return (numericLiteral, value);
+        lexeme = numericLiteral;
+        value = ParseNumericLiteral(numericLiteral);
     }
 
     public bool ConsumeIfMatchSequence(char[] s, bool includeConsumed = false)
@@ -1124,8 +1123,8 @@ public class Lexer(string fileContent)
 
                     if (char.IsDigit(Peek(1)))
                     {
-                        var numericLiteral = ReadNumericLiteral();
-                        Emit(TokenKind.NumericLiteral, numericLiteral.lexeme, numericLiteral.value);
+                        ReadNumericLiteral(out var lexeme, out var value);
+                        Emit(TokenKind.NumericLiteral, lexeme, value);
                         continue;
                     }
 
@@ -1141,8 +1140,8 @@ public class Lexer(string fileContent)
                     break;
                 case (>= '0' and <= '9'):
                     {
-                        var result = ReadNumericLiteral();
-                        Emit(TokenKind.NumericLiteral, result.lexeme, result.value);
+                        ReadNumericLiteral(out var lexeme, out var value);
+                        Emit(TokenKind.NumericLiteral, lexeme, value);
                     }
                     break;
                 case '"':

@@ -1115,7 +1115,7 @@ public class Parser
     {
         var token = PeekCurrent();
 
-        if (token.Kind == TokenKind.OpenParen)
+        if (token.Kind == TokenKind.OpenParen && possibleLHS is null)
         {
             // Could be plain parenthesis around a subexpression, a lambda's argument list, or a tuple
             /*
@@ -1146,7 +1146,7 @@ public class Parser
         {
             possibleLHS = primaryExpression;
         }
-        else if (resolvedIdentifier is not null)
+        else if (possibleLHS is not null)
         {
             var primaryPostfixExpression = TryParsePrimaryPostfixExpression(resolvedIdentifier, isParsingPattern);
             if (primaryPostfixExpression is not null)
@@ -1251,7 +1251,8 @@ public class Parser
         TokenKind.BoolKeyword,
         TokenKind.StringKeyword,
         TokenKind.CharKeyword,
-        TokenKind.VoidKeyword
+        TokenKind.VoidKeyword,
+        TokenKind.ObjectKeyword
     ];
 
     private bool IsMaybeType(Token token, bool excludeVar)
@@ -1945,21 +1946,26 @@ public class Parser
 
         List<CatchClauseNode> catchClauses = [];
         FinallyClauseNode? finallyClause = null;
+        ExpressionNode? whenClause = null;
 
         while (ConsumeIfMatch(TokenKind.CatchKeyword))
         {
-            Expect(TokenKind.OpenParen);
-            var type = ParseType();
-            var identifier = Consume().Lexeme;
-            ExpressionNode? whenClause = null;
-            Expect(TokenKind.CloseParen);
-
-            if (MatchesLexeme("when"))
+            TypeNode? type = null;
+            string? identifier = null;
+            if (ConsumeIfMatch(TokenKind.OpenParen))
             {
-                Consume();
-                Expect(TokenKind.OpenParen);
-                whenClause = ParseExpression();
+                type = ParseType();
+                identifier = Consume().Lexeme;
+
                 Expect(TokenKind.CloseParen);
+
+                if (MatchesLexeme("when"))
+                {
+                    Consume();
+                    Expect(TokenKind.OpenParen);
+                    whenClause = ParseExpression();
+                    Expect(TokenKind.CloseParen);
+                }
             }
 
             var catchBlock = ParseBlock();
