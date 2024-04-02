@@ -30,12 +30,14 @@ public class NamespaceNode(
     bool isFileScoped = false,
     List<UsingDirectiveNode>? usingDirectives = null,
     List<TypeDeclarationNode>? typeDeclarations = null,
-    List<NamespaceNode>? namespaces = null
+    List<NamespaceNode>? namespaces = null,
+    List<AttributeNode>? attributes = null
 ) : AstNode
 {
     public string Name { get; } = name;
     public bool IsFileScoped { get; } = isFileScoped;
     public List<UsingDirectiveNode> UsingDirectives { get; } = usingDirectives ?? [];
+    public List<AttributeNode> Attributes { get; } = attributes ?? [];
     public List<TypeDeclarationNode> TypeDeclarations { get; } = typeDeclarations ?? [];
     public List<NamespaceNode> Namespaces { get; } = namespaces ?? [];
 
@@ -1507,4 +1509,13 @@ public class AsExpressionNode(ExpressionNode lhs, TypeNode targetType) : Express
 
     public override List<AstNode> Children => [LHS, TargetType];
     public override string ToString() => $"{LHS} {TargetType}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class GlobalNamespaceQualifierNode(ExpressionNode ns) : ExpressionNode
+{
+    public ExpressionNode Namespace { get; set; } = ns;
+
+    public override List<AstNode> Children => [Namespace];
+    public override string ToString() => $"global::{Namespace}";
 }

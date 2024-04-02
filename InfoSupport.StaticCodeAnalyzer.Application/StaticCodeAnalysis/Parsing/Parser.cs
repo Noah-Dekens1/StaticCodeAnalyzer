@@ -631,6 +631,14 @@ public class Parser
 
     private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null)
     {
+        var isGlobal = MatchesLexeme("global");
+
+        if (isGlobal)
+        {
+            Consume();
+            Expect(TokenKind.ColonColon);
+        }
+
         List<MemberData> members = [];
 
         do
@@ -657,7 +665,12 @@ public class Parser
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
-        return ResolveMemberAccess(members, lhs);
+        var memberAccess = ResolveMemberAccess(members, lhs);
+
+        if (isGlobal)
+            memberAccess = new GlobalNamespaceQualifierNode(memberAccess);
+
+        return memberAccess;
     }
 
     [Obsolete]
@@ -2789,10 +2802,41 @@ public class Parser
         return ns;
     }
 
+    private readonly List<string> _topLevelAttributeTargets = [
+        "module",
+        "assembly"
+    ];
+
+    private List<AttributeNode> ParseTopLevelAttributes()
+    {
+        var attributes = new List<AttributeNode>();
+
+        while (Matches(TokenKind.OpenBracket))
+        {
+            var marker = Tell();
+
+            if (!TryParseSingleAttribute(out var attribute) || 
+                attribute.Target is null ||
+                !_topLevelAttributeTargets.Contains(attribute.Target))
+            {
+                Seek(marker);
+                break;
+            }
+
+            attributes.Add(attribute);
+        }
+
+        return attributes;
+    }
+
     private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, bool allowTopLevelStatements = false)
     {
         var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped);
         var directives = ParseUsingDirectives();
+
+        // try parse assembly/module
+
+        var attributes = ParseTopLevelAttributes();
 
         // the 'rule' in C# is that top-level statements must precede any type declarations and namespaces
         // this method stops the moment it encounters a type declaration
@@ -2810,6 +2854,7 @@ public class Parser
         var namespaces = declarationsAndNamespaces.OfType<NamespaceNode>().ToList();
 
         ns.UsingDirectives.AddRange(directives);
+        ns.Attributes.AddRange(attributes);
         ns.TypeDeclarations.AddRange(typeDeclarations);
         ns.Namespaces.AddRange(namespaces);
 

@@ -4922,4 +4922,34 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_TopLevelAttributes_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            [assembly: global::System.Reflection.AssemblyCompanyAttribute("TestWebApp")]
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.Attributes.Add(
+            new AttributeNode(
+                arguments: [
+                    new AttributeArgumentNode(
+                        expression: new InvocationExpressionNode(
+                            lhs: new GlobalNamespaceQualifierNode(AstUtils.ResolveMemberAccess("System.Reflection.AssemblyCompanyAttribute")),
+                            arguments: new ArgumentListNode([
+                                new ArgumentNode(new StringLiteralNode("TestWebApp"))
+                            ])
+                        )
+                    )
+                ],
+                target: "assembly"
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
