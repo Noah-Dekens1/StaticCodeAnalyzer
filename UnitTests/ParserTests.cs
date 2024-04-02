@@ -5094,6 +5094,34 @@ public class ParserTests
 
         var expected = AST.Build();
 
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new TupleTypeNode(
+                            elements: [
+                                new TupleTypeElementNode(
+                                    type: AstUtils.SimpleNameAsType("int")
+                                ),
+                                new TupleTypeElementNode(
+                                    type: AstUtils.SimpleNameAsType("string")
+                                )
+                            ]
+                        )
+                    ),
+                    identifier: "example",
+                    expression: new TupleExpressionNode([
+                        new TupleArgumentNode(
+                            expression: new NumericLiteralNode(3)
+                        ),
+                        new TupleArgumentNode(
+                            expression: new StringLiteralNode("hello")
+                        )
+                    ])
+                )
+            )
+        );
+
         AssertStandardASTEquals(expected, actual);
     }
 }

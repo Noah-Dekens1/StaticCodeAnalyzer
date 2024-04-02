@@ -533,7 +533,7 @@ public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments = null,
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-class TupleTypeNode(List<TupleTypeElementNode> elements) : AstNode
+public class TupleTypeNode(List<TupleTypeElementNode> elements) : AstNode
 {
     public List<TupleTypeElementNode> Elements { get; set; } = elements;
 
