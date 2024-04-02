@@ -746,6 +746,12 @@ public class Parser
         // Object creation expression
         if (ConsumeIfMatch(TokenKind.NewKeyword))
         {
+            bool isArrayCreation = false;
+            if (ConsumeIfMatch(TokenKind.OpenBracket))
+            {
+                isArrayCreation = true;
+                Expect(TokenKind.CloseBracket);
+            }
             TypeNode? type = null;
 
             if (IsMaybeType(PeekCurrent(), true))
@@ -803,7 +809,7 @@ public class Parser
                 Expect(TokenKind.CloseBrace);
             }
 
-            return new ObjectCreationExpressionNode(type, args, initializer);
+            return new ObjectCreationExpressionNode(type, isArrayCreation, args, initializer);
         }
         else if (ConsumeIfMatch(TokenKind.OpenBracket))
         {
@@ -1148,7 +1154,7 @@ public class Parser
         }
         else if (possibleLHS is not null)
         {
-            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(resolvedIdentifier, isParsingPattern);
+            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(possibleLHS, isParsingPattern);
             if (primaryPostfixExpression is not null)
             {
                 possibleLHS = primaryPostfixExpression;

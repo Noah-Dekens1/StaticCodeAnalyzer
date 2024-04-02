@@ -4834,4 +4834,42 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ArrayCreation_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var test = new[]
+            {
+                "Item1", "Item2"
+            };
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "test",
+                    expression: new ObjectCreationExpressionNode(
+                        type: null,
+                        isArrayCreation: true,
+                        initializer: new CollectionInitializerNode([
+                            new RegularCollectionInitializerNode(
+                                value: new StringLiteralNode("Item1")
+                            ),
+                            new RegularCollectionInitializerNode(
+                                value: new StringLiteralNode("Item2")
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

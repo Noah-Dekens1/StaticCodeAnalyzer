@@ -838,11 +838,12 @@ public class CollectionInitializerNode(List<CollectionInitializerElementNode> va
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class ObjectCreationExpressionNode(TypeNode? type, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
+public class ObjectCreationExpressionNode(TypeNode? type, bool isArrayCreation=false, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
 {
     public TypeNode? Type { get; set; } = type;
     public ArgumentListNode Arguments { get; set; } = arguments ?? new ArgumentListNode([]);
     public CollectionInitializerNode? CollectionInitializer = initializer;
+    public bool IsArrayCreation { get; set; } = isArrayCreation;
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type, Arguments, CollectionInitializer);
 
     [ExcludeFromCodeCoverage]

@@ -11,7 +11,8 @@ var _ = Lexer.Lex(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.Sta
 //return;
 
 //var directory = @"C:\Users\NoahD\source\repos\Files\src";
-var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Parsing";
+//var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Parsing";
+var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
 
 string[] paths = Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories);
 
