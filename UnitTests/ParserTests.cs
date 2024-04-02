@@ -1225,6 +1225,7 @@ public class ParserTests
                     new ConstructorNode(
                         accessModifier: AccessModifier.Public,
                         parameters: new ParameterListNode([]),
+                        baseArguments: null,
                         body: new BlockNode([
                             new ExpressionStatementNode(
                                 expression: new AssignmentExpressionNode(
@@ -2003,6 +2004,7 @@ public class ParserTests
                     new ConstructorNode(
                         accessModifier: AccessModifier.Public,
                         parameters: new ParameterListNode([]),
+                        baseArguments: null,
                         body: new BlockNode([
                             new ExpressionStatementNode(
                                 expression: new AssignmentExpressionNode(
@@ -3218,7 +3220,7 @@ public class ParserTests
                     type: AstUtils.SimpleNameAsType("var"),
                     identifier: "n1",
                     expression: new NameofExpressionNode(
-                        value: AstUtils.SimpleNameAsType("int")
+                        value: AstUtils.SimpleName("int")
                     )
                 )
             ),
@@ -3879,6 +3881,7 @@ public class ParserTests
                         accessModifier: AccessModifier.Public,
                         parameters: new ParameterListNode([]),
                         body: new BlockNode(statements: []),
+                        baseArguments: null,
                         attributes: [
                             new AttributeNode(
                                 arguments: [

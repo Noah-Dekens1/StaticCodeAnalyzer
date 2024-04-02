@@ -1001,11 +1001,19 @@ public class EnumMemberNode(string identifier, ExpressionNode? value, List<Attri
         : $"{Identifier}";
 }
 
+public enum ConstructorArgumentsType
+{
+    None,
+    Base,
+    This
+}
+
 [DebuggerDisplay("{AccessModifier,nq} Constructor({Parameters,nq})")]
-public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, ArgumentListNode? baseArguments, AstNode body, List<AttributeNode>? attributes = null) : MemberNode(attributes)
+public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, ArgumentListNode? baseArguments, AstNode body, ConstructorArgumentsType constructorArgumentsType = ConstructorArgumentsType.None, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier;
     public ParameterListNode Parameters { get; set; } = parameters;
+    public ConstructorArgumentsType ConstructorArgumentsType { get; set; } = constructorArgumentsType;
     public ArgumentListNode? BaseArguments { get; set; } = baseArguments;
     public AstNode Body { get; set; } = body;
 

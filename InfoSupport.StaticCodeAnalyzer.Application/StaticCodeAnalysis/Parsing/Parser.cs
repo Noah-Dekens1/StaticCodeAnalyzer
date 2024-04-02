@@ -1219,6 +1219,7 @@ public class Parser
             // Resolve member access
             Expect(TokenKind.Dot);
             possibleLHS = ResolveIdentifier(isMaybeGeneric: true, lhs: possibleLHS);
+            return ParseExpression(possibleLHS);
         }
 
         if (Matches(TokenKind.SwitchKeyword))
@@ -2502,6 +2503,7 @@ public class Parser
         Expect(TokenKind.CloseParen);
 
         ArgumentListNode? baseArguments = null;
+        ConstructorArgumentsType type = ConstructorArgumentsType.None;
 
         if (ConsumeIfMatch(TokenKind.Colon))
         {
@@ -2514,11 +2516,13 @@ public class Parser
             Expect(TokenKind.OpenParen);
             baseArguments = ParseArgumentList();
             Expect(TokenKind.CloseParen);
+
+            type = isBase ? ConstructorArgumentsType.Base : ConstructorArgumentsType.This;
         }
 
         var body = ParseMethodBody();
 
-        return new ConstructorNode(accessModifier, parms, baseArguments, body, attributes);
+        return new ConstructorNode(accessModifier, parms, baseArguments, body, type, attributes);
     }
 
     private MethodNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName, List<AttributeNode> attributes)
