@@ -25,6 +25,12 @@ struct StringData
     public int DQouteCount { get; set; }
 }
 
+readonly struct StackString(bool isCode, StringData? stringData)
+{
+    public readonly bool IsCode = isCode;
+    public readonly StringData? StringData = stringData;
+}
+
 public class UnexpectedCharacterException : Exception
 {
     public UnexpectedCharacterException(string message) : base(message)
@@ -730,8 +736,8 @@ public class Lexer(string fileContent)
         var literalBuilder = new StringBuilder();
         //var stringStart = _index;
 
-        Stack<(bool IsCode, StringData?)> stack = [];
-        stack.Push((false, topString));
+        Stack<StackString> stack = [];
+        stack.Push(new StackString(false, topString));
 
         bool MatchString(out StringData str, bool includeConsumed)
         {
@@ -799,9 +805,10 @@ public class Lexer(string fileContent)
 
             //literalBuilder.Append(c);
 
-            var (isCode, str) = stack.Peek();
+            var strData = stack.Peek();
+            var str = strData.StringData;
 
-            if (isCode)
+            if (strData.IsCode)
             {
                 var possibleMatchStart = _index;
 
@@ -812,13 +819,13 @@ public class Lexer(string fileContent)
                     if (item.IsCode)
                         continue;
 
-                    lastStr = item.Item2;
+                    lastStr = item.StringData;
                     break;
                 }
 
                 if (MatchString(out var stringData, false))
                 {
-                    stack.Push((false, stringData));
+                    stack.Push(new StackString(false, stringData));
                 }
                 else if (((lastStr.HasValue && !lastStr.Value.IsRaw) || !lastStr.HasValue) && ConsumeIfMatch('}'))
                 {
@@ -873,7 +880,7 @@ public class Lexer(string fileContent)
 
                 if (str.Value.IsInterpolated && ConsumeIfMatchGreedy('{', dollarSignCount, dollarSignCount) != -1)
                 {
-                    stack.Push((true, null));
+                    stack.Push(new StackString(true, null));
                     continue;
                 }
 
@@ -916,7 +923,7 @@ public class Lexer(string fileContent)
                 {
                     if (!ConsumeIfMatch('{'))
                     {
-                        stack.Push((true, null));
+                        stack.Push(new StackString(true, null));
                     }
                 }
                 else
