@@ -5124,4 +5124,45 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_TypeAlias_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            using TupleTest = (int, int);
+            using GenericTest = List<int, string>;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.UsingDirectives.AddRange([
+            new UsingDirectiveNode(
+                ns: new TypeNode(
+                    baseType: new TupleTypeNode([
+                        new TupleTypeElementNode(
+                            type: AstUtils.SimpleNameAsType("int")
+                        ),
+                        new TupleTypeElementNode(
+                            type: AstUtils.SimpleNameAsType("int")
+                        )
+                    ])
+                ),
+                alias: "TupleTest"
+            ),
+            new UsingDirectiveNode(
+                ns: new TypeNode(
+                    baseType: AstUtils.SimpleName("List"),
+                    typeArguments: new TypeArgumentsNode([
+                        AstUtils.SimpleNameAsType("int"),
+                        AstUtils.SimpleNameAsType("string"),
+                    ])
+                ),
+                alias: "GenericTest"
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

@@ -1564,6 +1564,17 @@ public class Parser
         return true;
     }
 
+    private bool TryParseTypeOrBacktrack([NotNullWhen(true)] out TypeNode? type)
+    {
+        var start = Tell();
+        var success = TryParseType(out type);
+
+        if (!success)
+            Seek(start);
+
+        return success;
+    }
+
     private TypeNode ParseType()
     {
         return !TryParseType(out var type) 
@@ -1925,6 +1936,34 @@ public class Parser
         {
             Expect(TokenKind.Identifier); // global
             Expect(TokenKind.ColonColon);
+        }
+
+        bool isNamespace = true;
+
+        if (hasAlias && !isNamespaceGlobal)
+        {
+            bool expectsIdentifier = true;
+            int i = 0;
+
+            do
+            {
+                isNamespace &= expectsIdentifier
+                    ? Matches(TokenKind.Identifier, i++)
+                    : Matches(TokenKind.Dot, i++);
+
+                expectsIdentifier = !expectsIdentifier;
+
+                if (!isNamespace)
+                    break;
+
+            } while (!Matches(TokenKind.Semicolon, i));
+        }
+
+        if (hasAlias && !isNamespace)
+        {
+            var type = ParseType();
+            Expect(TokenKind.Semicolon);
+            return new UsingDirectiveNode(type, alias, isGlobal, isNamespaceGlobal);
         }
 
         var ns = ParseQualifiedName();
