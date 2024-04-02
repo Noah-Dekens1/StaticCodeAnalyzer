@@ -5064,10 +5064,10 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new TupleDeconstructStatementNode(
                     designations: [
-                        new TupleDesignationNode(
+                        new TupleElementNode(
                             name: "id"
                         ),
-                        new TupleDesignationNode(
+                        new TupleElementNode(
                             name: "name"
                         )
                     ],
@@ -5079,6 +5079,20 @@ public class ParserTests
                 )
             )
         );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_TupleType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            (int, string) example = (3, "hello");
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
 
         AssertStandardASTEquals(expected, actual);
     }

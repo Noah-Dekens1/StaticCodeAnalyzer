@@ -533,6 +533,16 @@ public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments = null,
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
+class TupleTypeNode(List<TupleTypeElementNode> elements) : AstNode
+{
+    public List<TupleTypeElementNode> Elements { get; set; } = elements;
+
+    public override List<AstNode> Children => [.. Elements];
+
+    public override string ToString() => $"({string.Join(", ", Elements)})";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
 public class GenericNameNode(AstNode identifier, TypeArgumentsNode? typeArguments = null) : ExpressionNode
 {
     public AstNode Identifier { get; set; } = identifier;
@@ -1560,14 +1570,27 @@ public class TupleExpressionNode(List<TupleArgumentNode> arguments) : Expression
 
 
     public override List<AstNode> Children => [.. Arguments];
-    public override string ToString() => string.Join(", ", Children);
+    public override string ToString() => $"({string.Join(", ", Children)})";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class TupleDesignationNode(string name, TypeNode? type=null) : AstNode
+public class TupleElementNode(string name, TypeNode? type=null) : AstNode
 {
     public string Name { get; set; } = name;
     public TypeNode? Type { get; set; } = type;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
+
+    public override string ToString() => Type is not null
+        ? $"{Type} {Name}"
+        : $"{Name}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TupleTypeElementNode(TypeNode type, string? name = null) : AstNode
+{
+    public string? Name { get; set; } = name;
+    public TypeNode Type { get; set; } = type;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
 
@@ -1580,13 +1603,13 @@ public class TupleDesignationNode(string name, TypeNode? type=null) : AstNode
 // Seems cleaner to leave them apart
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleDeconstructStatementNode(
-    List<TupleDesignationNode> designations,
+    List<TupleElementNode> designations,
     ExpressionNode rhs,
     TypeNode? specifiedType = null
     ) : StatementNode
 {
     public TypeNode? SpecifiedType { get; set; } = specifiedType;
-    public List<TupleDesignationNode> Designations { get; set; } = designations;
+    public List<TupleElementNode> Designations { get; set; } = designations;
     public ExpressionNode RHS { get; set; } = rhs;
 
     public override List<AstNode> Children => [.. Designations, .. Utils.ParamsToList<AstNode>(SpecifiedType, RHS)];

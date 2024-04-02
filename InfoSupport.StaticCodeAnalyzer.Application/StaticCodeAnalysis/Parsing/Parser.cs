@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,6 +10,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Exceptions;
 
@@ -767,8 +769,7 @@ public class Parser
             }
             TypeNode? type = null;
 
-            if (IsMaybeType(PeekCurrent(), true))
-                type = ParseType();
+            bool _ = IsMaybeType(PeekCurrent(), true) && TryParseType(out type);
 
             ArgumentListNode? args = null;
 
@@ -1334,6 +1335,7 @@ public class Parser
         maybeType |= !excludeVar && (token.Kind == TokenKind.Identifier && token.Lexeme == "var");
         maybeType |= TypeList.Contains(token.Kind);
         maybeType |= token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
+        maybeType |= token.Kind == TokenKind.OpenParen; // tuples, this will get a lot of false positives though
 
         return maybeType;
     }
@@ -1461,8 +1463,55 @@ public class Parser
         return true;
     }
 
+    private bool TryParseTupleType([NotNullWhen(true)] out TupleTypeNode? tupleType)
+    {
+        List<TupleTypeElementNode> elements = [];
+        tupleType = null;
+
+        do
+        {
+            if (!TryParseType(out TypeNode? elementType))
+            {
+                return false;
+            }
+
+            string? identifier = null;
+
+            if (Matches(TokenKind.Identifier))
+            {
+                identifier = Consume().Lexeme;
+            }
+
+            elements.Add(new TupleTypeElementNode(elementType, identifier));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseParen))
+            return false;
+
+        tupleType = new TupleTypeNode(elements);
+        return true;
+    }
+
+    /**
+     * Attempts to parse a type
+     * Does NOT backtrack in case of failure, it will only return false
+     */
     private bool TryParseType([NotNullWhen(true)] out TypeNode? type)
     {
+        type = null;
+
+        if (ConsumeIfMatch(TokenKind.OpenParen))
+        {
+            if (TryParseTupleType(out var tuple))
+            {
+                type = new TypeNode(tuple);
+                return true;
+            }
+
+            return false;
+        }
+
         var baseType = ResolveIdentifier();
 
         type = null;
@@ -1553,7 +1602,7 @@ public class Parser
             return false;
         }
 
-        List<TupleDesignationNode> designations = [];
+        List<TupleElementNode> designations = [];
 
         do
         {
@@ -1575,7 +1624,7 @@ public class Parser
 
             var identifier = Consume().Lexeme;
 
-            designations.Add(new TupleDesignationNode(identifier, elementType));
+            designations.Add(new TupleElementNode(identifier, elementType));
 
         } while (ConsumeIfMatch(TokenKind.Comma));
 
