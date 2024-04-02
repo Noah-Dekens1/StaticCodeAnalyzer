@@ -4716,4 +4716,32 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_CastInExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            _column += (ulong)dir;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new AddAssignExpressionNode(
+                        lhs: new IdentifierExpression("_column"),
+                        rhs: new CastExpressionNode(
+                            type: AstUtils.SimpleNameAsType("ulong"),
+                            expr: new IdentifierExpression("dir")
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

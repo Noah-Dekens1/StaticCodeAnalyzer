@@ -2131,7 +2131,9 @@ public class Parser
             return false;
         }
 
-        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
+        var identifier = Matches(TokenKind.Identifier)
+            ? ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true)
+            : null;
 
         if (identifier is null)
         {
