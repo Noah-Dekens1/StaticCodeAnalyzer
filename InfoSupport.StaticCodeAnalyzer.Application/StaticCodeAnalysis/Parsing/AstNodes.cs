@@ -1361,6 +1361,12 @@ public class BreakStatementNode : StatementNode
 
 }
 
+[DebuggerDisplay("continue;")]
+public class ContinueStatementNode : StatementNode
+{
+
+}
+
 [DebuggerDisplay("{ToString(),nq}")]
 public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode trueExpr, ExpressionNode falseExpr) : ExpressionNode
 {

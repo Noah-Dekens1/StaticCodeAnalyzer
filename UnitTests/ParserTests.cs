@@ -4778,4 +4778,24 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ContinueStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            continue;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ContinueStatementNode()
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

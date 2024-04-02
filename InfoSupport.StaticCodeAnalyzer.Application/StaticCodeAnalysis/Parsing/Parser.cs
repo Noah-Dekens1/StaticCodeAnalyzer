@@ -1932,6 +1932,13 @@ public class Parser
         return new BreakStatementNode();
     }
 
+    private ContinueStatementNode ParseContinueStatement()
+    {
+        Expect(TokenKind.ContinueKeyword);
+        Expect(TokenKind.Semicolon);
+        return new ContinueStatementNode();
+    }
+
     private ThrowExpressionNode ParseThrowExpression()
     {
         Expect(TokenKind.ThrowKeyword);
@@ -2030,6 +2037,7 @@ public class Parser
             TokenKind.WhileKeyword => ParseWhileStatement(),
             TokenKind.SwitchKeyword => ParseSwitchStatement(),
             TokenKind.BreakKeyword => ParseBreakStatement(),
+            TokenKind.ContinueKeyword => ParseContinueStatement(),
             TokenKind.ReturnKeyword => ParseReturnStatement(),
             TokenKind.Semicolon => ParseEmptyStatement(),
             TokenKind.TryKeyword => ParseTryStatement(),
