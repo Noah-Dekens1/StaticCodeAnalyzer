@@ -4377,9 +4377,9 @@ public class ParserTests
                     new ParameterNode(AstUtils.SimpleNameAsType("int"), "b"),
                 ]),
                 baseArguments: new ArgumentListNode([
-                    new ArgumentNode(new IdentifierExpression("a"), null),
-                    new ArgumentNode(new IdentifierExpression("b"), null),
-                    new ArgumentNode(new BooleanLiteralNode(true), "optional"),
+                    new ArgumentNode(new IdentifierExpression("a")),
+                    new ArgumentNode(new IdentifierExpression("b")),
+                    new ArgumentNode(new BooleanLiteralNode(true), name: "optional"),
                 ])
             )
         );
@@ -4412,9 +4412,9 @@ public class ParserTests
                     new ParameterNode(AstUtils.SimpleNameAsType("int"), "b"),
                 ]),
                 baseArguments: new ArgumentListNode([
-                    new ArgumentNode(new IdentifierExpression("a"), null),
-                    new ArgumentNode(new IdentifierExpression("b"), null),
-                    new ArgumentNode(new BooleanLiteralNode(true), "optional"),
+                    new ArgumentNode(new IdentifierExpression("a")),
+                    new ArgumentNode(new IdentifierExpression("b")),
+                    new ArgumentNode(new BooleanLiteralNode(true), name: "optional"),
                 ])
             )
         );
@@ -4640,8 +4640,8 @@ public class ParserTests
                     expression: new InvocationExpressionNode(
                         lhs: AstUtils.ResolveMemberAccess("string.Join"),
                         arguments: new ArgumentListNode([
-                            new ArgumentNode(new StringLiteralNode(", "), null),
-                            new ArgumentNode(new IdentifierExpression("someList"), null),
+                            new ArgumentNode(new StringLiteralNode(", ")),
+                            new ArgumentNode(new IdentifierExpression("someList")),
                         ])
                     )
                 )
@@ -4737,6 +4737,40 @@ public class ParserTests
                             type: AstUtils.SimpleNameAsType("ulong"),
                             expr: new IdentifierExpression("dir")
                         )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ParameterTypesInArguments_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            SomeMethod(ref a, out var b, c: in c, ref readonly d);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new IdentifierExpression("SomeMethod"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(new IdentifierExpression("a"), ParameterType.Ref),
+                            new ArgumentNode(
+                                new IdentifierExpression("b"), 
+                                ParameterType.Out, 
+                                targetType: AstUtils.SimpleNameAsType("var")
+                            ),
+                            new ArgumentNode(new IdentifierExpression("c"), ParameterType.In, name: "c"),
+                            new ArgumentNode(new IdentifierExpression("d"), ParameterType.RefReadonly),
+                        ])
                     )
                 )
             )

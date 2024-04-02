@@ -674,10 +674,13 @@ public class NullForgivingExpressionNode(ExpressionNode expression) : Expression
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class ArgumentNode(ExpressionNode expression, string? name) : AstNode
+public class ArgumentNode(ExpressionNode expression, ParameterType parameterType=ParameterType.Regular, TypeNode? targetType=null, string? name=null) : AstNode
 {
     public ExpressionNode Expression { get; set; } = expression;
     public string? Name { get; set; } = name;
+    public ParameterType ParameterType { get; set; } = parameterType;
+    /** Type of out parameter */
+    public TypeNode? TargetType { get; set; } = targetType;
 
     public override List<AstNode> Children => [Expression];
 

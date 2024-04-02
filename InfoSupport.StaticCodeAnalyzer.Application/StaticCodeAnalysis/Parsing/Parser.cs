@@ -691,7 +691,7 @@ public class Parser
             ? expr
             : ToIndexExpression(expr)!;
 
-        var args = new BracketedArgumentList([new ArgumentNode(expr, null)]);
+        var args = new BracketedArgumentList([new ArgumentNode(expr)]);
 
         Expect(TokenKind.CloseBracket);
 
@@ -1582,10 +1582,33 @@ public class Parser
                 name = current.Lexeme;
             }
 
+            ParameterType parameterType = ParameterType.Regular;
+            TypeNode? targetType = null;
+
+            if (ConsumeIfMatchSequence(TokenKind.RefKeyword, TokenKind.ReadonlyKeyword))
+            {
+                parameterType = ParameterType.RefReadonly;
+            }
+            else if (_parameterTypes.TryGetValue(PeekCurrent().Lexeme, out var value))
+            {
+                Consume();
+                parameterType = value;
+            }
+
+            if (
+                parameterType == ParameterType.Out && 
+                IsMaybeType(PeekCurrent(), false) && 
+                !Matches(TokenKind.Comma, 1) &&
+                TryParseType(out var type))
+            {
+                // Try parse a type
+                targetType = type;
+            }
+
             var expr = ParseExpression();
 
             if (expr is not null)
-                expressions.Add(new ArgumentNode(expr, name));
+                expressions.Add(new ArgumentNode(expr, parameterType, targetType, name));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 
