@@ -5020,4 +5020,66 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_TupleExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var data = (1, 2, named: true);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "data",
+                    expression: new TupleExpressionNode([
+                        new TupleArgumentNode(new NumericLiteralNode(1)),
+                        new TupleArgumentNode(new NumericLiteralNode(2)),
+                        new TupleArgumentNode(new BooleanLiteralNode(true), name: "named")
+                    ])
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_TupleDeconstructing_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            var (id, name) = GetCurrentUser();
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new TupleDeconstructStatementNode(
+                    designations: [
+                        new TupleDesignationNode(
+                            name: "id"
+                        ),
+                        new TupleDesignationNode(
+                            name: "name"
+                        )
+                    ],
+                    rhs: new InvocationExpressionNode(
+                        lhs: new IdentifierExpression("GetCurrentUser"),
+                        arguments: new ArgumentListNode([])
+                    ),
+                    specifiedType: AstUtils.SimpleNameAsType("var")
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

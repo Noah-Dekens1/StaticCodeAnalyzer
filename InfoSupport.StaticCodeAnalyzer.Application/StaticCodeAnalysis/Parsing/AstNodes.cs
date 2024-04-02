@@ -1538,3 +1538,64 @@ public class UsingStatementNode(
 
     public override string ToString() => $"using {(DeclarationStatement is not null ? DeclarationStatement : Expression)};";
 }
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TupleArgumentNode(ExpressionNode expression, string? name = null) : AstNode
+{
+    public ExpressionNode Expression { get; set; } = expression;
+    public string? Name { get; set; } = name;
+
+    public override List<AstNode> Children => [Expression];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => Name is not null
+        ? $"{Name}: {Expression}"
+        : $"{Expression}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TupleExpressionNode(List<TupleArgumentNode> arguments) : ExpressionNode
+{
+    public List<TupleArgumentNode> Arguments { get; set; } = arguments;
+
+
+    public override List<AstNode> Children => [.. Arguments];
+    public override string ToString() => string.Join(", ", Children);
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TupleDesignationNode(string name, TypeNode? type=null) : AstNode
+{
+    public string Name { get; set; } = name;
+    public TypeNode? Type { get; set; } = type;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
+
+    public override string ToString() => Type is not null
+        ? $"{Type} {Name}"
+        : $"{Name}";
+}
+
+// Not sure if this should be merged into variable declaration
+// Seems cleaner to leave them apart
+[DebuggerDisplay("{ToString(),nq}")]
+public class TupleDeconstructStatementNode(
+    List<TupleDesignationNode> designations,
+    ExpressionNode rhs,
+    TypeNode? specifiedType = null
+    ) : StatementNode
+{
+    public TypeNode? SpecifiedType { get; set; } = specifiedType;
+    public List<TupleDesignationNode> Designations { get; set; } = designations;
+    public ExpressionNode RHS { get; set; } = rhs;
+
+    public override List<AstNode> Children => [.. Designations, .. Utils.ParamsToList<AstNode>(SpecifiedType, RHS)];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString()
+    {
+        var result = SpecifiedType is not null ? $"{SpecifiedType} " : "";
+        result += "(" + string.Join(", ", Designations) + ")";
+        return result;
+    }
+}

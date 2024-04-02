@@ -962,6 +962,54 @@ public class Parser
         return new IsExpressionNode(pattern);
     }
 
+    private bool TryParseTupleExpression([NotNullWhen(true)] out TupleExpressionNode? tupleExpression)
+    {
+        var start = Tell();
+
+        List<TupleArgumentNode> tupleArguments = [];
+
+        tupleExpression = null;
+
+        do
+        {
+            var isNamed = Matches(TokenKind.Colon, 1);
+
+            if (isNamed && !Matches(TokenKind.Identifier))
+            {
+                Seek(start);
+                return false;
+            }
+
+            string? name = null;
+
+            if (isNamed)
+            {
+                name = Consume().Lexeme;
+                Expect(TokenKind.Colon);
+            }
+
+            var expr = ParseExpression();
+
+            if (expr is null)
+            {
+                Seek(start);
+                return false;
+            }
+
+            tupleArguments.Add(new TupleArgumentNode(expression: expr, name: name));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseParen) || tupleArguments.Count < 2)
+        {
+            Seek(start);
+            return false;
+        }
+
+        tupleExpression = new TupleExpressionNode(tupleArguments);
+        return true;
+    }
+
     private ExpressionNode? ParseStartParenthesisExpression()
     {
         Expect(TokenKind.OpenParen);
@@ -1026,8 +1074,13 @@ public class Parser
 
                 if (maybeCast)
                     return new CastExpressionNode(type!, rhs!);
-                else
-                    Seek(start);
+                
+                Seek(start);
+            }
+
+            if (TryParseTupleExpression(out var tupleExpr))
+            {
+                return tupleExpr;
             }
 
             var expr = new ParenthesizedExpressionNode(ParseExpression()!);
@@ -1472,6 +1525,7 @@ public class Parser
     private StatementNode ParseDeclarationStatement(bool onlyParseDeclarator=false)
     {
         var type = ParseType();
+        var isDeconstructing = Matches(TokenKind.OpenParen);
         var identifier = Consume();
         Expect(TokenKind.Equals);
         var expr = ParseExpression();
@@ -1480,6 +1534,69 @@ public class Parser
             Expect(TokenKind.Semicolon);
 
         return new VariableDeclarationStatement(type, identifier.Lexeme, expr!);
+    }
+
+    private bool TryParseTupleDeconstruction([NotNullWhen(true)] out TupleDeconstructStatementNode? tupleDeconstruction)
+    {
+        tupleDeconstruction = null;
+
+        var start = Tell();
+
+        // Type may be null here, that's valid syntax
+        // Like (string a, int b) = QueryData();
+        // Or even (a, b) = SomeFunc(); assuming *a* and *b* have already been declared
+        TryParseType(out var type);
+
+        if (!ConsumeIfMatch(TokenKind.OpenParen))
+        {
+            Seek(start);
+            return false;
+        }
+
+        List<TupleDesignationNode> designations = [];
+
+        do
+        {
+            bool hasType = !Matches(TokenKind.Comma, 1) && !Matches(TokenKind.CloseParen, 1);
+
+            TypeNode? elementType = null;
+
+            if (hasType && !TryParseType(out elementType))
+            {
+                Seek(start);
+                return false;
+            }
+
+            if (!Matches(TokenKind.Identifier))
+            {
+                Seek(start);
+                return false;
+            }
+
+            var identifier = Consume().Lexeme;
+
+            designations.Add(new TupleDesignationNode(identifier, elementType));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseParen) || !ConsumeIfMatch(TokenKind.Equals))
+        {
+            Seek(start);
+            return false;
+        }
+
+        var expr = ParseExpression();
+
+        if (expr is null)
+        {
+            Seek(start);
+            return false;
+        }
+
+        Expect(TokenKind.Semicolon); // should be tuple at this point
+
+        tupleDeconstruction = new TupleDeconstructStatementNode(designations, expr, specifiedType: type);
+        return true;
     }
 
     private ExpressionStatementNode ParseExpressionStatement(bool expectSemicolon = true)
@@ -2081,6 +2198,9 @@ public class Parser
          * Labeled statements (for goto)
          * Empty statement (;)
          */
+
+        if (TryParseTupleDeconstruction(out var tupleDeconstruct))
+            return tupleDeconstruct;
 
         if (!isEmbeddedStatement && IsDeclarationStatement())
             return ParseDeclarationStatement();
