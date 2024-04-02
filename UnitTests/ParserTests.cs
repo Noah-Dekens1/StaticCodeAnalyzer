@@ -4681,4 +4681,39 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_IndexAssignment_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            keywordMap[key] = value;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new AssignmentExpressionNode(
+                        lhs: new ElementAccessExpressionNode(
+                            lhs: new IdentifierExpression("keywordMap"),
+                            arguments: new BracketedArgumentList([
+                                new ArgumentNode(
+                                    expression: new IndexExpressionNode(
+                                        new IdentifierExpression("key")
+                                    ),
+                                    name: null
+                                )
+                            ])
+                        ),
+                        rhs: new IdentifierExpression("value")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

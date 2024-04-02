@@ -1275,9 +1275,8 @@ public class Parser
         int pos = Tell();
 
         if (maybeType)
-        {
-            ParseType();
-            if (ConsumeIfMatch(TokenKind.Identifier) && ConsumeIfMatch(TokenKind.Equals))
+        {   
+            if (TryParseType(out _) && ConsumeIfMatch(TokenKind.Identifier) && ConsumeIfMatch(TokenKind.Equals))
             {
                 maybeDeclaration = true;
             }
@@ -1389,9 +1388,11 @@ public class Parser
         return true;
     }
 
-    private TypeNode ParseType()
+    private bool TryParseType([NotNullWhen(true)] out TypeNode? type)
     {
         var baseType = ResolveIdentifier();
+
+        type = null;
 
         var maybeGeneric = Matches(TokenKind.LessThan);
 
@@ -1424,7 +1425,10 @@ public class Parser
                 }
             }
 
-            Expect(TokenKind.CloseBracket);
+            if (!ConsumeIfMatch(TokenKind.CloseBracket))
+            {
+                return false;
+            }
 
             if (Matches(TokenKind.OpenBracket))
             {
@@ -1434,7 +1438,15 @@ public class Parser
 
         bool isNullable = ConsumeIfMatch(TokenKind.Question);
 
-        return new TypeNode(baseType, typeArguments, arrayData, isNullable || (maybeArrayNullable && !arrayData.IsArray));
+        type = new TypeNode(baseType, typeArguments, arrayData, isNullable || (maybeArrayNullable && !arrayData.IsArray));
+        return true;
+    }
+
+    private TypeNode ParseType()
+    {
+        return !TryParseType(out var type) 
+            ? throw new ParseException("Failed to parse expected type") 
+            : type;
     }
 
     private StatementNode ParseDeclarationStatement()
@@ -2113,13 +2125,11 @@ public class Parser
         while (IsValidLocalFunctionModifier(PeekCurrent()))
             Consume();
 
-        if (!IsMaybeType(PeekCurrent(), true))
+        if (!IsMaybeType(PeekCurrent(), true) || !TryParseType(out _))
         {
             Seek(startPos);
             return false;
         }
-
-        ParseType();
 
         var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
 
@@ -2511,7 +2521,7 @@ public class Parser
             var isThis = !isBase && ConsumeIfMatch(TokenKind.ThisKeyword);
 
             if (!isBase && !isThis)
-                throw new SyntaxException("Expected base or this keywords after constructor :");
+                throw new ParseException("Expected base or this keywords after constructor :");
 
             Expect(TokenKind.OpenParen);
             baseArguments = ParseArgumentList();
