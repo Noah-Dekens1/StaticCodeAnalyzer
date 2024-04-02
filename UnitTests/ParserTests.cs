@@ -4872,4 +4872,54 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_GlobalUsingDirective_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            using Test = global::System.CoolStuff.Test;
+            using global::System.Text;
+            global using global::System.Runtime.CompilerServices;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.UsingDirectives.AddRange([
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new QualifiedNameNode(
+                        lhs: new IdentifierExpression("System"),
+                        identifier: new IdentifierExpression("CoolStuff")
+                    ),
+                    identifier: new IdentifierExpression("Test")
+                ),
+                alias: "Test",
+                isNamespaceGlobal: true
+            ),
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new IdentifierExpression("System"),
+                    identifier: new IdentifierExpression("Text")
+                ),
+                alias: null,
+                isNamespaceGlobal: true
+            ),
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new QualifiedNameNode(
+                        lhs: new IdentifierExpression("System"),
+                        identifier: new IdentifierExpression("Runtime")
+                    ),
+                    identifier: new IdentifierExpression("CompilerServices")
+                ),
+                alias: null,
+                isGlobal: true,
+                isNamespaceGlobal: true
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

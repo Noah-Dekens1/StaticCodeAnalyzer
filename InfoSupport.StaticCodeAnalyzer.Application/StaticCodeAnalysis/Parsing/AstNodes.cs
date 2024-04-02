@@ -866,10 +866,12 @@ public class QualifiedNameNode(AstNode lhs, IdentifierExpression identifier) : A
 }
 
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public class UsingDirectiveNode(AstNode ns, string? alias) : AstNode
+public class UsingDirectiveNode(AstNode ns, string? alias, bool isGlobal=false, bool isNamespaceGlobal=false) : AstNode
 {
     public string? Alias { get; set; } = alias;
     public AstNode Namespace { get; set; } = ns;
+    public bool IsGlobal { get; set; } = isGlobal;
+    public bool IsNamespaceGlobal { get; set; } = isNamespaceGlobal;
 
     public override List<AstNode> Children => [Namespace];
 

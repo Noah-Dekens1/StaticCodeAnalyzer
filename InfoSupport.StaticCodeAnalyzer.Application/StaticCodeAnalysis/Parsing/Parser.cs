@@ -1720,6 +1720,13 @@ public class Parser
 
     private UsingDirectiveNode ParseUsingDirective()
     {
+        bool isGlobal = MatchesLexeme("global");
+
+        if (isGlobal)
+        {
+            Expect(TokenKind.Identifier); // global
+        }
+
         Expect(TokenKind.UsingKeyword);
 
         var hasAlias = PeekSafe().Kind == TokenKind.Equals;
@@ -1731,10 +1738,18 @@ public class Parser
             Expect(TokenKind.Equals);
         }
 
+        bool isNamespaceGlobal = MatchesLexeme("global");
+
+        if (isNamespaceGlobal)
+        {
+            Expect(TokenKind.Identifier); // global
+            Expect(TokenKind.ColonColon);
+        }
+
         var ns = ParseQualifiedName();
         Expect(TokenKind.Semicolon);
 
-        return new UsingDirectiveNode(ns, alias);
+        return new UsingDirectiveNode(ns, alias, isGlobal, isNamespaceGlobal);
     }
 
     private ReturnStatementNode ParseReturnStatement()
@@ -2056,7 +2071,7 @@ public class Parser
     {
         List<UsingDirectiveNode> directives = [];
 
-        while (!IsAtEnd() && Matches(TokenKind.UsingKeyword))
+        while (!IsAtEnd() && (Matches(TokenKind.UsingKeyword) || MatchesLexeme("global")))
         {
             directives.Add(ParseUsingDirective());
         }
