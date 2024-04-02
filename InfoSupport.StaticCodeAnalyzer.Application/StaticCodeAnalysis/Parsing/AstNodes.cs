@@ -554,6 +554,8 @@ public class VariableDeclarationStatement(TypeNode type, string identifier, Expr
     public string Identifier { get; set; } = identifier;
     public ExpressionNode Expression { get; set; } = expression;
     public override List<AstNode> Children => [Type, Expression];
+
+    public override string ToString() => $"{Type} {Identifier} = {Expression}";
 }
 
 
@@ -1518,4 +1520,21 @@ public class GlobalNamespaceQualifierNode(ExpressionNode ns) : ExpressionNode
 
     public override List<AstNode> Children => [Namespace];
     public override string ToString() => $"global::{Namespace}";
+}
+
+// using (variable-declaration|expression) { code }
+[DebuggerDisplay("{ToString(),nq}")]
+public class UsingStatementNode(
+    VariableDeclarationStatement? declaration = null, 
+    ExpressionNode? expression = null,
+    AstNode? body = null) : StatementNode // could have a body, could also be block-scoped
+{
+    public VariableDeclarationStatement? DeclarationStatement { get; set; } = declaration;
+    public ExpressionNode? Expression {  get; set; } = expression;
+    public AstNode? Body { get; set; } = body;
+    public bool IsDeclaration { get; } = body is null;
+
+    public override List<AstNode> Children => Utils.ParamsToList(DeclarationStatement, Expression, Body);
+
+    public override string ToString() => $"using {(DeclarationStatement is not null ? DeclarationStatement : Expression)};";
 }

@@ -631,7 +631,7 @@ public class Parser
 
     private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null)
     {
-        var isGlobal = MatchesLexeme("global");
+        var isGlobal = MatchesLexeme("global") && Matches(TokenKind.ColonColon, 1);
 
         if (isGlobal)
         {
@@ -1469,13 +1469,15 @@ public class Parser
             : type;
     }
 
-    private StatementNode ParseDeclarationStatement()
+    private StatementNode ParseDeclarationStatement(bool onlyParseDeclarator=false)
     {
         var type = ParseType();
         var identifier = Consume();
         Expect(TokenKind.Equals);
         var expr = ParseExpression();
-        Expect(TokenKind.Semicolon);
+
+        if (!onlyParseDeclarator)
+            Expect(TokenKind.Semicolon);
 
         return new VariableDeclarationStatement(type, identifier.Lexeme, expr!);
     }
@@ -2023,6 +2025,36 @@ public class Parser
         return new TryStatementNode(block, catchClauses, finallyClause);
     }
 
+    private UsingStatementNode ParseUsingStatement()
+    {
+        Expect(TokenKind.UsingKeyword);
+        var isDeclaration = !Matches(TokenKind.OpenParen);
+
+        if (!isDeclaration)
+            Expect(TokenKind.OpenParen);
+
+        bool isVariableDeclarator = IsDeclarationStatement();
+
+        VariableDeclarationStatement? declarator = null;
+        ExpressionNode? expression = null;
+        AstNode? body = null;
+
+        if (isVariableDeclarator)
+            declarator = (VariableDeclarationStatement)ParseDeclarationStatement(onlyParseDeclarator: true);
+        else
+            expression = ParseExpression();
+
+        if (!isDeclaration)
+            Expect(TokenKind.CloseParen);
+        else
+            Expect(TokenKind.Semicolon);
+
+        if (!isDeclaration)
+            body = ParseBody();
+
+        return new UsingStatementNode(declarator, expression, body);
+    }
+
     private EmptyStatementNode ParseEmptyStatement()
     {
         Expect(TokenKind.Semicolon);
@@ -2075,16 +2107,35 @@ public class Parser
             TokenKind.ReturnKeyword => ParseReturnStatement(),
             TokenKind.Semicolon => ParseEmptyStatement(),
             TokenKind.TryKeyword => ParseTryStatement(),
+            TokenKind.UsingKeyword => ParseUsingStatement(),
             // If no matches parse as an expression statement
             _ => ParseExpressionStatement(),
         };
+    }
+
+    // Try not to accidentally parse using statements
+    private bool IsUsingDirective()
+    {
+        if (MatchesLexeme("global") && Matches(TokenKind.UsingKeyword, 1))
+            return true;
+
+        if (Matches(TokenKind.UsingKeyword) && MatchesLexeme("global", peekOffset: 1))
+            return true;
+
+        bool isUsingDirective = true;
+
+        isUsingDirective &= Matches(TokenKind.UsingKeyword);
+        isUsingDirective &= Matches(TokenKind.Identifier, 1);
+        isUsingDirective &= Matches(TokenKind.Equals, 2) || Matches(TokenKind.Dot, 2);
+
+        return isUsingDirective;
     }
 
     private List<UsingDirectiveNode> ParseUsingDirectives()
     {
         List<UsingDirectiveNode> directives = [];
 
-        while (!IsAtEnd() && (Matches(TokenKind.UsingKeyword) || MatchesLexeme("global")))
+        while (!IsAtEnd() && IsUsingDirective())
         {
             directives.Add(ParseUsingDirective());
         }

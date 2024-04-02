@@ -4952,4 +4952,72 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_UsingStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            using var timer = new Timer();
+
+            using (var timer2 = new Timer())
+            {
+            }
+
+            var timer3 = new Timer();
+            using (timer3)
+            {
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            // using var timer = new Timer();
+            new GlobalStatementNode(
+                statement: new UsingStatementNode(
+                    declaration: new VariableDeclarationStatement(
+                        type: AstUtils.SimpleNameAsType("var"),
+                        identifier: "timer",
+                        expression: new ObjectCreationExpressionNode(
+                            type: AstUtils.SimpleNameAsType("Timer")
+                        )
+                    )
+                )
+            ),
+            // using (var timer2 = new Timer())
+            new GlobalStatementNode(
+                statement: new UsingStatementNode(
+                    declaration: new VariableDeclarationStatement(
+                        type: AstUtils.SimpleNameAsType("var"),
+                        identifier: "timer2",
+                        expression: new ObjectCreationExpressionNode(
+                            type: AstUtils.SimpleNameAsType("Timer")
+                        )
+                    ),
+                    body: new BlockNode([])
+                )
+            ),
+            // var timer3 = new Timer();
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    identifier: "timer3",
+                    expression: new ObjectCreationExpressionNode(
+                        type: AstUtils.SimpleNameAsType("Timer")
+                    )
+                )
+            ),
+            // using (timer3)
+            new GlobalStatementNode(
+                statement: new UsingStatementNode(
+                    expression: new IdentifierExpression("timer3"),
+                    body: new BlockNode([])
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
