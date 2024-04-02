@@ -10,6 +10,8 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Exceptions;
+
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 readonly struct MemberData(Token token, TypeArgumentsNode? typeArguments = null, bool isConditional = false, bool isNullForgiving = false)
@@ -2498,9 +2500,25 @@ public class Parser
         Expect(TokenKind.OpenParen);  // parms
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
+
+        ArgumentListNode? baseArguments = null;
+
+        if (ConsumeIfMatch(TokenKind.Colon))
+        {
+            var isBase = ConsumeIfMatch(TokenKind.BaseKeyword);
+            var isThis = !isBase && ConsumeIfMatch(TokenKind.ThisKeyword);
+
+            if (!isBase && !isThis)
+                throw new SyntaxException("Expected base or this keywords after constructor :");
+
+            Expect(TokenKind.OpenParen);
+            baseArguments = ParseArgumentList();
+            Expect(TokenKind.CloseParen);
+        }
+
         var body = ParseMethodBody();
 
-        return new ConstructorNode(accessModifier, parms, body, attributes);
+        return new ConstructorNode(accessModifier, parms, baseArguments, body, attributes);
     }
 
     private MethodNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName, List<AttributeNode> attributes)

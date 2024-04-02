@@ -1002,13 +1002,14 @@ public class EnumMemberNode(string identifier, ExpressionNode? value, List<Attri
 }
 
 [DebuggerDisplay("{AccessModifier,nq} Constructor({Parameters,nq})")]
-public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, AstNode body, List<AttributeNode>? attributes = null) : MemberNode(attributes)
+public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, ArgumentListNode? baseArguments, AstNode body, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier;
     public ParameterListNode Parameters { get; set; } = parameters;
+    public ArgumentListNode? BaseArguments { get; set; } = baseArguments;
     public AstNode Body { get; set; } = body;
 
-    public override List<AstNode> Children => [Parameters, Body];
+    public override List<AstNode> Children => Utils.ParamsToList(Parameters, BaseArguments, Body);
 }
 
 [DebuggerDisplay("{AccessModifier,nq} {ReturnType,nq} {MethodName,nq}({Parameters,nq})")]
