@@ -223,54 +223,58 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("var")),
-                    identifier: "test",
-                    expression: new ConditionalOrExpressionNode(
-                        lhs: new ParenthesizedExpressionNode(
-                            expr: new EqualsExpressionNode(
-                                lhs: new IdentifierExpression("a"),
-                                rhs: new ConditionalAndExpressionNode(
-                                    lhs: new IdentifierExpression("b"),
-                                    rhs: new GreaterThanEqualsExpressionNode(
-                                        lhs: new IdentifierExpression("c"),
-                                        rhs: new NumericLiteralNode(3)
-                                    )
-                                )
-                            )
-                        ),
-                        rhs: new ConditionalAndExpressionNode(
-                            lhs: new ParenthesizedExpressionNode(
-                                expr: new NotEqualsExpressionNode(
-                                    lhs: new IdentifierExpression("a"),
-                                    rhs: new ConditionalAndExpressionNode(
-                                        lhs: new IdentifierExpression("c"),
-                                        rhs: new UnaryLogicalNotNode(
-                                            expr: new UnaryLogicalNotNode(
-                                                expr: new UnaryLogicalNotNode(
-                                                    new IdentifierExpression("d")
-                                                )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "test",
+                            value: new ConditionalOrExpressionNode(
+                                lhs: new ParenthesizedExpressionNode(
+                                    expr: new EqualsExpressionNode(
+                                        lhs: new IdentifierExpression("a"),
+                                        rhs: new ConditionalAndExpressionNode(
+                                            lhs: new IdentifierExpression("b"),
+                                            rhs: new GreaterThanEqualsExpressionNode(
+                                                lhs: new IdentifierExpression("c"),
+                                                rhs: new NumericLiteralNode(3)
                                             )
                                         )
                                     )
-                                )
-                            ),
-                            rhs: new LessThanExpressionNode(
-                                lhs: new IdentifierExpression("a"),
+                                ),
                                 rhs: new ConditionalAndExpressionNode(
-                                    lhs: new IdentifierExpression("j"),
-                                    rhs: new LessThanEqualsExpressionNode(
-                                        lhs: new IdentifierExpression("j"),
+                                    lhs: new ParenthesizedExpressionNode(
+                                        expr: new NotEqualsExpressionNode(
+                                            lhs: new IdentifierExpression("a"),
+                                            rhs: new ConditionalAndExpressionNode(
+                                                lhs: new IdentifierExpression("c"),
+                                                rhs: new UnaryLogicalNotNode(
+                                                    expr: new UnaryLogicalNotNode(
+                                                        expr: new UnaryLogicalNotNode(
+                                                            new IdentifierExpression("d")
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    rhs: new LessThanExpressionNode(
+                                        lhs: new IdentifierExpression("a"),
                                         rhs: new ConditionalAndExpressionNode(
-                                            lhs: new IdentifierExpression("b"),
-                                            rhs: new GreaterThanExpressionNode(
-                                                lhs: new IdentifierExpression("q"),
-                                                rhs: new IdentifierExpression("e")
+                                            lhs: new IdentifierExpression("j"),
+                                            rhs: new LessThanEqualsExpressionNode(
+                                                lhs: new IdentifierExpression("j"),
+                                                rhs: new ConditionalAndExpressionNode(
+                                                    lhs: new IdentifierExpression("b"),
+                                                    rhs: new GreaterThanExpressionNode(
+                                                        lhs: new IdentifierExpression("q"),
+                                                        rhs: new IdentifierExpression("e")
+                                                    )
+                                                )
                                             )
                                         )
                                     )
                                 )
                             )
                         )
-                    )
+                    ]
                 )
             )
         );
@@ -290,8 +294,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("int")),
-                    identifier: "a",
-                    expression: new NumericLiteralNode(0)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             )
         );
@@ -311,11 +319,15 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("SomeClass")),
-                    identifier: "a",
-                    expression: new ObjectCreationExpressionNode(
-                        type: new TypeNode(new IdentifierExpression("SomeClass")),
-                        arguments: new ArgumentListNode([])
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new ObjectCreationExpressionNode(
+                                type: new TypeNode(new IdentifierExpression("SomeClass")),
+                                arguments: new ArgumentListNode([])
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -420,18 +432,30 @@ public class ParserTests
                         statements: [
                             new VariableDeclarationStatement(
                                 type: new TypeNode(new IdentifierExpression("var")),
-                                identifier: "a",
-                                expression: new StringLiteralNode("Hello world!")
+                                declarators: [
+                                    new VariableDeclaratorNode(
+                                        identifier: "a",
+                                        value: new StringLiteralNode("Hello world!")
+                                    )
+                                ]
                             ),
                             new VariableDeclarationStatement(
                                 type: new TypeNode(new IdentifierExpression("var")),
-                                identifier: "b",
-                                expression: new BooleanLiteralNode(true)
+                                declarators: [
+                                    new VariableDeclaratorNode(
+                                        identifier: "b",
+                                        value: new BooleanLiteralNode(true)
+                                    )
+                                ]
                             ),
                             new VariableDeclarationStatement(
                                 type: new TypeNode(new IdentifierExpression("var")),
-                                identifier: "c",
-                                expression: new BooleanLiteralNode(false)
+                                 declarators: [
+                                    new VariableDeclaratorNode(
+                                        identifier: "c",
+                                        value: new BooleanLiteralNode(false)
+                                    )
+                                ]
                             ),
                         ]
                     ),
@@ -499,8 +523,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("var")),
-                    identifier: "a",
-                    expression: new NumericLiteralNode(0)
+                     declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -545,8 +573,12 @@ public class ParserTests
                 statement: new ForStatementNode(
                     initializer: new VariableDeclarationStatement(
                         type: new TypeNode(new IdentifierExpression("int")),
-                        identifier: "i",
-                        expression: new NumericLiteralNode(0)
+                         declarators: [
+                            new VariableDeclaratorNode(
+                                identifier: "i",
+                                value: new NumericLiteralNode(0)
+                            )
+                        ]
                     ),
                     condition: new LessThanExpressionNode(
                         lhs: new IdentifierExpression("i"),
@@ -594,22 +626,34 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("int")),
-                    identifier: "i",
-                    expression: new NumericLiteralNode(0)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "i",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("int")),
-                    identifier: "b",
-                    expression: new NumericLiteralNode(10)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "b",
+                            value: new NumericLiteralNode(10)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("int")),
-                    identifier: "c",
-                    expression: new NumericLiteralNode(5)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "c",
+                            value: new NumericLiteralNode(5)
+                        ) 
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -716,8 +760,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("uint")),
-                    identifier: "count",
-                    expression: new NumericLiteralNode(0)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "count",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -760,8 +808,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("var")),
-                    identifier: "problems",
-                    expression: new NumericLiteralNode(100)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "problems",
+                            value: new NumericLiteralNode(100)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -1415,11 +1467,15 @@ public class ParserTests
                         body: new BlockNode([
                             new VariableDeclarationStatement(
                                 type: new TypeNode(new IdentifierExpression("var")),
-                                identifier: "test",
-                                expression: new ObjectCreationExpressionNode(
-                                    type: new TypeNode(new IdentifierExpression("Test")),
-                                    arguments: new ArgumentListNode([])
-                                )
+                                declarators: [
+                                    new VariableDeclaratorNode(
+                                        identifier: "test",
+                                        value: new ObjectCreationExpressionNode(
+                                            type: new TypeNode(new IdentifierExpression("Test")),
+                                            arguments: new ArgumentListNode([])
+                                        )
+                                    )
+                                ]
                             ),
                             new ExpressionStatementNode(
                                 new AssignmentExpressionNode(
@@ -1462,8 +1518,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("var")),
-                    identifier: "a",
-                    expression: new NumericLiteralNode(0)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -1517,28 +1577,52 @@ public class ParserTests
         var expected = AST.Build();
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "a", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("list"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
-                    ])
-                ))
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("list"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(0)), name: null)
+                                ])
+                            )
+                        )
+                    ]
+                )
             ),
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "b", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("list"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
-                    ])
-                ))
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "b",
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("list"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(expression: new IndexExpressionNode(new UnaryNegationNode(new NumericLiteralNode(3))), name: null)
+                                ])
+                            )
+                        )
+                    ]
+                )
             ),
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "c", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("dict"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode("hello")), name: null)
-                    ])
-                ))
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "c",
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("dict"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(expression: new IndexExpressionNode(new StringLiteralNode("hello")), name: null)
+                                ])
+                            )
+                        )
+                    ]
+                )
             ),
         ]);
 
@@ -1710,8 +1794,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("var")),
-                    identifier: "a",
-                    expression: new NumericLiteralNode(0)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -2164,32 +2252,36 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "thing",
-                    expression: new ObjectCreationExpressionNode(
-                        type: AstUtils.SimpleNameAsType("IndexersExample"),
-                        initializer: new CollectionInitializerNode([
-                            new IndexedCollectionInitializerNode(
-                                key: new IdentifierExpression("name"),
-                                value: new StringLiteralNode("object one")
-                            ),
-                            new IndexedCollectionInitializerNode(
-                                key: new NumericLiteralNode(1),
-                                value: new CharLiteralNode('1')
-                            ),
-                            new IndexedCollectionInitializerNode(
-                                key: new NumericLiteralNode(2),
-                                value: new CharLiteralNode('4')
-                            ),
-                            new IndexedCollectionInitializerNode(
-                                key: new NumericLiteralNode(3),
-                                value: new CharLiteralNode('9')
-                            ),
-                            new IndexedCollectionInitializerNode(
-                                key: new IdentifierExpression("Size"),
-                                value: AstUtils.ResolveMemberAccess("Math.PI")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "thing",
+                            value: new ObjectCreationExpressionNode(
+                                type: AstUtils.SimpleNameAsType("IndexersExample"),
+                                initializer: new CollectionInitializerNode([
+                                    new IndexedCollectionInitializerNode(
+                                        key: new IdentifierExpression("name"),
+                                        value: new StringLiteralNode("object one")
+                                    ),
+                                    new IndexedCollectionInitializerNode(
+                                        key: new NumericLiteralNode(1),
+                                        value: new CharLiteralNode('1')
+                                    ),
+                                    new IndexedCollectionInitializerNode(
+                                        key: new NumericLiteralNode(2),
+                                        value: new CharLiteralNode('4')
+                                    ),
+                                    new IndexedCollectionInitializerNode(
+                                        key: new NumericLiteralNode(3),
+                                        value: new CharLiteralNode('9')
+                                    ),
+                                    new IndexedCollectionInitializerNode(
+                                        key: new IdentifierExpression("Size"),
+                                        value: AstUtils.ResolveMemberAccess("Math.PI")
+                                    )
+                                ])
                             )
-                        ])
-                    )
+                        )
+                    ]
                 )
             )
         );
@@ -2212,23 +2304,27 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "list",
-                    expression: new ObjectCreationExpressionNode(
-                        type: new TypeNode(
-                            baseType: new IdentifierExpression("List"),
-                            typeArguments: new TypeArgumentsNode([
-                                AstUtils.SimpleNameAsType("string")
-                            ])
-                        ),
-                        initializer: new CollectionInitializerNode([
-                            new RegularCollectionInitializerNode(
-                                value: new StringLiteralNode("hello")
-                            ),
-                            new RegularCollectionInitializerNode(
-                                value: new StringLiteralNode("world")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "list",
+                            value: new ObjectCreationExpressionNode(
+                                type: new TypeNode(
+                                    baseType: new IdentifierExpression("List"),
+                                    typeArguments: new TypeArgumentsNode([
+                                        AstUtils.SimpleNameAsType("string")
+                                    ])
+                                ),
+                                initializer: new CollectionInitializerNode([
+                                    new RegularCollectionInitializerNode(
+                                        value: new StringLiteralNode("hello")
+                                    ),
+                                    new RegularCollectionInitializerNode(
+                                        value: new StringLiteralNode("world")
+                                    )
+                                ])
                             )
-                        ])
-                    )
+                        )
+                    ]
                 )
             )
         );
@@ -2262,24 +2358,28 @@ public class ParserTests
                             AstUtils.SimpleNameAsType("string")
                         ])
                     ),
-                    identifier: "dict",
-                    expression: new ObjectCreationExpressionNode(
-                        type: null,
-                        initializer: new CollectionInitializerNode([
-                            new ComplexCollectionInitializerNode([
-                                new CharLiteralNode('a'),
-                                new StringLiteralNode("a")
-                            ]),
-                            new ComplexCollectionInitializerNode([
-                                new CharLiteralNode('b'),
-                                new StringLiteralNode("b")
-                            ]),
-                            new ComplexCollectionInitializerNode([
-                                new CharLiteralNode('c'),
-                                new StringLiteralNode("c")
-                            ])
-                        ])
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "dict",
+                            value: new ObjectCreationExpressionNode(
+                                type: null,
+                                initializer: new CollectionInitializerNode([
+                                    new ComplexCollectionInitializerNode([
+                                        new CharLiteralNode('a'),
+                                        new StringLiteralNode("a")
+                                    ]),
+                                    new ComplexCollectionInitializerNode([
+                                        new CharLiteralNode('b'),
+                                        new StringLiteralNode("b")
+                                    ]),
+                                    new ComplexCollectionInitializerNode([
+                                        new CharLiteralNode('c'),
+                                        new StringLiteralNode("c")
+                                    ])
+                                ])
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -2307,30 +2407,34 @@ public class ParserTests
                             AstUtils.SimpleNameAsType("char")
                         ])
                     ),
-                    identifier: "chars",
-                    expression: new CollectionExpressionNode([
-                        new SpreadElementNode(
-                            expression: new IdentifierExpression("basicChars")
-                        ),
-                        new SpreadElementNode(
-                            expression: new IdentifierExpression("specialChars")
-                        ),
-                        new ExpressionElementNode(
-                            expression: new CharLiteralNode('a')
-                        ),
-                        new ExpressionElementNode(
-                            expression: new CharLiteralNode('b')
-                        ),
-                        new ExpressionElementNode(
-                            expression: new CharLiteralNode('c')
-                        ),
-                        new SpreadElementNode(
-                            expression: new InvocationExpressionNode(
-                                lhs: new IdentifierExpression("getRemainingChars"),
-                                arguments: new ArgumentListNode([])
-                            )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "chars",
+                            value: new CollectionExpressionNode([
+                                new SpreadElementNode(
+                                    expression: new IdentifierExpression("basicChars")
+                                ),
+                                new SpreadElementNode(
+                                    expression: new IdentifierExpression("specialChars")
+                                ),
+                                new ExpressionElementNode(
+                                    expression: new CharLiteralNode('a')
+                                ),
+                                new ExpressionElementNode(
+                                    expression: new CharLiteralNode('b')
+                                ),
+                                new ExpressionElementNode(
+                                    expression: new CharLiteralNode('c')
+                                ),
+                                new SpreadElementNode(
+                                    expression: new InvocationExpressionNode(
+                                        lhs: new IdentifierExpression("getRemainingChars"),
+                                        arguments: new ArgumentListNode([])
+                                    )
+                                )
+                            ])
                         )
-                    ])
+                    ]
                 )
             )
         );
@@ -2360,102 +2464,130 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "simpleLambdaExpr1",
-                    expression: new LambdaExpressionNode(
-                        parameters: [],
-                        body: new BooleanLiteralNode(true)
-                    )
-                )
-            ),
-            new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(
-                    type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "simpleLambdaExpr2",
-                    expression: new LambdaExpressionNode(
-                        parameters: [new LambdaParameterNode("a")],
-                        body: new AddExpressionNode(
-                            lhs: new IdentifierExpression("a"),
-                            rhs: new NumericLiteralNode(1)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "simpleLambdaExpr1",
+                            value: new LambdaExpressionNode(
+                                parameters: [],
+                                body: new BooleanLiteralNode(true)
+                            )
                         )
-                    )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "simpleLambdaExpr3",
-                    expression: new LambdaExpressionNode(
-                        parameters: [new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int"))],
-                        body: new AddExpressionNode(
-                            lhs: new IdentifierExpression("a"),
-                            rhs: new NumericLiteralNode(1)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "simpleLambdaExpr2",
+                            value: new LambdaExpressionNode(
+                                parameters: [new LambdaParameterNode("a")],
+                                body: new AddExpressionNode(
+                                    lhs: new IdentifierExpression("a"),
+                                    rhs: new NumericLiteralNode(1)
+                                )
+                            )
                         )
-                    )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "simpleLambdaExpr4",
-                    expression: new LambdaExpressionNode(
-                        parameters: [
-                            new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int")),
-                            new LambdaParameterNode("b", AstUtils.SimpleNameAsType("int"))
-                        ],
-                        body: new AddExpressionNode(
-                            lhs: new IdentifierExpression("a"),
-                            rhs: new IdentifierExpression("b")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "simpleLambdaExpr3",
+                            value: new LambdaExpressionNode(
+                                parameters: [new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int"))],
+                                body: new AddExpressionNode(
+                                    lhs: new IdentifierExpression("a"),
+                                    rhs: new NumericLiteralNode(1)
+                                )
+                            )
                         )
-                    )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "simpleLambdaExpr5",
-                    expression: new LambdaExpressionNode(
-                        parameters: [
-                            new LambdaParameterNode("a"),
-                            new LambdaParameterNode("b")
-                        ],
-                        body: new AddExpressionNode(
-                            lhs: new IdentifierExpression("a"),
-                            rhs: new IdentifierExpression("b")
-                        )
-                    )
-                )
-            ),
-            new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(
-                    type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "simpleLambdaExpr6",
-                    expression: new LambdaExpressionNode(
-                        parameters: [
-                            new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int")),
-                            new LambdaParameterNode("b", AstUtils.SimpleNameAsType("int"))
-                        ],
-                        body: new BlockNode([
-                            new ReturnStatementNode(
-                                returnExpression: new AddExpressionNode(
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "simpleLambdaExpr4",
+                            value: new LambdaExpressionNode(
+                                parameters: [
+                                    new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int")),
+                                    new LambdaParameterNode("b", AstUtils.SimpleNameAsType("int"))
+                                ],
+                                body: new AddExpressionNode(
                                     lhs: new IdentifierExpression("a"),
                                     rhs: new IdentifierExpression("b")
                                 )
                             )
-                        ])
-                    )
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "square",
-                    expression: new LambdaExpressionNode(
-                        parameters: [new LambdaParameterNode("x")],
-                        body: new MultiplyExpressionNode(
-                            lhs: new IdentifierExpression("x"),
-                            rhs: new IdentifierExpression("x")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "simpleLambdaExpr5",
+                            value: new LambdaExpressionNode(
+                                parameters: [
+                                    new LambdaParameterNode("a"),
+                                    new LambdaParameterNode("b")
+                                ],
+                                body: new AddExpressionNode(
+                                    lhs: new IdentifierExpression("a"),
+                                    rhs: new IdentifierExpression("b")
+                                )
+                            )
                         )
-                    )
+                    ]
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "simpleLambdaExpr6",
+                            value: new LambdaExpressionNode(
+                                parameters: [
+                                    new LambdaParameterNode("a", AstUtils.SimpleNameAsType("int")),
+                                    new LambdaParameterNode("b", AstUtils.SimpleNameAsType("int"))
+                                ],
+                                body: new BlockNode([
+                                    new ReturnStatementNode(
+                                        returnExpression: new AddExpressionNode(
+                                            lhs: new IdentifierExpression("a"),
+                                            rhs: new IdentifierExpression("b")
+                                        )
+                                    )
+                                ])
+                            )
+                        )
+                    ]
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "square",
+                            value: new LambdaExpressionNode(
+                                parameters: [new LambdaParameterNode("x")],
+                                body: new MultiplyExpressionNode(
+                                    lhs: new IdentifierExpression("x"),
+                                    rhs: new IdentifierExpression("x")
+                                )
+                            )
+                        )
+                    ]
                 )
             ),
         ]);
@@ -2884,13 +3016,17 @@ public class ParserTests
                         baseType: new IdentifierExpression("byte"),
                         arrayType: new ArrayTypeData(rank: null) // omitted
                     ),
-                    identifier: "buffer",
-                    expression: new ObjectCreationExpressionNode(
-                        type: new TypeNode(
-                            baseType: new IdentifierExpression("byte"),
-                            arrayType: new ArrayTypeData(rank: 256)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "buffer",
+                            value: new ObjectCreationExpressionNode(
+                                type: new TypeNode(
+                                    baseType: new IdentifierExpression("byte"),
+                                    arrayType: new ArrayTypeData(rank: 256)
+                                )
+                            )
                         )
-                    )
+                    ]
                 )
             )
         );
@@ -2918,25 +3054,29 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "result",
-                    expression: new SwitchExpressionNode(
-                        switchExpression: new NumericLiteralNode(10),
-                        arms: [
-                            new SwitchExpressionArmNode(
-                                condition: new ConstantPatternNode(new NumericLiteralNode(1)),
-                                value: new StringLiteralNode("1")
-                            ),
-                            new SwitchExpressionArmNode(
-                                condition: new ConstantPatternNode(new NumericLiteralNode(2)),
-                                value: new StringLiteralNode("2"),
-                                whenClause: new BooleanLiteralNode(true)
-                            ),
-                            new SwitchExpressionArmNode(
-                                condition: new DiscardPatternNode(),
-                                value: new StringLiteralNode("Invalid")
-                            ),
-                        ]
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "result",
+                            value: new SwitchExpressionNode(
+                                switchExpression: new NumericLiteralNode(10),
+                                arms: [
+                                    new SwitchExpressionArmNode(
+                                        condition: new ConstantPatternNode(new NumericLiteralNode(1)),
+                                        value: new StringLiteralNode("1")
+                                    ),
+                                    new SwitchExpressionArmNode(
+                                        condition: new ConstantPatternNode(new NumericLiteralNode(2)),
+                                        value: new StringLiteralNode("2"),
+                                        whenClause: new BooleanLiteralNode(true)
+                                    ),
+                                    new SwitchExpressionArmNode(
+                                        condition: new DiscardPatternNode(),
+                                        value: new StringLiteralNode("Invalid")
+                                    ),
+                                ]
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -2959,18 +3099,22 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "result",
-                    expression: new MultiplyExpressionNode(
-                        lhs: new NumericLiteralNode(5),
-                        rhs: new LessThanExpressionNode(
-                            lhs: new NumericLiteralNode(3),
-                            rhs: new TernaryExpressionNode(
-                                condition: new NumericLiteralNode(20),
-                                trueExpr: new NumericLiteralNode(0),
-                                falseExpr: new NumericLiteralNode(1)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "result",
+                            value: new MultiplyExpressionNode(
+                                lhs: new NumericLiteralNode(5),
+                                rhs: new LessThanExpressionNode(
+                                    lhs: new NumericLiteralNode(3),
+                                    rhs: new TernaryExpressionNode(
+                                        condition: new NumericLiteralNode(20),
+                                        trueExpr: new NumericLiteralNode(0),
+                                        falseExpr: new NumericLiteralNode(1)
+                                    )
+                                )
                             )
                         )
-                    )
+                    ]
                 )
             )
         );
@@ -2993,16 +3137,20 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "result",
-                    expression: new TernaryExpressionNode(
-                        condition: new BooleanLiteralNode(true),
-                        trueExpr: new NumericLiteralNode(1),
-                        falseExpr: new TernaryExpressionNode(
-                            condition: new IdentifierExpression("isValid"),
-                            trueExpr: new NumericLiteralNode(2),
-                            falseExpr: new NumericLiteralNode(3)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "result",
+                            value: new TernaryExpressionNode(
+                                condition: new BooleanLiteralNode(true),
+                                trueExpr: new NumericLiteralNode(1),
+                                falseExpr: new TernaryExpressionNode(
+                                    condition: new IdentifierExpression("isValid"),
+                                    trueExpr: new NumericLiteralNode(2),
+                                    falseExpr: new NumericLiteralNode(3)
+                                )
+                            )
                         )
-                    )
+                    ]
                 )
             )
         );
@@ -3028,8 +3176,12 @@ public class ParserTests
                         baseType: new IdentifierExpression("Person"),
                         isNullable: true
                     ),
-                    identifier: "person",
-                    expression: new NullLiteralNode()
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "person",
+                            value: new NullLiteralNode()
+                        )
+                    ]
                 )
             )
         );
@@ -3054,8 +3206,12 @@ public class ParserTests
                     type: new TypeNode(
                         baseType: new IdentifierExpression("Person")
                     ),
-                    identifier: "person",
-                    expression: new NullForgivingExpressionNode(new NullLiteralNode())
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "person",
+                            value: new NullForgivingExpressionNode(new NullLiteralNode())
+                        )
+                    ]
                 )
             )
         );
@@ -3078,14 +3234,18 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "name",
-                    expression: new ConditionalMemberAccessExpressionNode(
-                        lhs: new MemberAccessExpressionNode(
-                            lhs: new NullForgivingExpressionNode(new IdentifierExpression("test")),
-                            identifier: new IdentifierExpression("person")
-                        ),
-                        identifier: new NullForgivingExpressionNode(new IdentifierExpression("Name"))
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "name",
+                            value: new ConditionalMemberAccessExpressionNode(
+                                lhs: new MemberAccessExpressionNode(
+                                    lhs: new NullForgivingExpressionNode(new IdentifierExpression("test")),
+                                    identifier: new IdentifierExpression("person")
+                                ),
+                                identifier: new NullForgivingExpressionNode(new IdentifierExpression("Name"))
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -3139,19 +3299,23 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "people",
-                    expression: new CastExpressionNode(
-                        type: new TypeNode(
-                            baseType: AstUtils.SimpleName("IList"),
-                            typeArguments: new TypeArgumentsNode([
-                                new TypeNode(
-                                    baseType: AstUtils.SimpleName("Person")
-                                )
-                            ]),
-                            isNullable: true
-                        ),
-                        expr: new NullForgivingExpressionNode(new IdentifierExpression("result"))
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "people",
+                            value: new CastExpressionNode(
+                                type: new TypeNode(
+                                    baseType: AstUtils.SimpleName("IList"),
+                                    typeArguments: new TypeArgumentsNode([
+                                        new TypeNode(
+                                            baseType: AstUtils.SimpleName("Person")
+                                        )
+                                    ]),
+                                    isNullable: true
+                                ),
+                                expr: new NullForgivingExpressionNode(new IdentifierExpression("result"))
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -3174,16 +3338,20 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "result",
-                    expression: new ConditionalElementAccessExpressionNode(
-                        lhs: new IdentifierExpression("array"),
-                        arguments: new BracketedArgumentList([
-                            new ArgumentNode(
-                                expression: new IndexExpressionNode(new NumericLiteralNode(5)),
-                                name: null
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "result",
+                            value: new ConditionalElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("array"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(
+                                        expression: new IndexExpressionNode(new NumericLiteralNode(5)),
+                                        name: null
+                                    )
+                                ])
                             )
-                        ])
-                    )
+                        )
+                    ]
                 )
             )
         );
@@ -3209,50 +3377,66 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "n1",
-                    expression: new NameofExpressionNode(
-                        value: new IdentifierExpression("List")
-                    )
-                )
-            ),
-            new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(
-                    type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "n1",
-                    expression: new NameofExpressionNode(
-                        value: AstUtils.SimpleName("int")
-                    )
-                )
-            ),
-            new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(
-                    type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "n2",
-                    expression: new NameofExpressionNode(
-                        value: new GenericNameNode(
-                            identifier: new IdentifierExpression("List"),
-                            typeArguments: new TypeArgumentsNode([
-                                AstUtils.SimpleNameAsType("int")
-                            ])
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "n1",
+                            value: new NameofExpressionNode(
+                                value: new IdentifierExpression("List")
+                            )
                         )
-                    )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "n3",
-                    expression: new NameofExpressionNode(
-                        value: new MemberAccessExpressionNode(
-                            lhs: new GenericNameNode(
-                                identifier: new IdentifierExpression("List"),
-                                typeArguments: new TypeArgumentsNode([
-                                    AstUtils.SimpleNameAsType("int")
-                                ])
-                            ),
-                            identifier: new IdentifierExpression("Count")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "n1",
+                            value: new NameofExpressionNode(
+                                value: AstUtils.SimpleName("int")
+                            )
                         )
-                    )
+                    ]
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "n2",
+                            value: new NameofExpressionNode(
+                                value: new GenericNameNode(
+                                    identifier: new IdentifierExpression("List"),
+                                    typeArguments: new TypeArgumentsNode([
+                                        AstUtils.SimpleNameAsType("int")
+                                    ])
+                                )
+                            )
+                        )
+                    ]
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "n3",
+                            value: new NameofExpressionNode(
+                                value: new MemberAccessExpressionNode(
+                                    lhs: new GenericNameNode(
+                                        identifier: new IdentifierExpression("List"),
+                                        typeArguments: new TypeArgumentsNode([
+                                            AstUtils.SimpleNameAsType("int")
+                                        ])
+                                    ),
+                                    identifier: new IdentifierExpression("Count")
+                                )
+                            )
+                        )
+                    ]
                 )
             )
         ]);
@@ -3307,10 +3491,14 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "variable",
-                    expression: new DefaultOperatorExpressionNode(
-                        type: AstUtils.SimpleNameAsType("int")
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "variable",
+                            value: new DefaultOperatorExpressionNode(
+                                type: AstUtils.SimpleNameAsType("int")
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -3333,8 +3521,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("int"),
-                    identifier: "variable",
-                    expression: new DefaultLiteralNode()
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "variable",
+                            value: new DefaultLiteralNode()
+                        )
+                    ]
                 )
             )
         );
@@ -3362,35 +3554,51 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "d",
-                    expression: new LeftShiftExpressionNode(
-                        lhs: new NumericLiteralNode(1),
-                        rhs: new NumericLiteralNode(1)
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "d",
+                            value: new LeftShiftExpressionNode(
+                                lhs: new NumericLiteralNode(1),
+                                rhs: new NumericLiteralNode(1)
+                            )
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "h",
-                    expression: new RightShiftExpressionNode(
-                        lhs: new NumericLiteralNode(2),
-                        rhs: new NumericLiteralNode(1)
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "h",
+                            value: new RightShiftExpressionNode(
+                                lhs: new NumericLiteralNode(2),
+                                rhs: new NumericLiteralNode(1)
+                            )
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "a",
-                    expression: new NumericLiteralNode(2)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(2)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "b",
-                    expression: new NumericLiteralNode(4)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "b",
+                            value: new NumericLiteralNode(4)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -3548,15 +3756,19 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "a",
-                    expression: new InterpolatedStringLiteralNode(
-                        value: """"Hello world! {{"""Test"""}}"""",
-                        interpolations: [
-                            new StringInterpolationNode(
-                                expression: new StringLiteralNode("Test")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new InterpolatedStringLiteralNode(
+                                value: """"Hello world! {{"""Test"""}}"""",
+                                interpolations: [
+                                    new StringInterpolationNode(
+                                        expression: new StringLiteralNode("Test")
+                                    )
+                                ]
                             )
-                        ]
-                    )
+                        )
+                    ]
                 )
             )
         );
@@ -3579,10 +3791,14 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "literal",
-                    expression: new StringLiteralNode(
-                        value: "\"Hello world!\""
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "literal",
+                            value: new StringLiteralNode(
+                                value: "\"Hello world!\""
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -3602,12 +3818,20 @@ public class ParserTests
         var expected = AST.Build();
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "a", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("list"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true), name: null)
-                    ])
-                ))
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("list"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(expression: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true), name: null)
+                                ])
+                            )
+                        )
+                    ]
+                )
             )
         );
 
@@ -3628,46 +3852,70 @@ public class ParserTests
         var expected = AST.Build();
         expected.Root.GlobalStatements.AddRange([
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "a", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("list"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(
-                            expression: new RangeExpressionNode(
-                                lhs: null,
-                                rhs: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true)
-                            ), 
-                            name: null
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")), 
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a", 
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("list"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(
+                                        expression: new RangeExpressionNode(
+                                            lhs: null,
+                                            rhs: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true)
+                                        ), 
+                                        name: null
+                                    )
+                                ])
+                            )
                         )
-                    ])
-                ))
+                    ]
+                )
             ),
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "b", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("list"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(
-                            expression: new RangeExpressionNode(
-                                lhs: new IndexExpressionNode(new NumericLiteralNode(2)),
-                                rhs: new IndexExpressionNode(new NumericLiteralNode(4))
-                            ),
-                            name: null
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "b", 
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("list"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(
+                                        expression: new RangeExpressionNode(
+                                            lhs: new IndexExpressionNode(new NumericLiteralNode(2)),
+                                            rhs: new IndexExpressionNode(new NumericLiteralNode(4))
+                                        ),
+                                        name: null
+                                    )
+                                ])
+                            )
                         )
-                    ])
-                ))
+                    ]
+                )
             ),
             new GlobalStatementNode(
-                statement: new VariableDeclarationStatement(new TypeNode(new IdentifierExpression("var")), "c", new ElementAccessExpressionNode(
-                    lhs: new IdentifierExpression("list"),
-                    arguments: new BracketedArgumentList([
-                        new ArgumentNode(
-                            expression: new RangeExpressionNode(
-                                lhs: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true),
-                                rhs: new IndexExpressionNode(new NumericLiteralNode(3))
-                            ),
-                            name: null
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("var")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "c", 
+                            value: new ElementAccessExpressionNode(
+                                lhs: new IdentifierExpression("list"),
+                                arguments: new BracketedArgumentList([
+                                    new ArgumentNode(
+                                        expression: new RangeExpressionNode(
+                                            lhs: new IndexExpressionNode(new NumericLiteralNode(1), fromEnd: true),
+                                            rhs: new IndexExpressionNode(new NumericLiteralNode(3))
+                                        ),
+                                        name: null
+                                    )
+                                ])
+                            )
                         )
-                    ])
-                ))
+                    ]
+                )
             )
         ]);
 
@@ -4541,11 +4789,15 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "admin",
-                    expression: new AsExpressionNode(
-                        lhs: new IdentifierExpression("user"),
-                        targetType: AstUtils.SimpleNameAsType("Admin")
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "admin",
+                            value: new AsExpressionNode(
+                                lhs: new IdentifierExpression("user"),
+                                targetType: AstUtils.SimpleNameAsType("Admin")
+                            )
+                        )
+                    ]
                 )
             )
         );
@@ -4854,19 +5106,23 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "test",
-                    expression: new ObjectCreationExpressionNode(
-                        type: null,
-                        isArrayCreation: true,
-                        initializer: new CollectionInitializerNode([
-                            new RegularCollectionInitializerNode(
-                                value: new StringLiteralNode("Item1")
-                            ),
-                            new RegularCollectionInitializerNode(
-                                value: new StringLiteralNode("Item2")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "test",
+                            value: new ObjectCreationExpressionNode(
+                                type: null,
+                                isArrayCreation: true,
+                                initializer: new CollectionInitializerNode([
+                                    new RegularCollectionInitializerNode(
+                                        value: new StringLiteralNode("Item1")
+                                    ),
+                                    new RegularCollectionInitializerNode(
+                                        value: new StringLiteralNode("Item2")
+                                    )
+                                ])
                             )
-                        ])
-                    )
+                        )
+                    ]
                 )
             )
         );
@@ -4987,10 +5243,14 @@ public class ParserTests
                 statement: new UsingStatementNode(
                     declaration: new VariableDeclarationStatement(
                         type: AstUtils.SimpleNameAsType("var"),
-                        identifier: "timer",
-                        expression: new ObjectCreationExpressionNode(
-                            type: AstUtils.SimpleNameAsType("Timer")
-                        )
+                        declarators: [
+                            new VariableDeclaratorNode(
+                                identifier: "timer",
+                                value: new ObjectCreationExpressionNode(
+                                    type: AstUtils.SimpleNameAsType("Timer")
+                                )
+                            )
+                        ]
                     )
                 )
             ),
@@ -4999,10 +5259,14 @@ public class ParserTests
                 statement: new UsingStatementNode(
                     declaration: new VariableDeclarationStatement(
                         type: AstUtils.SimpleNameAsType("var"),
-                        identifier: "timer2",
-                        expression: new ObjectCreationExpressionNode(
-                            type: AstUtils.SimpleNameAsType("Timer")
-                        )
+                        declarators: [
+                            new VariableDeclaratorNode(
+                                identifier: "timer2",
+                                value: new ObjectCreationExpressionNode(
+                                    type: AstUtils.SimpleNameAsType("Timer")
+                                )
+                            )
+                        ]
                     ),
                     body: new BlockNode([])
                 )
@@ -5011,10 +5275,14 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "timer3",
-                    expression: new ObjectCreationExpressionNode(
-                        type: AstUtils.SimpleNameAsType("Timer")
-                    )
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "timer3",
+                            value: new ObjectCreationExpressionNode(
+                                type: AstUtils.SimpleNameAsType("Timer")
+                            )
+                        )
+                    ]
                 )
             ),
             // using (timer3)
@@ -5044,12 +5312,16 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: AstUtils.SimpleNameAsType("var"),
-                    identifier: "data",
-                    expression: new TupleExpressionNode([
-                        new TupleArgumentNode(new NumericLiteralNode(1)),
-                        new TupleArgumentNode(new NumericLiteralNode(2)),
-                        new TupleArgumentNode(new BooleanLiteralNode(true), name: "named")
-                    ])
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "data",
+                            value: new TupleExpressionNode([
+                                new TupleArgumentNode(new NumericLiteralNode(1)),
+                                new TupleArgumentNode(new NumericLiteralNode(2)),
+                                new TupleArgumentNode(new BooleanLiteralNode(true), name: "named")
+                            ])
+                        )
+                    ]
                 )
             )
         );
@@ -5117,15 +5389,19 @@ public class ParserTests
                             ]
                         )
                     ),
-                    identifier: "example",
-                    expression: new TupleExpressionNode([
-                        new TupleArgumentNode(
-                            expression: new NumericLiteralNode(3)
-                        ),
-                        new TupleArgumentNode(
-                            expression: new StringLiteralNode("hello")
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "example",
+                            value: new TupleExpressionNode([
+                                new TupleArgumentNode(
+                                    expression: new NumericLiteralNode(3)
+                                ),
+                                new TupleArgumentNode(
+                                    expression: new StringLiteralNode("hello")
+                                )
+                            ])
                         )
-                    ])
+                    ]
                 )
             )
         );
@@ -5319,8 +5595,12 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("uint")),
-                    identifier: "count",
-                    expression: new NumericLiteralNode(0)
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "count",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ]
                 )
             ),
             new GlobalStatementNode(
@@ -5428,6 +5708,38 @@ public class ParserTests
                         )
                     )
                 ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_MultipleVariableDeclaration_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("int a = 0, b, c = 3;");
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("int")),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(0)
+                        ),
+                        new VariableDeclaratorNode(
+                            identifier: "b"
+                        ),
+                        new VariableDeclaratorNode(
+                            identifier: "c",
+                            value: new NumericLiteralNode(3)
+                        )
+                    ]
+                )
             )
         );
 

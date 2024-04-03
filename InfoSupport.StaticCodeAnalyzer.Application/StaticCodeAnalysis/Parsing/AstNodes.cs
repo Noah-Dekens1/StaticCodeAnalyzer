@@ -584,16 +584,29 @@ public class GenericNameNode(AstNode identifier, TypeArgumentsNode? typeArgument
         : $"{Identifier}";
 }
 
+[DebuggerDisplay("{ToString(),nq}")]
+public class VariableDeclaratorNode(string identifier, ExpressionNode? value = null) : AstNode
+{
+    public string Identifier { get; set; } = identifier;
+    public ExpressionNode? Value { get; set; } = value;
 
-[DebuggerDisplay("{Type,nq} {Identifier,nq} = {Expression,nq}")]
-public class VariableDeclarationStatement(TypeNode type, string identifier, ExpressionNode expression) : StatementNode
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Value);
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => Value is not null
+        ? $"{Identifier} = {Value}"
+        : $"{Identifier}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class VariableDeclarationStatement(TypeNode type, List<VariableDeclaratorNode> declarators) : StatementNode
 {
     public TypeNode Type { get; set; } = type;
-    public string Identifier { get; set; } = identifier;
-    public ExpressionNode Expression { get; set; } = expression;
-    public override List<AstNode> Children => [Type, Expression];
 
-    public override string ToString() => $"{Type} {Identifier} = {Expression}";
+    public List<VariableDeclaratorNode> Declarators { get; set; } = declarators;
+    public override List<AstNode> Children => [Type, ..Declarators];
+
+    public override string ToString() => $"{Type} {string.Join(", ", Declarators)}";
 }
 
 

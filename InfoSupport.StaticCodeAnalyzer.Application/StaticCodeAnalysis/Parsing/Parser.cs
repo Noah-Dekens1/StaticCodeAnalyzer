@@ -1366,28 +1366,6 @@ public class Parser
         return maybeType;
     }
 
-    private bool IsDeclarationStatement()
-    {
-        var token = PeekCurrent();
-
-        bool maybeType = IsMaybeType(token, false);
-        bool maybeDeclaration = false;
-
-        int pos = Tell();
-
-        if (maybeType)
-        {   
-            if (TryParseType(out _) && ConsumeIfMatch(TokenKind.Identifier) && ConsumeIfMatch(TokenKind.Equals))
-            {
-                maybeDeclaration = true;
-            }
-        }
-
-        Seek(pos);
-
-        return maybeDeclaration;
-    }
-
     private readonly List<TokenKind> _disambiguatingTokenList = [
         TokenKind.OpenParen,
         TokenKind.CloseParen,
@@ -1626,20 +1604,56 @@ public class Parser
             : type;
     }
 
-    private StatementNode ParseDeclarationStatement(bool onlyParseDeclarator=false)
+    private bool TryParseDeclarationStatement([NotNullWhen(true)] out StatementNode? statement, bool onlyParseDeclarator=false)
     {
-        var type = ParseType();
-        var isDeconstructing = Matches(TokenKind.OpenParen);
-        var identifier = Consume();
-        Expect(TokenKind.Equals);
-        var expr = ParseExpression();
+        var start = Tell();
 
-        if (!onlyParseDeclarator)
-            Expect(TokenKind.Semicolon);
+        statement = null;
 
-        return new VariableDeclarationStatement(type, identifier.Lexeme, expr!);
+        if (!TryParseType(out var type))
+        {
+            Seek(start);
+            return false;
+        }
+
+        var declarators = new List<VariableDeclaratorNode>();
+
+        do
+        {
+            if (!Matches(TokenKind.Identifier))
+            {
+                Seek(start);
+                return false;
+            }
+
+            var identifier = Consume().Lexeme;
+            bool hasDefinition = ConsumeIfMatch(TokenKind.Equals);
+            ExpressionNode? value = null;
+
+            if (hasDefinition)
+            {
+                value = ParseExpression();
+
+                if (value is null)
+                {
+                    Seek(start);
+                    return false;
+                }
+            }
+
+            declarators.Add(new VariableDeclaratorNode(identifier, value));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!onlyParseDeclarator && !ConsumeIfMatch(TokenKind.Semicolon))
+        {
+            Seek(start);
+            return false;
+        }
+
+        statement = new VariableDeclarationStatement(type, declarators);
+        return true;
     }
-
     private bool ParseTupleDesignations(out List<TupleElementNode> designations)
     {
         designations = [];
@@ -1954,9 +1968,9 @@ public class Parser
         // Like "for (i = 3, Console.WriteLine("test"), i++; i < 10; i++)"
 
         // "Sane" path of variable declaration
-        if (IsDeclarationStatement())
+        if (TryParseDeclarationStatement(out var statement))
         {
-            return ParseDeclarationStatement();
+            return statement;
         }
 
         var result = ParseCommaSeperatedExpressionStatements();
@@ -2014,7 +2028,7 @@ public class Parser
         Expect(TokenKind.CloseParen);
         var body = ParseBody();
 
-        return new ForEachStatementNode(type, identifier, collection, body);
+        return new ForEachStatementNode(type, identifier!, collection, body);
     }
 
     private WhileStatementNode ParseWhileStatement()
@@ -2412,14 +2426,12 @@ public class Parser
         if (!isDeclaration)
             Expect(TokenKind.OpenParen);
 
-        bool isVariableDeclarator = IsDeclarationStatement();
-
         VariableDeclarationStatement? declarator = null;
         ExpressionNode? expression = null;
         AstNode? body = null;
 
-        if (isVariableDeclarator)
-            declarator = (VariableDeclarationStatement)ParseDeclarationStatement(onlyParseDeclarator: true);
+        if (TryParseDeclarationStatement(out var statement, true))
+            declarator = (VariableDeclarationStatement)statement;
         else
             expression = ParseExpression();
 
@@ -2464,8 +2476,8 @@ public class Parser
         if (TryParseTupleDeconstruction(out var tupleDeconstruct))
             return tupleDeconstruct;
 
-        if (!isEmbeddedStatement && IsDeclarationStatement())
-            return ParseDeclarationStatement();
+        if (!isEmbeddedStatement && TryParseDeclarationStatement(out var statement))
+            return statement;
 
         if (!isEmbeddedStatement && Matches(TokenKind.OpenBrace))
             return ParseBlock();
