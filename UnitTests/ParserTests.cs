@@ -5259,4 +5259,38 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ThisKeyword_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            this.SomeMethod();
+            return this;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new ThisExpressionNode(),
+                            identifier: new IdentifierExpression("SomeMethod")
+                        ),
+                        arguments: new ArgumentListNode([])
+                    )
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ReturnStatementNode(
+                    returnExpression: new ThisExpressionNode()
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

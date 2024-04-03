@@ -1200,6 +1200,11 @@ public class Parser
     {
         var token = PeekCurrent();
 
+        if (ConsumeIfMatch(TokenKind.ThisKeyword))
+        {
+            possibleLHS = new ThisExpressionNode();
+        }
+
         if (token.Kind == TokenKind.OpenParen && possibleLHS is null)
         {
             // Could be plain parenthesis around a subexpression, a lambda's argument list, or a tuple

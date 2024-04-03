@@ -1668,3 +1668,10 @@ public class TupleDeconstructStatementNode(
         return result;
     }
 }
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class ThisExpressionNode : ExpressionNode
+{
+    public override List<AstNode> Children => [];
+    public override string ToString() => "this";
+}
