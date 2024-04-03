@@ -1635,6 +1635,35 @@ public class Parser
         return new VariableDeclarationStatement(type, identifier.Lexeme, expr!);
     }
 
+    private bool ParseTupleDesignations(out List<TupleElementNode> designations)
+    {
+        designations = [];
+
+        do
+        {
+            bool hasType = !Matches(TokenKind.Comma, 1) && !Matches(TokenKind.CloseParen, 1);
+
+            TypeNode? elementType = null;
+
+            if (hasType && !TryParseType(out elementType))
+            {
+                return false;
+            }
+
+            if (!Matches(TokenKind.Identifier))
+            {
+                return false;
+            }
+
+            var identifier = Consume().Lexeme;
+
+            designations.Add(new TupleElementNode(identifier, elementType));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        return true;
+    }
+
     private bool TryParseTupleDeconstruction([NotNullWhen(true)] out TupleDeconstructStatementNode? tupleDeconstruction)
     {
         tupleDeconstruction = null;
@@ -1959,13 +1988,28 @@ public class Parser
         Expect(TokenKind.ForeachKeyword);
         Expect(TokenKind.OpenParen);
         var type = ParseType();
-        var identifier = Consume();
+        bool isTupleDesignation = ConsumeIfMatch(TokenKind.OpenParen);
+
+        AstNode? identifier = null;
+
+        if (isTupleDesignation)
+        {
+            if (ParseTupleDesignations(out var temp))
+                identifier = new TupleVariableDesignationsNode(temp);
+
+            Expect(TokenKind.CloseParen);
+        }
+        else
+        {
+            identifier = ResolveIdentifier();
+        }
+
         Expect(TokenKind.InKeyword);
         var collection = ParseExpression()!;
         Expect(TokenKind.CloseParen);
         var body = ParseBody();
 
-        return new ForEachStatementNode(type, identifier.Lexeme, collection, body);
+        return new ForEachStatementNode(type, identifier, collection, body);
     }
 
     private WhileStatementNode ParseWhileStatement()

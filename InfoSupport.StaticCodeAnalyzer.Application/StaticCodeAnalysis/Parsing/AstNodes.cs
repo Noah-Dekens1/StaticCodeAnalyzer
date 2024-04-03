@@ -667,10 +667,10 @@ public class ExpressionStatementListNode(List<ExpressionStatementNode> statement
 }
 
 [DebuggerDisplay("foreach ({VariableType,nq} {VariableIdentifier,nq} in {Collection,nq}) ...")]
-public class ForEachStatementNode(TypeNode variableType, string variableIdentifier, ExpressionNode collection, AstNode body) : StatementNode
+public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentifier, ExpressionNode collection, AstNode body) : StatementNode
 {
     public TypeNode VariableType { get; set; } = variableType;
-    public string VariableIdentifier { get; set; } = variableIdentifier;
+    public AstNode VariableIdentifier { get; set; } = variableIdentifier;
     public ExpressionNode Collection { get; set; } = collection;
     public AstNode Body { get; set; } = body;
 
@@ -1707,4 +1707,14 @@ public class ThisExpressionNode : ExpressionNode
 {
     public override List<AstNode> Children => [];
     public override string ToString() => "this";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class TupleVariableDesignationsNode(List<TupleElementNode> designations) : AstNode
+{
+    public List<TupleElementNode> Designations { get; set; } = designations;
+
+    public override List<AstNode> Children => [.. Designations];
+
+    public override string ToString() => $"({string.Join(", ", Designations)})";
 }

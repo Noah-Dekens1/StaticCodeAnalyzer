@@ -723,7 +723,7 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new ForEachStatementNode(
                     variableType: new TypeNode(new IdentifierExpression("var")),
-                    variableIdentifier: "item",
+                    variableIdentifier: new IdentifierExpression("item"),
                     collection: new MemberAccessExpressionNode(
                         lhs: new IdentifierExpression("test"),
                         identifier: new IdentifierExpression("someList")
@@ -5288,6 +5288,51 @@ public class ParserTests
             new GlobalStatementNode(
                 statement: new ReturnStatementNode(
                     returnExpression: new ThisExpressionNode()
+                )
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ForEachDesignationsStatement_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            uint count = 0;
+            foreach (var (key, item) in test.someDict)
+                count++;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.AddRange([
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(new IdentifierExpression("uint")),
+                    identifier: "count",
+                    expression: new NumericLiteralNode(0)
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new ForEachStatementNode(
+                    variableType: new TypeNode(new IdentifierExpression("var")),
+                    variableIdentifier: new TupleVariableDesignationsNode([
+                        new TupleElementNode("key"),
+                        new TupleElementNode("item"),
+                    ]),
+                    collection: new MemberAccessExpressionNode(
+                        lhs: new IdentifierExpression("test"),
+                        identifier: new IdentifierExpression("someDict")
+                    ),
+                    body: new ExpressionStatementNode(
+                        expression: new UnaryIncrementNode(
+                            expr: new IdentifierExpression("count"),
+                            isPrefix: false
+                        )
+                    )
                 )
             )
         ]);
