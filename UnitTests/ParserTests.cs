@@ -5579,6 +5579,34 @@ public class ParserTests
     }
 
     [TestMethod]
+    public void Parse_BaseKeyword_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            base.SomeMethod();
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: new MemberAccessExpressionNode(
+                            lhs: new BaseExpressionNode(),
+                            identifier: new IdentifierExpression("SomeMethod")
+                        ),
+                        arguments: new ArgumentListNode([])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
     public void Parse_ForEachDesignationsStatement_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""

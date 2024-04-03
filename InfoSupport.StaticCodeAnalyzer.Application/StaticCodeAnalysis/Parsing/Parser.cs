@@ -1227,6 +1227,10 @@ public class Parser
         {
             possibleLHS = new ThisExpressionNode();
         }
+        else if (ConsumeIfMatch(TokenKind.BaseKeyword))
+        {
+            possibleLHS = new BaseExpressionNode();
+        }
 
         if (token.Kind == TokenKind.OpenParen && possibleLHS is null)
         {

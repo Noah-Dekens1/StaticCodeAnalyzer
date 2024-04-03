@@ -12,7 +12,8 @@ var _ = Lexer.Lex(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.Sta
 
 //var directory = @"C:\Users\NoahD\source\repos\Files\src";
 //var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
-var directory = @"C:\Users\NoahD\source\repos\NestedStringsTesting\NestedStringsTesting";
+//var directory = @"C:\Users\NoahD\source\repos\NestedStringsTesting\NestedStringsTesting";
+var directory = @"C:\Users\NoahD\source\repos\RoslynTest\RoslynTest";
 //var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
 
 string[] paths = Directory

@@ -1723,6 +1723,13 @@ public class ThisExpressionNode : ExpressionNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
+public class BaseExpressionNode : ExpressionNode
+{
+    public override List<AstNode> Children => [];
+    public override string ToString() => "base";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
 public class TupleVariableDesignationsNode(List<TupleElementNode> designations) : AstNode
 {
     public List<TupleElementNode> Designations { get; set; } = designations;
