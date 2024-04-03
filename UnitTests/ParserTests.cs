@@ -157,11 +157,11 @@ public class ParserTests
         expected.Root.GlobalStatements.Add(
             new GlobalStatementNode(
                 statement: new ExpressionStatementNode(
-                    expression: new LogicalOrExpressionNode(
+                    expression: new ConditionalOrExpressionNode(
                         lhs: new ParenthesizedExpressionNode(
                             expr: new EqualsExpressionNode(
                                 lhs: new IdentifierExpression("a"),
-                                rhs: new LogicalAndExpressionNode(
+                                rhs: new ConditionalAndExpressionNode(
                                     lhs: new IdentifierExpression("b"),
                                     rhs: new GreaterThanEqualsExpressionNode(
                                         lhs: new IdentifierExpression("c"),
@@ -170,11 +170,11 @@ public class ParserTests
                                 )
                             )
                         ),
-                        rhs: new LogicalAndExpressionNode(
+                        rhs: new ConditionalAndExpressionNode(
                             lhs: new ParenthesizedExpressionNode(
                                 expr: new NotEqualsExpressionNode(
                                     lhs: new IdentifierExpression("a"),
-                                    rhs: new LogicalAndExpressionNode(
+                                    rhs: new ConditionalAndExpressionNode(
                                         lhs: new IdentifierExpression("c"),
                                         rhs: new UnaryLogicalNotNode(
                                             expr: new UnaryLogicalNotNode(
@@ -188,11 +188,11 @@ public class ParserTests
                             ),
                             rhs: new LessThanExpressionNode(
                                 lhs: new IdentifierExpression("a"),
-                                rhs: new LogicalAndExpressionNode(
+                                rhs: new ConditionalAndExpressionNode(
                                     lhs: new IdentifierExpression("j"),
                                     rhs: new LessThanEqualsExpressionNode(
                                         lhs: new IdentifierExpression("j"),
-                                        rhs: new LogicalAndExpressionNode(
+                                        rhs: new ConditionalAndExpressionNode(
                                             lhs: new IdentifierExpression("b"),
                                             rhs: new GreaterThanExpressionNode(
                                                 lhs: new IdentifierExpression("q"),
@@ -224,11 +224,11 @@ public class ParserTests
                 statement: new VariableDeclarationStatement(
                     type: new TypeNode(new IdentifierExpression("var")),
                     identifier: "test",
-                    expression: new LogicalOrExpressionNode(
+                    expression: new ConditionalOrExpressionNode(
                         lhs: new ParenthesizedExpressionNode(
                             expr: new EqualsExpressionNode(
                                 lhs: new IdentifierExpression("a"),
-                                rhs: new LogicalAndExpressionNode(
+                                rhs: new ConditionalAndExpressionNode(
                                     lhs: new IdentifierExpression("b"),
                                     rhs: new GreaterThanEqualsExpressionNode(
                                         lhs: new IdentifierExpression("c"),
@@ -237,11 +237,11 @@ public class ParserTests
                                 )
                             )
                         ),
-                        rhs: new LogicalAndExpressionNode(
+                        rhs: new ConditionalAndExpressionNode(
                             lhs: new ParenthesizedExpressionNode(
                                 expr: new NotEqualsExpressionNode(
                                     lhs: new IdentifierExpression("a"),
-                                    rhs: new LogicalAndExpressionNode(
+                                    rhs: new ConditionalAndExpressionNode(
                                         lhs: new IdentifierExpression("c"),
                                         rhs: new UnaryLogicalNotNode(
                                             expr: new UnaryLogicalNotNode(
@@ -255,11 +255,11 @@ public class ParserTests
                             ),
                             rhs: new LessThanExpressionNode(
                                 lhs: new IdentifierExpression("a"),
-                                rhs: new LogicalAndExpressionNode(
+                                rhs: new ConditionalAndExpressionNode(
                                     lhs: new IdentifierExpression("j"),
                                     rhs: new LessThanEqualsExpressionNode(
                                         lhs: new IdentifierExpression("j"),
-                                        rhs: new LogicalAndExpressionNode(
+                                        rhs: new ConditionalAndExpressionNode(
                                             lhs: new IdentifierExpression("b"),
                                             rhs: new GreaterThanExpressionNode(
                                                 lhs: new IdentifierExpression("q"),
@@ -371,12 +371,12 @@ public class ParserTests
                 statement: new IfStatementNode(
                     expression: new GreaterThanExpressionNode(
                         lhs: new NumericLiteralNode(10),
-                        rhs: new LogicalAndExpressionNode(
+                        rhs: new ConditionalAndExpressionNode(
                             lhs: new NumericLiteralNode(3),
                             rhs: new ParenthesizedExpressionNode(
                                 expr: new LessThanExpressionNode(
                                     lhs: new NumericLiteralNode(5),
-                                    rhs: new LogicalOrExpressionNode(
+                                    rhs: new ConditionalOrExpressionNode(
                                         lhs: new NumericLiteralNode(7),
                                         rhs: new NotEqualsExpressionNode(
                                             lhs: new NumericLiteralNode(2),
@@ -766,11 +766,11 @@ public class ParserTests
             ),
             new GlobalStatementNode(
                 statement: new WhileStatementNode(
-                    condition: new LogicalOrExpressionNode(
+                    condition: new ConditionalOrExpressionNode(
                         lhs: new ParenthesizedExpressionNode(
                             expr: new EqualsExpressionNode(
                                 lhs: new IdentifierExpression("a"),
-                                rhs: new LogicalAndExpressionNode(
+                                rhs: new ConditionalAndExpressionNode(
                                     lhs: new BooleanLiteralNode(true),
                                     rhs: new LessThanExpressionNode(
                                         lhs: new IdentifierExpression("b"),
@@ -779,7 +779,7 @@ public class ParserTests
                                 )
                             )
                         ),
-                        rhs: new LogicalAndExpressionNode(
+                        rhs: new ConditionalAndExpressionNode(
                             lhs: new IdentifierExpression("c"),
                             rhs: new ParenthesizedExpressionNode(
                                 expr: new GreaterThanExpressionNode(
@@ -4325,6 +4325,7 @@ public class ParserTests
                                         new ExpressionStatementNode(new ThrowExpressionNode(null))
                                     ]),
                                     whenClause: new IsExpressionNode(
+                                        expression: new IdentifierExpression("e"),
                                         pattern: new NotPatternNode(
                                             pattern: new ConstantPatternNode(
                                                 value: new IdentifierExpression("OperationCanceledException")

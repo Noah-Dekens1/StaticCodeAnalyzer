@@ -550,6 +550,10 @@ public class Parser
             case TokenKind.QuestionQuestion:
             case TokenKind.QuestionQuestionEquals:
 
+            // Binary
+            case TokenKind.Caret:
+            case TokenKind.CaretEquals:
+
 
                 // ...
                 return true;
@@ -590,8 +594,8 @@ public class Parser
             { TokenKind.GreaterThanEquals,   () => new GreaterThanEqualsExpressionNode(lhs, rhs) },
             { TokenKind.LessThan,            () => new LessThanExpressionNode(lhs, rhs) },
             { TokenKind.LessThanEquals,      () => new LessThanEqualsExpressionNode(lhs, rhs) },
-            { TokenKind.AmpersandAmpersand,  () => new LogicalAndExpressionNode(lhs, rhs) },
-            { TokenKind.BarBar,              () => new LogicalOrExpressionNode(lhs, rhs) },
+            { TokenKind.AmpersandAmpersand,  () => new ConditionalAndExpressionNode(lhs, rhs) },
+            { TokenKind.BarBar,              () => new ConditionalOrExpressionNode(lhs, rhs) },
 
             { TokenKind.PlusEquals,          () => new AddAssignExpressionNode(lhs, rhs) },
             { TokenKind.MinusEquals,         () => new SubtractAssignExpressionNode(lhs, rhs) },
@@ -600,6 +604,11 @@ public class Parser
             { TokenKind.PercentEquals,       () => new ModulusAssignExpressionNode(lhs, rhs) },
             { TokenKind.AmpersandEquals,     () => new AndAssignExpressionNode(lhs, rhs) },
             { TokenKind.BarEquals,           () => new OrAssignExpressionNode(lhs, rhs) },
+            { TokenKind.CaretEquals,         () => new LogicalXorAssignExpressionNode(lhs, rhs) },
+            
+            { TokenKind.Ampersand,           () => new LogicalAndExpressionNode(lhs, rhs) },
+            { TokenKind.Bar,                 () => new LogicalOrExpressionNode(lhs, rhs) },
+            { TokenKind.Caret,               () => new LogicalXorExpressionNode(lhs, rhs) },
 
             { TokenKind.Equals,              () => new AssignmentExpressionNode(lhs, rhs) },
             { TokenKind.QuestionQuestion,    () => new NullCoalescingExpressionNode(lhs, rhs) },
@@ -972,7 +981,7 @@ public class Parser
 
         var pattern = ParsePattern()!;
 
-        return new IsExpressionNode(pattern);
+        return new IsExpressionNode(lhs, pattern);
     }
 
     private bool TryParseTupleExpression([NotNullWhen(true)] out TupleExpressionNode? tupleExpression)

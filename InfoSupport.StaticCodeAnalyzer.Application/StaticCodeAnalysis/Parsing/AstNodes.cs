@@ -264,8 +264,8 @@ public enum BinaryOperator
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
-    LogicalAnd,
-    LogicalOr,
+    ConditionalAnd,
+    ConditionalOr,
 
     // Compound
     AddAssign,
@@ -275,6 +275,7 @@ public enum BinaryOperator
     ModulusAssign,
     AndAssign,
     OrAssign,
+    XorAssign,
 
     Assignment,
     NullCoalescing,
@@ -285,6 +286,9 @@ public enum BinaryOperator
     RightShift,
     LeftShiftAssign,
     RightShiftAssign,
+    LogicalXor,
+    LogicalAnd,
+    LogicalOr,
 
     // ...
 }
@@ -313,8 +317,8 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.GreaterThanOrEqual => ">=",
         BinaryOperator.LessThan => "<",
         BinaryOperator.LessThanOrEqual => "<=",
-        BinaryOperator.LogicalAnd => "&&",
-        BinaryOperator.LogicalOr => "||",
+        BinaryOperator.ConditionalAnd => "&&",
+        BinaryOperator.ConditionalOr => "||",
 
         BinaryOperator.AddAssign => "+=",
         BinaryOperator.SubtractAssign => "-=",
@@ -323,6 +327,7 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.ModulusAssign => "%=",
         BinaryOperator.AndAssign => "&=",
         BinaryOperator.OrAssign => "|=",
+        BinaryOperator.XorAssign => "^=",
 
         BinaryOperator.Assignment => "=",
         BinaryOperator.NullCoalescing => "??",
@@ -332,6 +337,9 @@ public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : Expr
         BinaryOperator.LeftShiftAssign => "<<=",
         BinaryOperator.RightShift => ">>",
         BinaryOperator.RightShiftAssign => ">>=",
+        BinaryOperator.LogicalAnd => "&",
+        BinaryOperator.LogicalOr => "|",
+        BinaryOperator.LogicalXor => "^",
 
         _ => throw new NotImplementedException()
     };
@@ -380,9 +388,9 @@ public class GreaterThanExpressionNode(ExpressionNode lhs, ExpressionNode rhs) :
     public override BinaryOperator Operator { get => BinaryOperator.GreaterThan; }
 }
 
-public class LogicalAndExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+public class ConditionalAndExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public override BinaryOperator Operator { get => BinaryOperator.LogicalAnd; }
+    public override BinaryOperator Operator { get => BinaryOperator.ConditionalAnd; }
 }
 
 
@@ -401,9 +409,9 @@ public class LessThanEqualsExpressionNode(ExpressionNode lhs, ExpressionNode rhs
     public override BinaryOperator Operator { get => BinaryOperator.LessThanOrEqual; }
 }
 
-public class LogicalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+public class ConditionalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
-    public override BinaryOperator Operator { get => BinaryOperator.LogicalOr; }
+    public override BinaryOperator Operator { get => BinaryOperator.ConditionalOr; }
 }
 
 public class AssignmentExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
@@ -474,6 +482,26 @@ public class RightShiftExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : 
 public class RightShiftAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
 {
     public override BinaryOperator Operator => BinaryOperator.RightShiftAssign;
+}
+
+public class LogicalAndExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LogicalAnd;
+}
+
+public class LogicalOrExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LogicalOr;
+}
+
+public class LogicalXorExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.LogicalXor;
+}
+
+public class LogicalXorAssignExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : BinaryExpressionNode(lhs, rhs)
+{
+    public override BinaryOperator Operator => BinaryOperator.XorAssign;
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
@@ -1257,12 +1285,13 @@ public abstract class PatternNode : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class IsExpressionNode(PatternNode pattern) : ExpressionNode
+public class IsExpressionNode(ExpressionNode expression, PatternNode pattern) : ExpressionNode
 {
+    public ExpressionNode Expression { get; set; } = expression;
     public PatternNode Pattern { get; set; } = pattern;
 
-    public override List<AstNode> Children => [Pattern];
-    public override string ToString() => $"is {Pattern}";
+    public override List<AstNode> Children => [Expression, Pattern];
+    public override string ToString() => $"{Expression} is {Pattern}";
 }
 
 public class DeclarationPatternNode(TypeNode type, string identifier) : PatternNode
@@ -1303,17 +1332,21 @@ public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode 
     public override string ToString() => $"{OperatorForDbg} {Value}";
 }
 
-[DebuggerDisplay("{Value,nq}")]
+[DebuggerDisplay("{ToString(),nq}")]
 public class ConstantPatternNode(ExpressionNode value) : PatternNode
 {
     public ExpressionNode Value { get; set; } = value;
     public override List<AstNode> Children => [Value];
+
+    public override string ToString() => $"{Value}";
 }
 
-[DebuggerDisplay("_")]
+[DebuggerDisplay("{ToString(),nq}")]
 public class DiscardPatternNode : PatternNode
 {
     public override List<AstNode> Children => [];
+
+    public override string ToString() => $"_";
 }
 
 public abstract class LogicalPatternNode : PatternNode
