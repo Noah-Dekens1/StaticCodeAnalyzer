@@ -1088,9 +1088,9 @@ public class Parser
 
             var maybeCast = true;
             {
-                var type = ParseType();
+                bool isType = TryParseType(out var type);
 
-                maybeCast &= type is not null && ConsumeIfMatch(TokenKind.CloseParen);
+                maybeCast &= isType && ConsumeIfMatch(TokenKind.CloseParen);
                 var rhs = ParseExpression(null, true);
                 maybeCast &= rhs is not null;
 
@@ -1289,7 +1289,7 @@ public class Parser
             possibleLHS = ParseAsExpression(possibleLHS!);
         }
 
-        bool isBinary = !onlyParseSingle && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
+        bool isBinary = !onlyParseSingle && !isParsingPattern && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
         //bool isTernary = false;
 
         if (possibleLHS is not null && Matches(TokenKind.Exclamation) && !isBinary)
@@ -1551,9 +1551,14 @@ public class Parser
             return false;
         }
 
-        var baseType = ResolveIdentifier();
+        var baseType = IsMaybeType(PeekCurrent(), true) ? ResolveIdentifier() : null;
 
         type = null;
+
+        if (baseType is null)
+        {
+            return false;
+        }
 
         var maybeGeneric = Matches(TokenKind.LessThan);
 
