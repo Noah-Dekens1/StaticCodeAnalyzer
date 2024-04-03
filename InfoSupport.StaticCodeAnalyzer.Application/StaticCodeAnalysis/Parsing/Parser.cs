@@ -790,7 +790,7 @@ public class Parser
             }
             TypeNode? type = null;
 
-            bool _ = IsMaybeType(PeekCurrent(), true) && TryParseType(out type);
+            bool _ = IsMaybeType(PeekCurrent(), true) && TryParseTypeOrBacktrack(out type);
 
             ArgumentListNode? args = null;
 

@@ -1256,7 +1256,7 @@ public class CollectionExpressionNode(List<ElementNode> elements) : ExpressionNo
 
     public override List<AstNode> Children => [.. Elements];
 
-    public override string ToString() => string.Join(", ", Elements);
+    public override string ToString() => $"[{string.Join(", ", Elements)}]";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]

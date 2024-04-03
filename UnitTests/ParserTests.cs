@@ -5371,7 +5371,59 @@ public class ParserTests
         );
 
         AssertStandardASTEquals(expected, actual);
+    }
 
+    [TestMethod]
+    public void Parse_ComplexPropertyValue_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class A
+            {
+                public ParameterListNode Parameters { get; set; } = parameters ?? new([]);
+            }
+            """);
 
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: new IdentifierExpression("A"),
+                members: [
+                    new PropertyMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        propertyName: "Parameters",
+                        propertyType: AstUtils.SimpleNameAsType("ParameterListNode"),
+                        getter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        setter: new PropertyAccessorNode(
+                            accessorType: PropertyAccessorType.Auto,
+                            accessModifier: AccessModifier.Public,
+                            expressionBody: null,
+                            blockBody: null
+                        ),
+                        value: new NullCoalescingExpressionNode(
+                            lhs: new IdentifierExpression("parameters"),
+                            rhs: new ObjectCreationExpressionNode(
+                                type: null,
+                                arguments: new ArgumentListNode([
+                                    new ArgumentNode(
+                                        expression: new CollectionExpressionNode([])
+                                    )
+                                ])
+                            )
+                        )
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
     }
 }
