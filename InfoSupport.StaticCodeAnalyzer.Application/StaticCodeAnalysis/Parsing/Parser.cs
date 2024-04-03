@@ -137,6 +137,18 @@ public class Parser
         return token.Lexeme == lexeme && (kind is null || token.Kind == kind);
     }
 
+    [DebuggerHidden]
+    public bool ConsumeIfMatchLexeme(string lexeme, TokenKind? kind = null)
+    {
+        if (MatchesLexeme(lexeme, kind))
+        {
+            Consume();
+            return true;
+        }
+
+        return false;
+    }
+
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
     {
         int negativeSearch = includeConsumed ? 1 : 0;
@@ -1696,6 +1708,64 @@ public class Parser
         return PeekCurrent().Kind == TokenKind.OpenBrace ? ParseBlock() : ParseStatement(isEmbeddedStatement: true);
     }
 
+    private readonly Dictionary<string, GenericConstraintType> _constraintTypes = new()
+    {
+        ["struct"] = GenericConstraintType.Struct,
+        ["class"] = GenericConstraintType.Class,
+        ["class?"] = GenericConstraintType.NullableClass,
+        ["notnull"] = GenericConstraintType.NotNull,
+        ["unmanaged"] = GenericConstraintType.Unmanaged,
+        ["new()"] = GenericConstraintType.New,
+        ["default"] = GenericConstraintType.Default
+    };
+
+    private List<WhereConstraintNode> ParseGenericConstraints()
+    {
+        List<WhereConstraintNode> whereConstraints = [];
+
+        while (ConsumeIfMatchLexeme("where"))
+        {
+            var target = ParseType()!; // is this needed? it's just an identifier right?
+            Expect(TokenKind.Colon);
+
+            List<GenericConstraintNode> constraints = [];
+
+            do
+            {
+                GenericConstraintType? constraintType;
+                TypeNode? baseType = null;
+
+                // new()
+                if (ConsumeIfMatchSequence(TokenKind.NewKeyword, TokenKind.OpenParen, TokenKind.CloseParen))
+                {
+                    constraintType = GenericConstraintType.New;
+                }
+                // class?
+                else if (ConsumeIfMatchSequence(TokenKind.ClassKeyword, TokenKind.OpenParen))
+                {
+                    constraintType = GenericConstraintType.NullableClass;
+                }
+                else if (_constraintTypes.TryGetValue(PeekCurrent().Lexeme, out var temp))
+                {
+                    Consume();
+                    constraintType = temp;
+                }
+                else
+                {
+                    constraintType = GenericConstraintType.Type;
+                    baseType = ParseType();
+                }
+
+                constraints.Add(new GenericConstraintNode(constraintType.Value, baseType));
+
+            } while (ConsumeIfMatch(TokenKind.Comma));
+
+            whereConstraints.Add(new WhereConstraintNode(target, constraints));
+        }
+
+        return whereConstraints;
+    }
+
     private AstNode ParseMethodBody()
     {
         // Could be either an expression bodied member or a block
@@ -2009,11 +2079,12 @@ public class Parser
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
+        var genericConstraints = ParseGenericConstraints();
         var body = ParseMethodBody();
 
         Debug.Assert(body is not null);
 
-        return new LocalFunctionDeclarationNode(modifiers, identifier, type, parms, body);
+        return new LocalFunctionDeclarationNode(modifiers, identifier, type, parms, body, genericConstraints);
     }
 
     private ParenthesizedPatternNode ParseParenthesizedPattern()
@@ -2887,10 +2958,12 @@ public class Parser
         Expect(TokenKind.CloseParen);
         AstNode? body = null;
 
+        var genericConstraints = ParseGenericConstraints();
+
         if (!ConsumeIfMatch(TokenKind.Semicolon))
             body = ParseMethodBody();
 
-        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body, attributes);
+        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body, attributes, genericConstraints);
     }
 
     private EnumMemberNode ParseEnumMember(List<AttributeNode> attributes)
@@ -3006,6 +3079,8 @@ public class Parser
             }
         }
 
+        var genericConstraints = ParseGenericConstraints();
+
         Expect(TokenKind.OpenBrace);
 
         var kind = type switch
@@ -3023,10 +3098,10 @@ public class Parser
 
         return type switch
         {
-            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
             TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attributes),
-            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
-            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments),
+            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, genericConstraints),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
             _ => throw new NotImplementedException(),
         };
     }

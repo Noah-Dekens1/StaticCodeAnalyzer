@@ -1040,6 +1040,44 @@ public class ConstructorNode(AccessModifier accessModifier, ParameterListNode pa
     public override List<AstNode> Children => Utils.ParamsToList(Parameters, BaseArguments, Body);
 }
 
+public enum GenericConstraintType
+{
+    Struct,
+    Class,
+    NullableClass,
+    NotNull,
+    Unmanaged,
+    New,
+    Default,
+    Type // any type-based constraints and their nullable variants
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class GenericConstraintNode(GenericConstraintType constraintType, TypeNode? baseType = null) : AstNode
+{
+    public GenericConstraintType ConstraintType { get; set; } = constraintType;
+    public TypeNode? BaseType { get; set; } = baseType;
+
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(BaseType);
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => BaseType is null
+        ? $"{ConstraintType}"
+        : $"{ConstraintType} {BaseType}";
+}
+
+[DebuggerDisplay("{ToString(),nq}")]
+public class WhereConstraintNode(TypeNode target, List<GenericConstraintNode> constraints) : AstNode
+{
+    public TypeNode Target { get; set; } = target;
+    public List<GenericConstraintNode> Constraints { get; set; } = constraints;
+
+    public override List<AstNode> Children => [Target, .. Constraints];
+
+    [ExcludeFromCodeCoverage]
+    public override string ToString() => $"where {Target} : {string.Join(", ", Constraints)}";
+}
+
 [DebuggerDisplay("{AccessModifier,nq} {ReturnType,nq} {MethodName,nq}({Parameters,nq})")]
 public class MethodNode(
     AccessModifier accessModifier,
@@ -1048,7 +1086,8 @@ public class MethodNode(
     AstNode methodName,
     ParameterListNode parameters,
     AstNode? body, 
-    List<AttributeNode>? attributes = null
+    List<AttributeNode>? attributes = null,
+    List<WhereConstraintNode>? genericConstraints = null
     ) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier { set; get; } = accessModifier;
@@ -1057,6 +1096,7 @@ public class MethodNode(
     public AstNode MethodName { get; set; } = methodName;
     public ParameterListNode Parameters { get; set; } = parameters;
     public AstNode? Body { get; set; } = body;
+    public List<WhereConstraintNode> GenericConstraints = genericConstraints ?? [];
 
     public override List<AstNode> Children => Utils.ParamsToList(ReturnType, MethodName, Parameters, Body);
 }
@@ -1064,7 +1104,8 @@ public class MethodNode(
 public class BasicDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, ArgumentListNode? baseArguments = null) : TypeDeclarationNode(attributes)
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
+    ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null) : TypeDeclarationNode(attributes)
 {
     public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
@@ -1076,6 +1117,8 @@ public class BasicDeclarationNode(
     public ParameterListNode Parameters { get; set; } = parameters ?? new([]);
     public ArgumentListNode BaseArguments { get; set; } = baseArguments ?? new([]);
 
+    public List<WhereConstraintNode> GenericConstraints { get; set; } = genericConstraints ?? [];
+
     public override List<AstNode> Children => [.. Members];
 }
 
@@ -1083,18 +1126,18 @@ public class BasicDeclarationNode(
 public class ClassDeclarationNode(
     AstNode className, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, ArgumentListNode? baseArguments = null
-    ) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments)
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
+    ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
+    ) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
 {
-
 }
 
 [DebuggerDisplay("interface {Name,nq}")]
 public class InterfaceDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
-    List<AttributeNode>? attributes = null
-    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes)
+    List<AttributeNode>? attributes = null, List<WhereConstraintNode>? genericConstraints = null
+    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, genericConstraints: genericConstraints)
 {
 
 }
@@ -1103,8 +1146,9 @@ public class InterfaceDeclarationNode(
 public class StructDeclarationNode(
     AstNode name, List<MemberNode> members, AstNode? parentName = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
-    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, ArgumentListNode? baseArguments = null
-    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments)
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
+    ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
+    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
 {
 
 }
@@ -1136,9 +1180,11 @@ public enum TypeKind
 // @fixme: Maybe it's not entirely correct to make it a statement
 [DebuggerDisplay("{ToString(),nq}")]
 public class LocalFunctionDeclarationNode(
-    List<OptionalModifier> modifiers, AstNode name, TypeNode returnType, ParameterListNode parameters, AstNode body
+    List<OptionalModifier> modifiers, AstNode name, TypeNode returnType, ParameterListNode parameters, 
+    AstNode body, List<WhereConstraintNode>? genericConstraints = null
     ) : StatementNode
 {
+    public List<WhereConstraintNode> GenericConstraints { get; set; } = genericConstraints ?? [];
     public List<OptionalModifier> Modifiers { get; set; } = modifiers;
     public AstNode Name { get; set; } = name;
     public TypeNode ReturnType { get; set; } = returnType;

@@ -5191,4 +5191,72 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_GenericConstraints_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Test<A, B>
+                where A : class, new()
+                where B : IEnumerable<string>
+            {
+                public void SomeMethod<C>() where C : default
+                {
+                    
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: new GenericNameNode(
+                    identifier: new IdentifierExpression("Test"),
+                    typeArguments: new TypeArgumentsNode([
+                        AstUtils.SimpleNameAsType("A"),
+                        AstUtils.SimpleNameAsType("B")
+                    ])
+                ),
+                members: [
+                    new MethodNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        returnType: AstUtils.SimpleNameAsType("void"),
+                        methodName: new GenericNameNode(
+                            identifier: AstUtils.SimpleName("SomeMethod"),
+                            typeArguments: new TypeArgumentsNode([
+                                AstUtils.SimpleNameAsType("C")
+                            ])
+                        ),
+                        parameters: new ParameterListNode([]),
+                        body: new BlockNode([]),
+                        genericConstraints: [
+                            new WhereConstraintNode(target: AstUtils.SimpleNameAsType("C"), constraints: [
+                                new GenericConstraintNode(GenericConstraintType.Default),
+                            ])
+                        ]
+                    )
+                ],
+                genericConstraints: [
+                    new WhereConstraintNode(target: AstUtils.SimpleNameAsType("A"), constraints: [ 
+                        new GenericConstraintNode(GenericConstraintType.Class), 
+                        new GenericConstraintNode(GenericConstraintType.New), 
+                    ]),
+                    new WhereConstraintNode(target: AstUtils.SimpleNameAsType("B"), constraints: [
+                        new GenericConstraintNode(GenericConstraintType.Type, baseType: new TypeNode(
+                            baseType: AstUtils.SimpleName("IEnumerable"),
+                            typeArguments: new TypeArgumentsNode([
+                                AstUtils.SimpleNameAsType("string")
+                            ])
+                        )),
+                    ])
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
