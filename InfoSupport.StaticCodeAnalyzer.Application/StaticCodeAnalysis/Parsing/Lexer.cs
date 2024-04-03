@@ -1016,15 +1016,17 @@ public class Lexer(string fileContent)
             isInterpolated = true;
 
 
-        if (ConsumeIfMatch('@')) // ugly hack to handle @$ and $@, this is fine though for this test project
+        if (ConsumeIfMatch('@'))
             isVerbatim = true;
 
-        var dquoteCount = ConsumeIfMatchGreedy('"', 3);
+        var dquoteCount = isVerbatim ? -1 : ConsumeIfMatchGreedy('"', 3);
 
         if (dquoteCount == -1)
         {
             if (!ConsumeIfMatch('"'))
                 throw new Exception("Tried to read invalid string literal");
+
+            dquoteCount = 1;
         }
 
         // 1 "    -> regular string start
