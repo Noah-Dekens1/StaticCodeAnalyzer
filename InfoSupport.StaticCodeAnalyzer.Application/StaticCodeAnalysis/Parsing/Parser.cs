@@ -969,7 +969,7 @@ public class Parser
         if (Matches(TokenKind.Question) && Matches(TokenKind.OpenBracket, 1))
             return ParseElementAccess(resolvedIdentifier);
 
-        if (Matches(TokenKind.EqualsGreaterThan) && !isParsingPattern)
+        if (Matches(TokenKind.EqualsGreaterThan) && !isParsingPattern && resolvedIdentifier is IdentifierExpression)
             return ParseLambdaExpressionSingleParam(resolvedIdentifier);
 
         return null;
@@ -1052,14 +1052,28 @@ public class Parser
 
             // @note: besides checking whether it may be a type it also checks if the next token is an identifier
             // because we don't have knowledge about which identifiers may be types
+
+            /*
             var type = IsMaybeType(PeekCurrent(), true) && Matches(TokenKind.Identifier, 1)
-                ? ParseType()
+                ? ParseType(
                 : null;
+            */
+
+            // check for a,b => or
+            var hasType = !Matches(TokenKind.Comma, 1) &&
+                !Matches(TokenKind.EqualsGreaterThan, 1) &&
+                !Matches(TokenKind.CloseParen, 1);
+
+            TypeNode? type = null;
+            
+            if (hasType)
+                hasType = TryParseType(out type);
+
 
             if (isFirst)
-                isImplicit = type is null;
+                isImplicit = !hasType;
 
-            if (type is null != isImplicit) // must all be implicit/explicit, exit as early as possible if not the case
+            if (!hasType != isImplicit) // must all be implicit/explicit, exit as early as possible if not the case
             {
                 maybeLambda = false;
                 break;
