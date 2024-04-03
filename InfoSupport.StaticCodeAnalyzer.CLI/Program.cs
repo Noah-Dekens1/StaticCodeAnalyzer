@@ -28,6 +28,7 @@ foreach (string path in paths)
 {
     counter++;
     Console.WriteLine($"Parsing {Path.GetFileName(path)} ({counter}/{paths.Length})");
+    Console.WriteLine(path);
     var file = File.ReadAllText(path);
     var tokens = Lexer.Lex(file);
     var ast = Parser.Parse(tokens);

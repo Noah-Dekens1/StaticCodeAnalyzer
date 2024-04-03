@@ -2508,7 +2508,7 @@ public class Parser
 
         isUsingDirective &= Matches(TokenKind.UsingKeyword);
         isUsingDirective &= Matches(TokenKind.Identifier, 1);
-        isUsingDirective &= Matches(TokenKind.Equals, 2) || Matches(TokenKind.Dot, 2);
+        isUsingDirective &= Matches(TokenKind.Equals, 2) || Matches(TokenKind.Dot, 2) || Matches(TokenKind.Semicolon, 2);
 
         return isUsingDirective;
     }

@@ -4928,12 +4928,19 @@ public class ParserTests
     public void Parse_TopLevelAttributes_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
+            using System;
+            using System.Reflection;
             [assembly: global::System.Reflection.AssemblyCompanyAttribute("TestWebApp")]
             """);
 
         var actual = Parser.Parse(tokens);
 
         var expected = AST.Build();
+
+        expected.Root.UsingDirectives.AddRange([
+            new UsingDirectiveNode(new IdentifierExpression("System"), null),
+            new UsingDirectiveNode(new QualifiedNameNode(new IdentifierExpression("System"), new IdentifierExpression("Reflection")), null),
+        ]);
 
         expected.Root.Attributes.Add(
             new AttributeNode(
