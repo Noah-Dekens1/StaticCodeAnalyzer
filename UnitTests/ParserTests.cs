@@ -5339,4 +5339,39 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_DeclarationPattern_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            if (a is TestClass testClass)
+            {
+
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new IfStatementNode(
+                    expression: new IsExpressionNode(
+                        expression: new IdentifierExpression("a"),
+                        pattern: new DeclarationPatternNode(
+                            type: AstUtils.SimpleNameAsType("TestClass"),
+                            identifier: "testClass"
+                        )
+                    ),
+                    body: new BlockNode([]),
+                    elseBody: null
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+
+
+    }
 }

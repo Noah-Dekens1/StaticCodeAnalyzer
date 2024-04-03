@@ -2185,6 +2185,28 @@ public class Parser
         return new ConstantPatternNode(value);
     }
 
+    private bool TryParseDeclarationPattern([NotNullWhen(true)] out DeclarationPatternNode? declarationPattern)
+    {
+        var start = Tell();
+
+        declarationPattern = null;
+
+        if (!TryParseType(out var type))
+        {
+            Seek(start);
+            return false;
+        }
+
+        if (!Matches(TokenKind.Identifier))
+        {
+            Seek(start);
+            return false;
+        }
+
+        declarationPattern = new DeclarationPatternNode(type, Consume().Lexeme);
+        return true;
+    }
+
     private DiscardPatternNode ParseDiscardPattern()
     {
         Consume();
@@ -2239,6 +2261,11 @@ public class Parser
             Debug.Assert(possibleLHS is not null);
             Consume();
             return new OrPatternNode(possibleLHS!, ParsePattern()!);
+        }
+
+        if (TryParseDeclarationPattern(out var declarationPattern))
+        {
+            return declarationPattern;
         }
 
         if (isIdentifier || isLiteral)
