@@ -5131,6 +5131,7 @@ public class ParserTests
         var tokens = Lexer.Lex("""
             using TupleTest = (int, int);
             using GenericTest = List<int, string>;
+            using MixedList = List<(TokenKind Kind, List<string> Lexeme)>;
             """);
 
         var actual = Parser.Parse(tokens);
@@ -5160,6 +5161,31 @@ public class ParserTests
                     ])
                 ),
                 alias: "GenericTest"
+            ),
+            new UsingDirectiveNode(
+                ns: new TypeNode(
+                    baseType: AstUtils.SimpleName("List"),
+                    typeArguments: new TypeArgumentsNode([
+                         new TypeNode(
+                            baseType: new TupleTypeNode([
+                                new TupleTypeElementNode(
+                                    type: AstUtils.SimpleNameAsType("TokenKind"),
+                                    name: "Kind"
+                                ),
+                                new TupleTypeElementNode(
+                                    type: new TypeNode(
+                                        baseType: AstUtils.SimpleName("List"),
+                                        typeArguments: new TypeArgumentsNode([
+                                            AstUtils.SimpleNameAsType("string")
+                                        ])
+                                    ),
+                                    name: "Lexeme"
+                                )
+                            ])
+                        ),
+                    ])
+                ),
+                alias: "MixedList"
             )
         ]);
 

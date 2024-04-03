@@ -1416,20 +1416,33 @@ public class Parser
                 return false;
             }
 
-            var identifier = ResolveIdentifier();
-
-            TypeArgumentsNode? nestedTypes = null;
-
-            if (Matches(TokenKind.LessThan))
+            if (ConsumeIfMatch(TokenKind.OpenParen))
             {
-                if (!PossiblyParseTypeArgumentList(out nestedTypes, isInNamespaceOrTypeName))
+                if (!TryParseTupleType(out var tupleType))
                 {
                     Seek(startPosition);
                     return false;
                 }
+                temp.Add(new TypeNode(tupleType));
+            }
+            else
+            {
+                var identifier = ResolveIdentifier();
+
+                TypeArgumentsNode? nestedTypes = null;
+
+                if (Matches(TokenKind.LessThan))
+                {
+                    if (!PossiblyParseTypeArgumentList(out nestedTypes, isInNamespaceOrTypeName))
+                    {
+                        Seek(startPosition);
+                        return false;
+                    }
+                }
+
+                temp.Add(new TypeNode(baseType: identifier, typeArguments: nestedTypes));
             }
 
-            temp.Add(new TypeNode(baseType: identifier, typeArguments: nestedTypes));
 
             if (!ConsumeIfMatch(TokenKind.Comma))
             {

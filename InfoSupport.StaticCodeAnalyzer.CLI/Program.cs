@@ -15,9 +15,9 @@ var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
 //var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
 
 string[] paths = Directory
-    .GetFiles(directory, "*.cs", SearchOption.AllDirectories)
-    .Where(f => Path.GetFileName(f) != "LexerTests.cs")
-    .ToArray();
+    .GetFiles(directory, "*.cs", SearchOption.AllDirectories);
+    //.Where(f => Path.GetFileName(f) != "LexerTests.cs")
+    //.ToArray();
 
 var counter = 0;
 var tokensLexed = 0;
