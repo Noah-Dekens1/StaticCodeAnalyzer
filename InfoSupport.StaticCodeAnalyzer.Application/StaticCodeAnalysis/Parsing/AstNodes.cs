@@ -599,14 +599,15 @@ public class VariableDeclaratorNode(string identifier, ExpressionNode? value = n
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class VariableDeclarationStatement(TypeNode type, List<VariableDeclaratorNode> declarators) : StatementNode
+public class VariableDeclarationStatement(TypeNode type, List<VariableDeclaratorNode> declarators, bool isConst=false) : StatementNode
 {
+    public bool IsConst { get; set; } = isConst;
     public TypeNode Type { get; set; } = type;
 
     public List<VariableDeclaratorNode> Declarators { get; set; } = declarators;
     public override List<AstNode> Children => [Type, ..Declarators];
 
-    public override string ToString() => $"{Type} {string.Join(", ", Declarators)}";
+    public override string ToString() => $"{(IsConst ? "const " : "")}{Type} {string.Join(", ", Declarators)}";
 }
 
 

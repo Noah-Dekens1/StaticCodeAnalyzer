@@ -1628,6 +1628,8 @@ public class Parser
 
         statement = null;
 
+        bool isConst = ConsumeIfMatch(TokenKind.ConstKeyword);
+
         if (!TryParseType(out var type))
         {
             Seek(start);
@@ -1669,7 +1671,7 @@ public class Parser
             return false;
         }
 
-        statement = new VariableDeclarationStatement(type, declarators);
+        statement = new VariableDeclarationStatement(type, declarators, isConst);
         return true;
     }
     private bool ParseTupleDesignations(out List<TupleElementNode> designations)

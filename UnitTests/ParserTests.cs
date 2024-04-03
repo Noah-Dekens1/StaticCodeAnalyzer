@@ -5773,4 +5773,33 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ConstVariableDeclaration_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            const int a = 0;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("int"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "a",
+                            value: new NumericLiteralNode(0)
+                        )
+                    ],
+                    isConst: true
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
