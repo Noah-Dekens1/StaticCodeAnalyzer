@@ -5838,4 +5838,32 @@ public class ParserTests
             )
         );
     }
+
+    [TestMethod]
+    public void Parse_ConditionalAccessAfterInvocation_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            return ReadContent()?.Value;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ReturnStatementNode(
+                    returnExpression: new ConditionalMemberAccessExpressionNode(
+                        lhs: new InvocationExpressionNode(
+                            lhs: new IdentifierExpression("ReadContent"),
+                            arguments: new ArgumentListNode([])
+                        ),
+                        identifier: new IdentifierExpression("Value")
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

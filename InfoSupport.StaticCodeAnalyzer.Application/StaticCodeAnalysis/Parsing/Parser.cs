@@ -622,7 +622,7 @@ public class Parser
         return operators[binaryOperator.Kind]();
     }
 
-    private static ExpressionNode ResolveMemberAccess(List<MemberData> members, ExpressionNode? lhsExpr = null)
+    private static ExpressionNode ResolveMemberAccess(List<MemberData> members, ExpressionNode? lhsExpr = null, bool lhsConditional = false)
     {
         var member = members[^1];
         ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme);
@@ -638,7 +638,9 @@ public class Parser
         if (members.Count == 1 && lhsExpr is null)
             return identifier;
         else if (members.Count == 1 && lhsExpr is not null)
-            return new MemberAccessExpressionNode(lhsExpr, identifier);
+            return lhsConditional
+                ? new ConditionalMemberAccessExpressionNode(lhsExpr, identifier)
+                : new MemberAccessExpressionNode(lhsExpr, identifier);
 
         members.Remove(member);
 
@@ -654,7 +656,7 @@ public class Parser
             );
     }
 
-    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null)
+    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null, bool lhsConditional = false)
     {
         var isGlobal = MatchesLexeme("global") && Matches(TokenKind.ColonColon, 1);
 
@@ -690,7 +692,7 @@ public class Parser
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
-        var memberAccess = ResolveMemberAccess(members, lhs);
+        var memberAccess = ResolveMemberAccess(members, lhs, lhsConditional);
 
         if (isGlobal)
             memberAccess = new GlobalNamespaceQualifierNode(memberAccess);
@@ -1166,8 +1168,7 @@ public class Parser
 
     private bool IsTernaryOperator()
     {
-        // Unary/Binary operators like ?. and ?? should be handled already so don't check for them
-        return Matches(TokenKind.Question);
+        return Matches(TokenKind.Question) && !Matches(TokenKind.Dot, 1) && !Matches(TokenKind.Question, 1);
     }
 
     private readonly List<string> _contextualKeywords = [
@@ -1264,6 +1265,7 @@ public class Parser
         if (primaryExpression is not null)
         {
             possibleLHS = primaryExpression;
+            return ParseExpression(possibleLHS);
         }
         else if (possibleLHS is not null)
         {
@@ -1271,7 +1273,9 @@ public class Parser
             if (primaryPostfixExpression is not null)
             {
                 possibleLHS = primaryPostfixExpression;
+                return ParseExpression(possibleLHS);
             }
+
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);
@@ -1333,11 +1337,20 @@ public class Parser
             possibleLHS = ParseTernaryExpression(possibleLHS!);
         }
 
-        if (possibleLHS is not null && Matches(TokenKind.Dot) && Matches(TokenKind.Identifier, 1))
+        if (possibleLHS is not null && (
+            Matches(TokenKind.Dot) && Matches(TokenKind.Identifier, 1) ||
+            Matches(TokenKind.Question) && Matches(TokenKind.Dot, 1)
+            ))
         {
             // Resolve member access
+            bool isConditional = Matches(TokenKind.Question);
+
+            if (isConditional)
+                Expect(TokenKind.Question);
+            
             Expect(TokenKind.Dot);
-            possibleLHS = ResolveIdentifier(isMaybeGeneric: true, lhs: possibleLHS);
+
+            possibleLHS = ResolveIdentifier(isMaybeGeneric: true, lhs: possibleLHS, lhsConditional: isConditional);
             return ParseExpression(possibleLHS);
         }
 
