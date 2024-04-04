@@ -3477,6 +3477,43 @@ public class ParserTests
     }
 
     [TestMethod]
+    public void Parse_Typeof_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            Console.WriteLine(typeof(List<string>));
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ExpressionStatementNode(
+                    expression: new InvocationExpressionNode(
+                        lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                        arguments: new ArgumentListNode([
+                            new ArgumentNode(
+                                expression: new TypeofExpressionNode(
+                                    new TypeNode(
+                                        baseType: new IdentifierExpression("List"),
+                                        typeArguments: new TypeArgumentsNode([
+                                            AstUtils.SimpleNameAsType("string")
+                                        ])
+                                    )
+                                ),
+                                name: null
+                            )
+                        ])
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
     public void Parse_DefaultOperator_ReturnsValidAST()
     {
         var tokens = Lexer.Lex("""
@@ -5861,6 +5898,88 @@ public class ParserTests
                         identifier: new IdentifierExpression("Value")
                     )
                 )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_BaseConstructor_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                public Example(int a) : base(a)
+                {
+
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new ConstructorNode(
+                        accessModifier: AccessModifier.Public,
+                        parameters: new ParameterListNode([
+                            new ParameterNode(
+                                type: AstUtils.SimpleNameAsType("int"),
+                                identifier: "a"
+                            )
+                        ]),
+                        body: new BlockNode(statements: []),
+                        baseArguments: new ArgumentListNode([
+                            new ArgumentNode(new IdentifierExpression("a"))
+                        ]),
+                        constructorArgumentsType: ConstructorArgumentsType.Base
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ThisConstructor_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                public Example(int a) : this()
+                {
+
+                }
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new ConstructorNode(
+                        accessModifier: AccessModifier.Public,
+                        parameters: new ParameterListNode([
+                            new ParameterNode(
+                                type: AstUtils.SimpleNameAsType("int"),
+                                identifier: "a"
+                            )
+                        ]),
+                        body: new BlockNode(statements: []),
+                        baseArguments: new ArgumentListNode([]),
+                        constructorArgumentsType: ConstructorArgumentsType.This
+                    )
+                ]
             )
         );
 

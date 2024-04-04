@@ -700,19 +700,6 @@ public class Parser
         return memberAccess;
     }
 
-    [Obsolete]
-    private ExpressionNode ResolveMaybeGenericIdentifier(bool isInNamespaceOrType)
-    {
-        var identifier = ResolveIdentifier();
-
-        if (Matches(TokenKind.LessThan) && PossiblyParseTypeArgumentList(out var typeArguments, isInNamespaceOrType))
-        {
-            return new GenericNameNode(identifier, typeArguments);
-        }
-
-        return identifier;
-    }
-
     private InvocationExpressionNode ParseInvocation(ExpressionNode lhs)
     {
         Expect(TokenKind.OpenParen);

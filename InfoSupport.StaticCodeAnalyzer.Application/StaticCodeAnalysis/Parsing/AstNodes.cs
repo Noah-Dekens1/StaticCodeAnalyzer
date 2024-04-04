@@ -12,14 +12,14 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 public abstract class AstNode
 {
-    public List<Token> Tokens { get; set; } = [];
+    public List<Token> Tokens { get; } = [];
 
     public abstract List<AstNode> Children { get; }
 }
 
 public class GlobalNamespaceNode() : NamespaceNode("global", true)
 {
-    public List<GlobalStatementNode> GlobalStatements { get; set; } = [];
+    public List<GlobalStatementNode> GlobalStatements { get; } = [];
 
     public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces];
 }
@@ -52,7 +52,7 @@ public class StatementNode : AstNode
 [DebuggerDisplay("return {ToString(),nq}")]
 public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNode
 {
-    public ExpressionNode? ReturnExpression { get; set; } = returnExpression;
+    public ExpressionNode? ReturnExpression { get; } = returnExpression;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ReturnExpression);
 
@@ -63,7 +63,7 @@ public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNo
 [DebuggerDisplay("{Statement,nq}")]
 public class GlobalStatementNode(StatementNode statement) : AstNode
 {
-    public StatementNode Statement { get; set; } = statement;
+    public StatementNode Statement { get; } = statement;
 
     public override List<AstNode> Children => [Statement];
 }
@@ -71,7 +71,7 @@ public class GlobalStatementNode(StatementNode statement) : AstNode
 [DebuggerDisplay("{Expression,nq}")]
 public class ExpressionStatementNode(ExpressionNode expression) : StatementNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
     public override List<AstNode> Children => [Expression];
 
     [ExcludeFromCodeCoverage]
@@ -91,7 +91,7 @@ public class LiteralExpressionNode : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class NumericLiteralNode(object? value) : LiteralExpressionNode
 {
-    public object? Value { get; set; } = value;
+    public object? Value { get; } = value;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{Value}";
@@ -100,13 +100,14 @@ public class NumericLiteralNode(object? value) : LiteralExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class DefaultLiteralNode : LiteralExpressionNode
 {
+    [ExcludeFromCodeCoverage]
     public override string ToString() => "default";
 }
 
 [DebuggerDisplay("{ToString()}")]
 public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 {
-    public bool Value { get; set; } = value;
+    public bool Value { get; } = value;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{(Value ? "true" : "false")}";
@@ -115,7 +116,7 @@ public class BooleanLiteralNode(bool value) : LiteralExpressionNode
 [DebuggerDisplay("{ToString()}")]
 public class CharLiteralNode(char value) : LiteralExpressionNode
 {
-    public char Value { get; set; } = value;
+    public char Value { get; } = value;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"'{Value}'";
@@ -124,7 +125,7 @@ public class CharLiteralNode(char value) : LiteralExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class StringLiteralNode(string value) : LiteralExpressionNode
 {
-    public string Value { get; set; } = value;
+    public string Value { get; } = value;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"\"{Value}\"";
@@ -133,9 +134,11 @@ public class StringLiteralNode(string value) : LiteralExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class StringInterpolationNode(ExpressionNode expression) : AstNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
 
     public override List<AstNode> Children => [Expression];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{Expression}";
 }
 
@@ -161,7 +164,7 @@ public class NullLiteralNode : LiteralExpressionNode
 [DebuggerDisplay("{ToString()}")]
 public class ParenthesizedExpressionNode(ExpressionNode expr) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expr;
+    public ExpressionNode Expression { get; } = expr;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"({Expression})";
@@ -183,8 +186,8 @@ public enum UnaryOperator
 [DebuggerDisplay("{ToString()}")]
 public class UnaryExpressionNode : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; }
-    public bool IsPrefix { get; set; } = true;
+    public ExpressionNode Expression { get; }
+    public bool IsPrefix { get; } = true;
 
     [ExcludeFromCodeCoverage]
     public virtual UnaryOperator Operator { get; }
@@ -214,8 +217,8 @@ public class UnaryExpressionNode : ExpressionNode
 
 public class CastExpressionNode(TypeNode type, ExpressionNode expr) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expr;
-    public TypeNode Type { get; set; } = type;
+    public ExpressionNode Expression { get; } = expr;
+    public TypeNode Type { get; } = type;
 
     public override List<AstNode> Children => [Type, Expression];
 
@@ -296,8 +299,8 @@ public enum BinaryOperator
 [DebuggerDisplay("{ToString()}")]
 public class BinaryExpressionNode(ExpressionNode lhs, ExpressionNode rhs) : ExpressionNode
 {
-    public ExpressionNode LHS { get; set; } = lhs;
-    public ExpressionNode RHS { get; set; } = rhs;
+    public ExpressionNode LHS { get; } = lhs;
+    public ExpressionNode RHS { get; } = rhs;
 
     public virtual BinaryOperator Operator { get; }
     public override List<AstNode> Children => [LHS, RHS];
@@ -507,7 +510,7 @@ public class LogicalXorAssignExpressionNode(ExpressionNode lhs, ExpressionNode r
 [DebuggerDisplay("{ToString(),nq}")]
 public class TypeArgumentsNode(List<TypeNode> typeArguments) : AstNode
 {
-    public List<TypeNode> TypeArguments { get; set; } = typeArguments;
+    public List<TypeNode> TypeArguments { get; } = typeArguments;
 
     public override List<AstNode> Children => [.. TypeArguments];
 
@@ -547,10 +550,10 @@ public struct ArrayTypeData
 [DebuggerDisplay("{ToString(),nq}")]
 public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments = null, ArrayTypeData? arrayType = null, bool isNullable = false) : AstNode
 {
-    public AstNode BaseType { get; set; } = baseType;
-    public TypeArgumentsNode? TypeArgumentsNode { get; set; } = typeArguments;
-    public ArrayTypeData ArrayType { get; set; } = arrayType ?? new();
-    public bool IsNullable { get; set; } = isNullable;
+    public AstNode BaseType { get; } = baseType;
+    public TypeArgumentsNode? TypeArgumentsNode { get; } = typeArguments;
+    public ArrayTypeData ArrayType { get; } = arrayType ?? new();
+    public bool IsNullable { get; } = isNullable;
 
     public override List<AstNode> Children => Utils.ParamsToList(BaseType, TypeArgumentsNode);
 
@@ -563,18 +566,19 @@ public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments = null,
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleTypeNode(List<TupleTypeElementNode> elements) : AstNode
 {
-    public List<TupleTypeElementNode> Elements { get; set; } = elements;
+    public List<TupleTypeElementNode> Elements { get; } = elements;
 
     public override List<AstNode> Children => [.. Elements];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"({string.Join(", ", Elements)})";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
 public class GenericNameNode(AstNode identifier, TypeArgumentsNode? typeArguments = null) : ExpressionNode
 {
-    public AstNode Identifier { get; set; } = identifier;
-    public TypeArgumentsNode? TypeArgumentsNode { get; set; } = typeArguments;
+    public AstNode Identifier { get; } = identifier;
+    public TypeArgumentsNode? TypeArgumentsNode { get; } = typeArguments;
 
     public override List<AstNode> Children => Utils.ParamsToList(Identifier, TypeArgumentsNode);
 
@@ -587,8 +591,8 @@ public class GenericNameNode(AstNode identifier, TypeArgumentsNode? typeArgument
 [DebuggerDisplay("{ToString(),nq}")]
 public class VariableDeclaratorNode(string identifier, ExpressionNode? value = null) : AstNode
 {
-    public string Identifier { get; set; } = identifier;
-    public ExpressionNode? Value { get; set; } = value;
+    public string Identifier { get; } = identifier;
+    public ExpressionNode? Value { get; } = value;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Value);
 
@@ -601,12 +605,13 @@ public class VariableDeclaratorNode(string identifier, ExpressionNode? value = n
 [DebuggerDisplay("{ToString(),nq}")]
 public class VariableDeclarationStatement(TypeNode type, List<VariableDeclaratorNode> declarators, bool isConst=false) : StatementNode
 {
-    public bool IsConst { get; set; } = isConst;
-    public TypeNode Type { get; set; } = type;
+    public bool IsConst { get; } = isConst;
+    public TypeNode Type { get; } = type;
 
-    public List<VariableDeclaratorNode> Declarators { get; set; } = declarators;
+    public List<VariableDeclaratorNode> Declarators { get; } = declarators;
     public override List<AstNode> Children => [Type, ..Declarators];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{(IsConst ? "const " : "")}{Type} {string.Join(", ", Declarators)}";
 }
 
@@ -619,7 +624,7 @@ public class EmptyStatementNode : StatementNode
 
 public class BlockNode(List<StatementNode> statements) : StatementNode
 {
-    public List<StatementNode> Statements { get; set; } = statements;
+    public List<StatementNode> Statements { get; } = statements;
     public override List<AstNode> Children => [.. Statements];
 }
 
@@ -627,7 +632,7 @@ public class BlockNode(List<StatementNode> statements) : StatementNode
 [DebuggerDisplay("{Identifier,nq}")]
 public class IdentifierExpression(string identifier) : ExpressionNode
 {
-    public string Identifier { get; set; } = identifier;
+    public string Identifier { get; } = identifier;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => Identifier;
@@ -636,9 +641,9 @@ public class IdentifierExpression(string identifier) : ExpressionNode
 [DebuggerDisplay("if ({Expression,nq})")]
 public class IfStatementNode(ExpressionNode expression, AstNode body, AstNode? elseBody) : StatementNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
-    public AstNode Body { get; set; } = body;
-    public AstNode? ElseBody { get; set; } = elseBody;
+    public ExpressionNode Expression { get; } = expression;
+    public AstNode Body { get; } = body;
+    public AstNode? ElseBody { get; } = elseBody;
 
     public override List<AstNode> Children =>
         ElseBody is not null ? [Expression, Body, ElseBody] : [Expression, Body];
@@ -647,8 +652,8 @@ public class IfStatementNode(ExpressionNode expression, AstNode body, AstNode? e
 [DebuggerDisplay("do ... while ({Condition,nq})")]
 public class DoStatementNode(ExpressionNode condition, AstNode body) : StatementNode
 {
-    public ExpressionNode Condition { get; set; } = condition;
-    public AstNode Body { get; set; } = body;
+    public ExpressionNode Condition { get; } = condition;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => [Condition, Body];
 }
@@ -658,10 +663,10 @@ public class ForStatementNode(
     AstNode initializer, ExpressionNode? condition, AstNode iteration, AstNode body
     ) : StatementNode
 {
-    public AstNode Initializer { get; set; } = initializer;
-    public ExpressionNode? Condition { get; set; } = condition;
-    public AstNode IterationExpression { get; set; } = iteration;
-    public AstNode Body { get; set; } = body;
+    public AstNode Initializer { get; } = initializer;
+    public ExpressionNode? Condition { get; } = condition;
+    public AstNode IterationExpression { get; } = iteration;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => Utils.ParamsToList(Initializer, Condition, IterationExpression, Body);
 }
@@ -669,7 +674,7 @@ public class ForStatementNode(
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class ExpressionStatementListNode(List<ExpressionStatementNode> statements) : AstNode
 {
-    public List<ExpressionStatementNode> Statements { get; set; } = statements;
+    public List<ExpressionStatementNode> Statements { get; } = statements;
 
     public override List<AstNode> Children => [.. Statements];
 
@@ -683,10 +688,10 @@ public class ExpressionStatementListNode(List<ExpressionStatementNode> statement
 [DebuggerDisplay("foreach ({VariableType,nq} {VariableIdentifier,nq} in {Collection,nq}) ...")]
 public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentifier, ExpressionNode collection, AstNode body) : StatementNode
 {
-    public TypeNode VariableType { get; set; } = variableType;
-    public AstNode VariableIdentifier { get; set; } = variableIdentifier;
-    public ExpressionNode Collection { get; set; } = collection;
-    public AstNode Body { get; set; } = body;
+    public TypeNode VariableType { get; } = variableType;
+    public AstNode VariableIdentifier { get; } = variableIdentifier;
+    public ExpressionNode Collection { get; } = collection;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => [Collection, Body];
 }
@@ -694,8 +699,8 @@ public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentif
 [DebuggerDisplay("while ({Condition,nq}) ...")]
 public class WhileStatementNode(ExpressionNode condition, AstNode body) : StatementNode
 {
-    public ExpressionNode Condition { get; set; } = condition;
-    public AstNode Body { get; set; } = body;
+    public ExpressionNode Condition { get; } = condition;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => [Condition, Body];
 }
@@ -703,8 +708,8 @@ public class WhileStatementNode(ExpressionNode condition, AstNode body) : Statem
 [DebuggerDisplay("{ToString(),nq}")]
 public class MemberAccessExpressionNode(ExpressionNode lhs, ExpressionNode identifier) : ExpressionNode
 {
-    public ExpressionNode LHS { get; set; } = lhs;
-    public ExpressionNode Identifier { get; set; } = identifier;
+    public ExpressionNode LHS { get; } = lhs;
+    public ExpressionNode Identifier { get; } = identifier;
 
     public override List<AstNode> Children => [LHS, Identifier];
 
@@ -723,20 +728,22 @@ public class ConditionalMemberAccessExpressionNode(ExpressionNode lhs, Expressio
 [DebuggerDisplay("{ToString(),nq}")]
 public class NullForgivingExpressionNode(ExpressionNode expression) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
 
     public override List<AstNode> Children => [Expression];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"{Expression}!";
 }
 
 [DebuggerDisplay("{ToString()}")]
 public class ArgumentNode(ExpressionNode expression, ParameterType parameterType=ParameterType.Regular, TypeNode? targetType=null, string? name=null) : AstNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
-    public string? Name { get; set; } = name;
-    public ParameterType ParameterType { get; set; } = parameterType;
+    public ExpressionNode Expression { get; } = expression;
+    public string? Name { get; } = name;
+    public ParameterType ParameterType { get; } = parameterType;
     /** Type of out parameter */
-    public TypeNode? TargetType { get; set; } = targetType;
+    public TypeNode? TargetType { get; } = targetType;
 
     public override List<AstNode> Children => [Expression];
 
@@ -749,7 +756,7 @@ public class ArgumentNode(ExpressionNode expression, ParameterType parameterType
 [DebuggerDisplay("{ToString(),nq}")]
 public class ArgumentListNode(List<ArgumentNode> arguments) : AstNode
 {
-    public List<ArgumentNode> Arguments { get; set; } = arguments;
+    public List<ArgumentNode> Arguments { get; } = arguments;
 
     public override List<AstNode> Children => [.. Arguments];
 
@@ -779,11 +786,11 @@ public enum ParameterType
 [DebuggerDisplay("{ToString(),nq}")]
 public class ParameterNode(TypeNode type, string identifier, ExpressionNode? defaultValue = null, List<AttributeNode>? attributes = null, ParameterType parameterType = ParameterType.Regular) : AstNode
 {
-    public TypeNode Type { get; set; } = type;
-    public string Identifier { get; set; } = identifier;
-    public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
-    public ParameterType ParameterType { get; set; } = parameterType;
-    public ExpressionNode? DefaultValue { get; set; } = defaultValue;
+    public TypeNode Type { get; } = type;
+    public string Identifier { get; } = identifier;
+    public List<AttributeNode> Attributes { get; } = attributes ?? [];
+    public ParameterType ParameterType { get; } = parameterType;
+    public ExpressionNode? DefaultValue { get; } = defaultValue;
 
     public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList<AstNode>(Type, DefaultValue)];
 
@@ -795,7 +802,7 @@ public class ParameterNode(TypeNode type, string identifier, ExpressionNode? def
 [DebuggerDisplay("{ToString(),nq}")]
 public class ParameterListNode(List<ParameterNode> parameters) : AstNode
 {
-    public List<ParameterNode> Parameters { get; set; } = parameters;
+    public List<ParameterNode> Parameters { get; } = parameters;
 
     public override List<AstNode> Children => [.. Parameters];
 
@@ -809,8 +816,8 @@ public class ParameterListNode(List<ParameterNode> parameters) : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class InvocationExpressionNode(ExpressionNode lhs, ArgumentListNode arguments) : ExpressionNode
 {
-    public ExpressionNode LHS { get; set; } = lhs;
-    public ArgumentListNode Arguments { get; set; } = arguments;
+    public ExpressionNode LHS { get; } = lhs;
+    public ArgumentListNode Arguments { get; } = arguments;
 
     public override List<AstNode> Children => [LHS, Arguments];
 
@@ -821,8 +828,8 @@ public class InvocationExpressionNode(ExpressionNode lhs, ArgumentListNode argum
 [DebuggerDisplay("{ToString(),nq}")]
 public class ElementAccessExpressionNode(ExpressionNode lhs, BracketedArgumentList arguments) : ExpressionNode
 {
-    public ExpressionNode LHS { get; set; } = lhs;
-    public ArgumentListNode Arguments { get; set; } = arguments;
+    public ExpressionNode LHS { get; } = lhs;
+    public ArgumentListNode Arguments { get; } = arguments;
 
     public override List<AstNode> Children => [LHS, Arguments];
 
@@ -841,8 +848,8 @@ public class ConditionalElementAccessExpressionNode(ExpressionNode lhs, Brackete
 [DebuggerDisplay("{ToString(),nq}")]
 public class IndexExpressionNode(ExpressionNode expression, bool fromEnd=false) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
-    public bool FromEnd { get; set; } = fromEnd;
+    public ExpressionNode Expression { get; } = expression;
+    public bool FromEnd { get; } = fromEnd;
 
     public override List<AstNode> Children => [Expression];
 
@@ -853,8 +860,8 @@ public class IndexExpressionNode(ExpressionNode expression, bool fromEnd=false) 
 [DebuggerDisplay("{ToString(),nq}")]
 public class RangeExpressionNode(IndexExpressionNode? lhs, IndexExpressionNode? rhs) : ExpressionNode
 {
-    public IndexExpressionNode? LHS { get; set; } = lhs;
-    public IndexExpressionNode? RHS { get; set; } = rhs;
+    public IndexExpressionNode? LHS { get; } = lhs;
+    public IndexExpressionNode? RHS { get; } = rhs;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(LHS, RHS);
 
@@ -868,27 +875,27 @@ public abstract class CollectionInitializerElementNode : AstNode
 
 public class RegularCollectionInitializerNode(ExpressionNode value) : CollectionInitializerElementNode
 {
-    public ExpressionNode Values { get; set; } = value;
+    public ExpressionNode Values { get; } = value;
     public override List<AstNode> Children => [Values];
 }
 
 public class IndexedCollectionInitializerNode(ExpressionNode key, ExpressionNode value) : CollectionInitializerElementNode
 {
-    public ExpressionNode Key { get; set; } = key;
-    public ExpressionNode Value { get; set; } = value;
+    public ExpressionNode Key { get; } = key;
+    public ExpressionNode Value { get; } = value;
 
     public override List<AstNode> Children => [Key, Value];
 }
 
 public class ComplexCollectionInitializerNode(List<ExpressionNode> values) : CollectionInitializerElementNode
 {
-    public List<ExpressionNode> Values { get; set; } = values;
+    public List<ExpressionNode> Values { get; } = values;
     public override List<AstNode> Children => [.. Values];
 }
 
 public class CollectionInitializerNode(List<CollectionInitializerElementNode> values) : CollectionInitializerElementNode
 {
-    public List<CollectionInitializerElementNode> Values { get; set; } = values;
+    public List<CollectionInitializerElementNode> Values { get; } = values;
 
     public override List<AstNode> Children => [.. Values];
 }
@@ -896,10 +903,10 @@ public class CollectionInitializerNode(List<CollectionInitializerElementNode> va
 [DebuggerDisplay("{ToString(),nq}")]
 public class ObjectCreationExpressionNode(TypeNode? type, bool isArrayCreation=false, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
 {
-    public TypeNode? Type { get; set; } = type;
-    public ArgumentListNode Arguments { get; set; } = arguments ?? new ArgumentListNode([]);
+    public TypeNode? Type { get; } = type;
+    public ArgumentListNode Arguments { get; } = arguments ?? new ArgumentListNode([]);
     public CollectionInitializerNode? CollectionInitializer = initializer;
-    public bool IsArrayCreation { get; set; } = isArrayCreation;
+    public bool IsArrayCreation { get; } = isArrayCreation;
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type, Arguments, CollectionInitializer);
 
     [ExcludeFromCodeCoverage]
@@ -911,8 +918,8 @@ public class ObjectCreationExpressionNode(TypeNode? type, bool isArrayCreation=f
 [DebuggerDisplay("{LHS,nq}.{Identifier,nq}")]
 public class QualifiedNameNode(AstNode lhs, IdentifierExpression identifier) : AstNode
 {
-    public AstNode LHS { get; set; } = lhs;
-    public IdentifierExpression Identifier { get; set; } = identifier;
+    public AstNode LHS { get; } = lhs;
+    public IdentifierExpression Identifier { get; } = identifier;
 
     public override List<AstNode> Children => [LHS, Identifier];
 
@@ -924,10 +931,10 @@ public class QualifiedNameNode(AstNode lhs, IdentifierExpression identifier) : A
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class UsingDirectiveNode(AstNode ns, string? alias, bool isGlobal=false, bool isNamespaceGlobal=false) : AstNode
 {
-    public string? Alias { get; set; } = alias;
-    public AstNode NamespaceOrType { get; set; } = ns;
-    public bool IsGlobal { get; set; } = isGlobal;
-    public bool IsNamespaceGlobal { get; set; } = isNamespaceGlobal;
+    public string? Alias { get; } = alias;
+    public AstNode NamespaceOrType { get; } = ns;
+    public bool IsGlobal { get; } = isGlobal;
+    public bool IsNamespaceGlobal { get; } = isNamespaceGlobal;
 
     public override List<AstNode> Children => [NamespaceOrType];
 
@@ -940,7 +947,7 @@ public class UsingDirectiveNode(AstNode ns, string? alias, bool isGlobal=false, 
 
 public abstract class TypeDeclarationNode(List<AttributeNode>? attributes = null) : AstNode
 {
-    public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
+    public List<AttributeNode> Attributes { get; } = attributes ?? [];
 }
 
 public enum AccessModifier
@@ -972,7 +979,7 @@ public enum OptionalModifier
 
 public abstract class MemberNode(List<AttributeNode>? attributes = null) : AstNode
 {
-    public List<AttributeNode> Attributes { get; set; } = attributes ?? [];
+    public List<AttributeNode> Attributes { get; } = attributes ?? [];
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
@@ -980,9 +987,9 @@ public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifie
 {
     public AccessModifier AccessModifier = accessModifier;
     public List<OptionalModifier> Modifiers = modifiers;
-    public string FieldName { get; set; } = fieldName;
-    public TypeNode FieldType { get; set; } = fieldType;
-    public ExpressionNode? Value { get; set; } = value;
+    public string FieldName { get; } = fieldName;
+    public TypeNode FieldType { get; } = fieldType;
+    public ExpressionNode? Value { get; } = value;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(FieldType, Value);
 
@@ -1021,11 +1028,11 @@ public class PropertyAccessorNode(
     bool initOnly = false
     ) : AstNode
 {
-    public PropertyAccessorType AccessorType { get; set; } = accessorType;
-    public AccessModifier AccessModifier { get; set; } = accessModifier;
-    public ExpressionNode? ExpressionBody { get; set; } = expressionBody;
-    public BlockNode? BlockBody { get; set; } = blockBody;
-    public bool IsInitOnly { get; set; } = initOnly;
+    public PropertyAccessorType AccessorType { get; } = accessorType;
+    public AccessModifier AccessModifier { get; } = accessModifier;
+    public ExpressionNode? ExpressionBody { get; } = expressionBody;
+    public BlockNode? BlockBody { get; } = blockBody;
+    public bool IsInitOnly { get; } = initOnly;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ExpressionBody, BlockBody);
 }
@@ -1035,13 +1042,13 @@ public class PropertyMemberNode(
     AccessModifier accessModifier, List<OptionalModifier> modifiers, string propertyName, TypeNode propertyType, 
     PropertyAccessorNode? getter, PropertyAccessorNode? setter, ExpressionNode? value, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
-    public AccessModifier AccessModifier { get; set; } = accessModifier;
-    public List<OptionalModifier> Modifiers { get; set; } = modifiers;
-    public string PropertyName { get; set; } = propertyName;
-    public TypeNode PropertyType { get; set; } = propertyType;
-    public PropertyAccessorNode? Getter { get; set; } = getter;
-    public PropertyAccessorNode? Setter { get; set; } = setter;
-    public ExpressionNode? Value { get; set; } = value;
+    public AccessModifier AccessModifier { get; } = accessModifier;
+    public List<OptionalModifier> Modifiers { get; } = modifiers;
+    public string PropertyName { get; } = propertyName;
+    public TypeNode PropertyType { get; } = propertyType;
+    public PropertyAccessorNode? Getter { get; } = getter;
+    public PropertyAccessorNode? Setter { get; } = setter;
+    public ExpressionNode? Value { get; } = value;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(PropertyType, Getter, Setter, Value);
 
@@ -1052,8 +1059,8 @@ public class PropertyMemberNode(
 [DebuggerDisplay("{ToString(),nq}")]
 public class EnumMemberNode(string identifier, ExpressionNode? value, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
-    public string Identifier { get; set; } = identifier;
-    public ExpressionNode? Value { get; set; } = value;
+    public string Identifier { get; } = identifier;
+    public ExpressionNode? Value { get; } = value;
 
     public override List<AstNode> Children => Value is not null ? [Value] : [];
 
@@ -1073,11 +1080,11 @@ public enum ConstructorArgumentsType
 [DebuggerDisplay("{AccessModifier,nq} Constructor({Parameters,nq})")]
 public class ConstructorNode(AccessModifier accessModifier, ParameterListNode parameters, ArgumentListNode? baseArguments, AstNode body, ConstructorArgumentsType constructorArgumentsType = ConstructorArgumentsType.None, List<AttributeNode>? attributes = null) : MemberNode(attributes)
 {
-    public AccessModifier AccessModifier { get; set; } = accessModifier;
-    public ParameterListNode Parameters { get; set; } = parameters;
-    public ConstructorArgumentsType ConstructorArgumentsType { get; set; } = constructorArgumentsType;
-    public ArgumentListNode? BaseArguments { get; set; } = baseArguments;
-    public AstNode Body { get; set; } = body;
+    public AccessModifier AccessModifier { get; } = accessModifier;
+    public ParameterListNode Parameters { get; } = parameters;
+    public ConstructorArgumentsType ConstructorArgumentsType { get; } = constructorArgumentsType;
+    public ArgumentListNode? BaseArguments { get; } = baseArguments;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => Utils.ParamsToList(Parameters, BaseArguments, Body);
 }
@@ -1097,8 +1104,8 @@ public enum GenericConstraintType
 [DebuggerDisplay("{ToString(),nq}")]
 public class GenericConstraintNode(GenericConstraintType constraintType, TypeNode? baseType = null) : AstNode
 {
-    public GenericConstraintType ConstraintType { get; set; } = constraintType;
-    public TypeNode? BaseType { get; set; } = baseType;
+    public GenericConstraintType ConstraintType { get; } = constraintType;
+    public TypeNode? BaseType { get; } = baseType;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(BaseType);
 
@@ -1111,8 +1118,8 @@ public class GenericConstraintNode(GenericConstraintType constraintType, TypeNod
 [DebuggerDisplay("{ToString(),nq}")]
 public class WhereConstraintNode(TypeNode target, List<GenericConstraintNode> constraints) : AstNode
 {
-    public TypeNode Target { get; set; } = target;
-    public List<GenericConstraintNode> Constraints { get; set; } = constraints;
+    public TypeNode Target { get; } = target;
+    public List<GenericConstraintNode> Constraints { get; } = constraints;
 
     public override List<AstNode> Children => [Target, .. Constraints];
 
@@ -1132,12 +1139,12 @@ public class MethodNode(
     List<WhereConstraintNode>? genericConstraints = null
     ) : MemberNode(attributes)
 {
-    public AccessModifier AccessModifier { set; get; } = accessModifier;
-    public List<OptionalModifier> Modifiers { get; set; } = modifiers;
-    public TypeNode ReturnType { get; set; } = returnType;
-    public AstNode MethodName { get; set; } = methodName;
-    public ParameterListNode Parameters { get; set; } = parameters;
-    public AstNode? Body { get; set; } = body;
+    public AccessModifier AccessModifier { get; } = accessModifier;
+    public List<OptionalModifier> Modifiers { get; } = modifiers;
+    public TypeNode ReturnType { get; } = returnType;
+    public AstNode MethodName { get; } = methodName;
+    public ParameterListNode Parameters { get; } = parameters;
+    public AstNode? Body { get; } = body;
     public List<WhereConstraintNode> GenericConstraints = genericConstraints ?? [];
 
     public override List<AstNode> Children => Utils.ParamsToList(ReturnType, MethodName, Parameters, Body);
@@ -1149,17 +1156,17 @@ public class BasicDeclarationNode(
     List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
     ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null) : TypeDeclarationNode(attributes)
 {
-    public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
-    public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
-    public AstNode? ParentName { get; set; } = parentName;
-    public AstNode Name { get; set; } = name;
-    public List<MemberNode> Members { get; set; } = members;
+    public AccessModifier AccessModifier { get; } = accessModifier ?? AccessModifier.Internal;
+    public List<OptionalModifier> Modifiers { get; } = modifiers ?? [];
+    public AstNode? ParentName { get; } = parentName;
+    public AstNode Name { get; } = name;
+    public List<MemberNode> Members { get; } = members;
 
     // Primary Constructor parameters
-    public ParameterListNode Parameters { get; set; } = parameters ?? new([]);
-    public ArgumentListNode BaseArguments { get; set; } = baseArguments ?? new([]);
+    public ParameterListNode Parameters { get; } = parameters ?? new([]);
+    public ArgumentListNode BaseArguments { get; } = baseArguments ?? new([]);
 
-    public List<WhereConstraintNode> GenericConstraints { get; set; } = genericConstraints ?? [];
+    public List<WhereConstraintNode> GenericConstraints { get; } = genericConstraints ?? [];
 
     public override List<AstNode> Children => [.. Members];
 }
@@ -1201,11 +1208,11 @@ public class EnumDeclarationNode(
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
     List<AttributeNode>? attributes = null) : TypeDeclarationNode(attributes)
 {
-    public AccessModifier AccessModifier { get; set; } = accessModifier ?? AccessModifier.Internal;
-    public List<OptionalModifier> Modifiers { get; set; } = modifiers ?? [];
-    public AstNode? ParentType { get; set; } = parentType;
-    public AstNode EnumName { get; set; } = enumName;
-    public List<EnumMemberNode> Members { get; set; } = members;
+    public AccessModifier AccessModifier { get; } = accessModifier ?? AccessModifier.Internal;
+    public List<OptionalModifier> Modifiers { get; } = modifiers ?? [];
+    public AstNode? ParentType { get; } = parentType;
+    public AstNode EnumName { get; } = enumName;
+    public List<EnumMemberNode> Members { get; } = members;
 
     public override List<AstNode> Children => [.. Members];
 }
@@ -1226,12 +1233,12 @@ public class LocalFunctionDeclarationNode(
     AstNode body, List<WhereConstraintNode>? genericConstraints = null
     ) : StatementNode
 {
-    public List<WhereConstraintNode> GenericConstraints { get; set; } = genericConstraints ?? [];
-    public List<OptionalModifier> Modifiers { get; set; } = modifiers;
-    public AstNode Name { get; set; } = name;
-    public TypeNode ReturnType { get; set; } = returnType;
-    public ParameterListNode Parameters { get; set; } = parameters;
-    public AstNode Body { get; set; } = body;
+    public List<WhereConstraintNode> GenericConstraints { get; } = genericConstraints ?? [];
+    public List<OptionalModifier> Modifiers { get; } = modifiers;
+    public AstNode Name { get; } = name;
+    public TypeNode ReturnType { get; } = returnType;
+    public ParameterListNode Parameters { get; } = parameters;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => [Name, ReturnType, Parameters, Body];
 
@@ -1246,7 +1253,7 @@ public abstract class ElementNode : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class SpreadElementNode(ExpressionNode expression) : ElementNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
 
     public override List<AstNode> Children => [Expression];
 
@@ -1256,7 +1263,7 @@ public class SpreadElementNode(ExpressionNode expression) : ElementNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class ExpressionElementNode(ExpressionNode expression) : ElementNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
 
     public override List<AstNode> Children => [Expression];
 
@@ -1266,7 +1273,7 @@ public class ExpressionElementNode(ExpressionNode expression) : ElementNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class CollectionExpressionNode(List<ElementNode> elements) : ExpressionNode
 {
-    public List<ElementNode> Elements { get; set; } = elements;
+    public List<ElementNode> Elements { get; } = elements;
 
     public override List<AstNode> Children => [.. Elements];
 
@@ -1276,8 +1283,8 @@ public class CollectionExpressionNode(List<ElementNode> elements) : ExpressionNo
 [DebuggerDisplay("{ToString(),nq}")]
 public class LambdaParameterNode(string identifier, TypeNode? type = null) : AstNode
 {
-    public TypeNode? Type { get; set; } = type;
-    public string Identifier { get; set; } = identifier;
+    public TypeNode? Type { get; } = type;
+    public string Identifier { get; } = identifier;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
 
@@ -1288,8 +1295,8 @@ public class LambdaParameterNode(string identifier, TypeNode? type = null) : Ast
 
 public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode body) : ExpressionNode
 {
-    public List<LambdaParameterNode> Parameters { get; set; } = parameters;
-    public AstNode Body { get; set; } = body;
+    public List<LambdaParameterNode> Parameters { get; } = parameters;
+    public AstNode Body { get; } = body;
 
     public override List<AstNode> Children => [Body];
 }
@@ -1301,8 +1308,8 @@ public abstract class PatternNode : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class IsExpressionNode(ExpressionNode expression, PatternNode pattern) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
-    public PatternNode Pattern { get; set; } = pattern;
+    public ExpressionNode Expression { get; } = expression;
+    public PatternNode Pattern { get; } = pattern;
 
     public override List<AstNode> Children => [Expression, Pattern];
     public override string ToString() => $"{Expression} is {Pattern}";
@@ -1310,8 +1317,8 @@ public class IsExpressionNode(ExpressionNode expression, PatternNode pattern) : 
 
 public class DeclarationPatternNode(TypeNode type, string identifier) : PatternNode
 {
-    public TypeNode Type { get; set; } = type;
-    public string Identifier { get; set; } = identifier;
+    public TypeNode Type { get; } = type;
+    public string Identifier { get; } = identifier;
 
     public override List<AstNode> Children => [Type];
     public override string ToString() => $"{Type} {Identifier}";
@@ -1328,8 +1335,8 @@ public enum RelationalPatternOperator
 [DebuggerDisplay("{ToString(),nq}")]
 public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode value) : PatternNode
 {
-    public RelationalPatternOperator Operator { get; set; } = op;
-    public ExpressionNode Value { get; set; } = value;
+    public RelationalPatternOperator Operator { get; } = op;
+    public ExpressionNode Value { get; } = value;
 
     public override List<AstNode> Children => [Value];
 
@@ -1349,7 +1356,7 @@ public class RelationalPatternNode(RelationalPatternOperator op, ExpressionNode 
 [DebuggerDisplay("{ToString(),nq}")]
 public class ConstantPatternNode(ExpressionNode value) : PatternNode
 {
-    public ExpressionNode Value { get; set; } = value;
+    public ExpressionNode Value { get; } = value;
     public override List<AstNode> Children => [Value];
 
     public override string ToString() => $"{Value}";
@@ -1371,8 +1378,8 @@ public abstract class LogicalPatternNode : PatternNode
 
 public class AndPatternNode(PatternNode lhs, PatternNode rhs) : LogicalPatternNode
 {
-    public PatternNode LHS { get; set; } = lhs;
-    public PatternNode RHS { get; set; } = rhs;
+    public PatternNode LHS { get; } = lhs;
+    public PatternNode RHS { get; } = rhs;
 
     public override List<AstNode> Children => [LHS, RHS];
     public override string ToString() => $"{LHS} and {RHS}";
@@ -1380,8 +1387,8 @@ public class AndPatternNode(PatternNode lhs, PatternNode rhs) : LogicalPatternNo
 
 public class OrPatternNode(PatternNode lhs, PatternNode rhs) : LogicalPatternNode
 {
-    public PatternNode LHS { get; set; } = lhs;
-    public PatternNode RHS { get; set; } = rhs;
+    public PatternNode LHS { get; } = lhs;
+    public PatternNode RHS { get; } = rhs;
 
     public override List<AstNode> Children => [LHS, RHS];
     public override string ToString() => $"{LHS} or {RHS}";
@@ -1390,7 +1397,7 @@ public class OrPatternNode(PatternNode lhs, PatternNode rhs) : LogicalPatternNod
 [DebuggerDisplay("{ToString(),nq}")]
 public class NotPatternNode(PatternNode pattern) : LogicalPatternNode
 {
-    public PatternNode Pattern { get; set; } = pattern;
+    public PatternNode Pattern { get; } = pattern;
 
     public override List<AstNode> Children => [Pattern];
 
@@ -1400,7 +1407,7 @@ public class NotPatternNode(PatternNode pattern) : LogicalPatternNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class ParenthesizedPatternNode(PatternNode pattern) : PatternNode
 {
-    public PatternNode InnerPattern { get; set; } = pattern;
+    public PatternNode InnerPattern { get; } = pattern;
 
     public override List<AstNode> Children => [InnerPattern];
 
@@ -1414,8 +1421,8 @@ public abstract class SwitchSectionNode : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> statements, ExpressionNode? whenClause = null) : SwitchSectionNode
 {
-    PatternNode CasePattern { get; set; } = casePattern;
-    public List<StatementNode> Statements { get; set; } = statements;
+    PatternNode CasePattern { get; } = casePattern;
+    public List<StatementNode> Statements { get; } = statements;
     public ExpressionNode? WhenClause = whenClause;
 
     public override List<AstNode> Children => [.. Utils.ParamsToList<AstNode>(CasePattern, WhenClause), .. Statements];
@@ -1426,7 +1433,7 @@ public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> stateme
 [DebuggerDisplay("default:")]
 public class SwitchDefaultCaseNode(List<StatementNode> statements) : SwitchSectionNode
 {
-    public List<StatementNode> Statements { get; set; } = statements;
+    public List<StatementNode> Statements { get; } = statements;
 
     public override List<AstNode> Children => [.. Statements];
 }
@@ -1434,8 +1441,8 @@ public class SwitchDefaultCaseNode(List<StatementNode> statements) : SwitchSecti
 [DebuggerDisplay("{ToString(),nq}")]
 public class SwitchStatementNode(ExpressionNode switchExpression, List<SwitchSectionNode> sections) : StatementNode
 {
-    public ExpressionNode SwitchExpression { get; set; } = switchExpression;
-    public List<SwitchSectionNode> SwitchSectionNodes { get; set; } = sections;
+    public ExpressionNode SwitchExpression { get; } = switchExpression;
+    public List<SwitchSectionNode> SwitchSectionNodes { get; } = sections;
 
     public override List<AstNode> Children => [SwitchExpression, .. SwitchSectionNodes];
     public override string ToString() => $"switch {SwitchExpression}";
@@ -1444,9 +1451,9 @@ public class SwitchStatementNode(ExpressionNode switchExpression, List<SwitchSec
 [DebuggerDisplay("{ToString(),nq}")]
 public class SwitchExpressionArmNode(PatternNode condition, ExpressionNode value, ExpressionNode? whenClause = null) : AstNode
 {
-    public PatternNode Condition { get; set; } = condition;
-    public ExpressionNode Value { get; set; } = value;
-    public ExpressionNode? WhenClause { get; set; } = whenClause;
+    public PatternNode Condition { get; } = condition;
+    public ExpressionNode Value { get; } = value;
+    public ExpressionNode? WhenClause { get; } = whenClause;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Condition, Value, WhenClause);
 
@@ -1458,8 +1465,8 @@ public class SwitchExpressionArmNode(PatternNode condition, ExpressionNode value
 [DebuggerDisplay("{ToString(),nq}")]
 public class SwitchExpressionNode(ExpressionNode switchExpression, List<SwitchExpressionArmNode> arms) : ExpressionNode
 {
-    public ExpressionNode SwitchExpression { get; set; } = switchExpression;
-    public List<SwitchExpressionArmNode> SwitchArmNodes { get; set; } = arms;
+    public ExpressionNode SwitchExpression { get; } = switchExpression;
+    public List<SwitchExpressionArmNode> SwitchArmNodes { get; } = arms;
 
     public override List<AstNode> Children => [SwitchExpression, .. SwitchArmNodes];
     public override string ToString() => $"{SwitchExpression} switch";
@@ -1480,9 +1487,9 @@ public class ContinueStatementNode : StatementNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode trueExpr, ExpressionNode falseExpr) : ExpressionNode
 {
-    public ExpressionNode Condition { get; set; } = condition;
-    public ExpressionNode TrueExpr { get; set; } = trueExpr;
-    public ExpressionNode FalseExpr { get; set; } = falseExpr;
+    public ExpressionNode Condition { get; } = condition;
+    public ExpressionNode TrueExpr { get; } = trueExpr;
+    public ExpressionNode FalseExpr { get; } = falseExpr;
 
     public override List<AstNode> Children => [Condition, TrueExpr, FalseExpr];
 
@@ -1494,7 +1501,7 @@ public class TernaryExpressionNode(ExpressionNode condition, ExpressionNode true
 [DebuggerDisplay("{ToString(),nq}")]
 public class TypeofExpressionNode(TypeNode type) : ExpressionNode
 {
-    public TypeNode Type { get; set; } = type;
+    public TypeNode Type { get; } = type;
 
     public override List<AstNode> Children => [Type];
 
@@ -1505,7 +1512,7 @@ public class TypeofExpressionNode(TypeNode type) : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class NameofExpressionNode(AstNode value) : ExpressionNode
 {
-    public AstNode Value { get; set; } = value;
+    public AstNode Value { get; } = value;
     public override List<AstNode> Children => [Value];
 
     [ExcludeFromCodeCoverage]
@@ -1515,7 +1522,7 @@ public class NameofExpressionNode(AstNode value) : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class SizeofExpressionNode(TypeNode type) : ExpressionNode
 {
-    public TypeNode Type { get; set; } = type;
+    public TypeNode Type { get; } = type;
     public override List<AstNode> Children => [Type];
 
     [ExcludeFromCodeCoverage]
@@ -1525,7 +1532,7 @@ public class SizeofExpressionNode(TypeNode type) : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class DefaultOperatorExpressionNode(TypeNode type) : ExpressionNode
 {
-    public TypeNode Type { get; set; } = type;
+    public TypeNode Type { get; } = type;
     public override List<AstNode> Children => [Type];
 
     [ExcludeFromCodeCoverage]
@@ -1535,7 +1542,7 @@ public class DefaultOperatorExpressionNode(TypeNode type) : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class AwaitExpressionNode(ExpressionNode expression) : ExpressionNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
     public override List<AstNode> Children => [Expression];
 
     [ExcludeFromCodeCoverage]
@@ -1545,7 +1552,7 @@ public class AwaitExpressionNode(ExpressionNode expression) : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class AttributeArgumentNode(ExpressionNode expression) : AstNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
+    public ExpressionNode Expression { get; } = expression;
 
     public override List<AstNode> Children => [Expression];
 
@@ -1556,8 +1563,8 @@ public class AttributeArgumentNode(ExpressionNode expression) : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class AttributeNode(List<AttributeArgumentNode> arguments, string? target=null) : AstNode
 {
-    public List<AttributeArgumentNode> Arguments { get; set; } = arguments;
-    public string? Target { get; set; } = target;
+    public List<AttributeArgumentNode> Arguments { get; } = arguments;
+    public string? Target { get; } = target;
 
     public override List<AstNode> Children => [.. Arguments];
 
@@ -1578,10 +1585,10 @@ public class ThrowExpressionNode(ExpressionNode? expression) : ExpressionNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class CatchClauseNode(TypeNode? exceptionType, string? identifier, BlockNode block, ExpressionNode? whenClause=null) : AstNode
 {
-    public TypeNode? ExceptionType { get; set; } = exceptionType;
-    public string? Identifier { get; set; } = identifier;
-    public BlockNode Block { get; set; } = block;
-    public ExpressionNode? WhenClause { get; set; } = whenClause;
+    public TypeNode? ExceptionType { get; } = exceptionType;
+    public string? Identifier { get; } = identifier;
+    public BlockNode Block { get; } = block;
+    public ExpressionNode? WhenClause { get; } = whenClause;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ExceptionType, Block, WhenClause);
     public override string ToString() => $"catch ({ExceptionType} {Identifier})";
@@ -1590,7 +1597,7 @@ public class CatchClauseNode(TypeNode? exceptionType, string? identifier, BlockN
 [DebuggerDisplay("{ToString(),nq}")]
 public class FinallyClauseNode(BlockNode block) : AstNode
 {
-    public BlockNode Block { get; set; } = block;
+    public BlockNode Block { get; } = block;
 
     public override List<AstNode> Children => [Block];
     public override string ToString() => "finally";
@@ -1599,9 +1606,9 @@ public class FinallyClauseNode(BlockNode block) : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class TryStatementNode(BlockNode block, List<CatchClauseNode>? catchClauses=null, FinallyClauseNode? finallyClause=null) : StatementNode
 {
-    public BlockNode Block { get; set; } = block;
-    public List<CatchClauseNode> CatchClauses { get; set; } = catchClauses ?? [];
-    public FinallyClauseNode? FinallyClause { get; set; } = finallyClause;
+    public BlockNode Block { get; } = block;
+    public List<CatchClauseNode> CatchClauses { get; } = catchClauses ?? [];
+    public FinallyClauseNode? FinallyClause { get; } = finallyClause;
 
     public override string ToString() => $"try";
 }
@@ -1609,8 +1616,8 @@ public class TryStatementNode(BlockNode block, List<CatchClauseNode>? catchClaus
 [DebuggerDisplay("{ToString(),nq}")]
 public class AsExpressionNode(ExpressionNode lhs, TypeNode targetType) : ExpressionNode
 {
-    public ExpressionNode LHS { get; set; } = lhs;
-    public TypeNode TargetType { get; set; } = targetType;
+    public ExpressionNode LHS { get; } = lhs;
+    public TypeNode TargetType { get; } = targetType;
 
     public override List<AstNode> Children => [LHS, TargetType];
     public override string ToString() => $"{LHS} {TargetType}";
@@ -1619,7 +1626,7 @@ public class AsExpressionNode(ExpressionNode lhs, TypeNode targetType) : Express
 [DebuggerDisplay("{ToString(),nq}")]
 public class GlobalNamespaceQualifierNode(ExpressionNode ns) : ExpressionNode
 {
-    public ExpressionNode Namespace { get; set; } = ns;
+    public ExpressionNode Namespace { get; } = ns;
 
     public override List<AstNode> Children => [Namespace];
     public override string ToString() => $"global::{Namespace}";
@@ -1632,9 +1639,9 @@ public class UsingStatementNode(
     ExpressionNode? expression = null,
     AstNode? body = null) : StatementNode // could have a body, could also be block-scoped
 {
-    public VariableDeclarationStatement? DeclarationStatement { get; set; } = declaration;
-    public ExpressionNode? Expression {  get; set; } = expression;
-    public AstNode? Body { get; set; } = body;
+    public VariableDeclarationStatement? DeclarationStatement { get; } = declaration;
+    public ExpressionNode? Expression {  get; } = expression;
+    public AstNode? Body { get; } = body;
     public bool IsDeclaration { get; } = body is null;
 
     public override List<AstNode> Children => Utils.ParamsToList(DeclarationStatement, Expression, Body);
@@ -1645,8 +1652,8 @@ public class UsingStatementNode(
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleArgumentNode(ExpressionNode expression, string? name = null) : AstNode
 {
-    public ExpressionNode Expression { get; set; } = expression;
-    public string? Name { get; set; } = name;
+    public ExpressionNode Expression { get; } = expression;
+    public string? Name { get; } = name;
 
     public override List<AstNode> Children => [Expression];
 
@@ -1659,7 +1666,7 @@ public class TupleArgumentNode(ExpressionNode expression, string? name = null) :
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleExpressionNode(List<TupleArgumentNode> arguments) : ExpressionNode
 {
-    public List<TupleArgumentNode> Arguments { get; set; } = arguments;
+    public List<TupleArgumentNode> Arguments { get; } = arguments;
 
 
     public override List<AstNode> Children => [.. Arguments];
@@ -1669,8 +1676,8 @@ public class TupleExpressionNode(List<TupleArgumentNode> arguments) : Expression
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleElementNode(string name, TypeNode? type=null) : AstNode
 {
-    public string Name { get; set; } = name;
-    public TypeNode? Type { get; set; } = type;
+    public string Name { get; } = name;
+    public TypeNode? Type { get; } = type;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
 
@@ -1682,8 +1689,8 @@ public class TupleElementNode(string name, TypeNode? type=null) : AstNode
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleTypeElementNode(TypeNode type, string? name = null) : AstNode
 {
-    public string? Name { get; set; } = name;
-    public TypeNode Type { get; set; } = type;
+    public string? Name { get; } = name;
+    public TypeNode Type { get; } = type;
 
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type);
 
@@ -1701,9 +1708,9 @@ public class TupleDeconstructStatementNode(
     TypeNode? specifiedType = null
     ) : StatementNode
 {
-    public TypeNode? SpecifiedType { get; set; } = specifiedType;
-    public List<TupleElementNode> Designations { get; set; } = designations;
-    public ExpressionNode RHS { get; set; } = rhs;
+    public TypeNode? SpecifiedType { get; } = specifiedType;
+    public List<TupleElementNode> Designations { get; } = designations;
+    public ExpressionNode RHS { get; } = rhs;
 
     public override List<AstNode> Children => [.. Designations, .. Utils.ParamsToList<AstNode>(SpecifiedType, RHS)];
 
@@ -1727,15 +1734,18 @@ public class ThisExpressionNode : ExpressionNode
 public class BaseExpressionNode : ExpressionNode
 {
     public override List<AstNode> Children => [];
+
+    [ExcludeFromCodeCoverage]
     public override string ToString() => "base";
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
 public class TupleVariableDesignationsNode(List<TupleElementNode> designations) : AstNode
 {
-    public List<TupleElementNode> Designations { get; set; } = designations;
+    public List<TupleElementNode> Designations { get; } = designations;
 
     public override List<AstNode> Children => [.. Designations];
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() => $"({string.Join(", ", Designations)})";
 }
