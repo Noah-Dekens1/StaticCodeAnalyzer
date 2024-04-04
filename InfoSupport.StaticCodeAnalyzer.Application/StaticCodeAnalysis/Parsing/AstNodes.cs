@@ -518,14 +518,14 @@ public class TypeArgumentsNode(List<TypeNode> typeArguments) : AstNode
 public struct ArrayTypeData
 {
     public bool IsArray { get; set; }
-    public int ArrayRank { get; set; }
+    public ExpressionNode? ArrayRank { get; set; }
     public bool RankOmitted { get; set; } = true;
     public bool IsInnerTypeNullable { get; set; } = false;
 
     public ArrayTypeData()
     {
         IsArray = false;
-        ArrayRank = 0;
+        ArrayRank = null;
         RankOmitted = true;
         IsInnerTypeNullable = false;
     }
@@ -536,11 +536,11 @@ public struct ArrayTypeData
         IsInnerTypeNullable = innerTypeNullable;
     }
 
-    public ArrayTypeData(int? rank)
+    public ArrayTypeData(ExpressionNode? rank)
     {
         IsArray = true;
-        RankOmitted = !rank.HasValue;
-        ArrayRank = RankOmitted ? 0 : rank!.Value;
+        RankOmitted = rank is null;
+        ArrayRank = rank;
     }
 }
 

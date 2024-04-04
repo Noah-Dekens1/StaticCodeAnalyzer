@@ -1440,6 +1440,7 @@ public class Parser
                 return false;
             }
 
+            /*
             if (ConsumeIfMatch(TokenKind.OpenParen))
             {
                 if (!TryParseTupleType(out var tupleType))
@@ -1466,7 +1467,15 @@ public class Parser
 
                 temp.Add(new TypeNode(baseType: identifier, typeArguments: nestedTypes));
             }
+            */
+            
+            if (!TryParseType(out var type))
+            {
+                Seek(startPosition);
+                return false;
+            }
 
+            temp.Add(type);
 
             if (!ConsumeIfMatch(TokenKind.Comma))
             {
@@ -1577,11 +1586,10 @@ public class Parser
             arrayData.IsArray = true;
             arrayData.IsInnerTypeNullable = maybeArrayNullable;
 
-            if (Matches(TokenKind.NumericLiteral))
+            if (!Matches(TokenKind.CloseBracket))
             {
-                var literal = Consume();
-                arrayData.ArrayRank = (int)literal.Value!;
-                arrayData.RankOmitted = false;
+                arrayData.ArrayRank = ParseExpression();
+                arrayData.RankOmitted = arrayData.ArrayRank is null;
 
                 if (Matches(TokenKind.Comma))
                 {
@@ -1955,7 +1963,7 @@ public class Parser
             {
                 parameterType = ParameterType.RefReadonly;
             }
-            else if (_parameterTypes.TryGetValue(PeekCurrent().Lexeme, out var value))
+            else if (!Matches(TokenKind.ThisKeyword) && _parameterTypes.TryGetValue(PeekCurrent().Lexeme, out var value))
             {
                 Consume();
                 parameterType = value;

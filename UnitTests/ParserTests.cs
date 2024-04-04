@@ -3022,7 +3022,7 @@ public class ParserTests
                             value: new ObjectCreationExpressionNode(
                                 type: new TypeNode(
                                     baseType: new IdentifierExpression("byte"),
-                                    arrayType: new ArrayTypeData(rank: 256)
+                                    arrayType: new ArrayTypeData(rank: new NumericLiteralNode(256))
                                 )
                             )
                         )
@@ -5801,5 +5801,41 @@ public class ParserTests
         );
 
         AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_ArrayRankExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            byte[] array = new byte[content.Length];
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: new TypeNode(
+                        baseType: new IdentifierExpression("byte"),
+                        arrayType: new ArrayTypeData(true)
+                    ),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "array",
+                            value: new ObjectCreationExpressionNode(
+                                type: new TypeNode(
+                                    baseType: new IdentifierExpression("byte"),
+                                    arrayType: new ArrayTypeData(
+                                        rank: AstUtils.ResolveMemberAccess("content.Length")
+                                    )
+                                )
+                            )
+                        )
+                    ]
+                )
+            )
+        );
     }
 }
