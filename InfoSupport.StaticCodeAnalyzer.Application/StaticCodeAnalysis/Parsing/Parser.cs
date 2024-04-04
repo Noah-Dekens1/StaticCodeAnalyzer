@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,6 +10,9 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
+
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Exceptions;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
@@ -131,6 +135,18 @@ public class Parser
         var token = PeekSafe(peekOffset);
 
         return token.Lexeme == lexeme && (kind is null || token.Kind == kind);
+    }
+
+    [DebuggerHidden]
+    public bool ConsumeIfMatchLexeme(string lexeme, TokenKind? kind = null)
+    {
+        if (MatchesLexeme(lexeme, kind))
+        {
+            Consume();
+            return true;
+        }
+
+        return false;
     }
 
     public bool ConsumeIfMatch(TokenKind c, bool includeConsumed = false)
@@ -258,8 +274,13 @@ public class Parser
             quotes++;
             i++;
 
-            if (isVerbatim)
+            if (isVerbatim || i >= str.Length)
                 break;
+        }
+
+        if (quotes == 2) // immediately closing string
+        {
+            return new StringLiteralData("", isInterpolated, interpolations, i, 1);
         }
 
         bool isRaw = quotes >= 3;
@@ -529,6 +550,12 @@ public class Parser
             case TokenKind.QuestionQuestion:
             case TokenKind.QuestionQuestionEquals:
 
+            // Binary
+            case TokenKind.Caret:
+            case TokenKind.CaretEquals:
+            case TokenKind.Ampersand:
+            case TokenKind.Bar:
+
 
                 // ...
                 return true;
@@ -569,8 +596,8 @@ public class Parser
             { TokenKind.GreaterThanEquals,   () => new GreaterThanEqualsExpressionNode(lhs, rhs) },
             { TokenKind.LessThan,            () => new LessThanExpressionNode(lhs, rhs) },
             { TokenKind.LessThanEquals,      () => new LessThanEqualsExpressionNode(lhs, rhs) },
-            { TokenKind.AmpersandAmpersand,  () => new LogicalAndExpressionNode(lhs, rhs) },
-            { TokenKind.BarBar,              () => new LogicalOrExpressionNode(lhs, rhs) },
+            { TokenKind.AmpersandAmpersand,  () => new ConditionalAndExpressionNode(lhs, rhs) },
+            { TokenKind.BarBar,              () => new ConditionalOrExpressionNode(lhs, rhs) },
 
             { TokenKind.PlusEquals,          () => new AddAssignExpressionNode(lhs, rhs) },
             { TokenKind.MinusEquals,         () => new SubtractAssignExpressionNode(lhs, rhs) },
@@ -579,6 +606,11 @@ public class Parser
             { TokenKind.PercentEquals,       () => new ModulusAssignExpressionNode(lhs, rhs) },
             { TokenKind.AmpersandEquals,     () => new AndAssignExpressionNode(lhs, rhs) },
             { TokenKind.BarEquals,           () => new OrAssignExpressionNode(lhs, rhs) },
+            { TokenKind.CaretEquals,         () => new LogicalXorAssignExpressionNode(lhs, rhs) },
+            
+            { TokenKind.Ampersand,           () => new LogicalAndExpressionNode(lhs, rhs) },
+            { TokenKind.Bar,                 () => new LogicalOrExpressionNode(lhs, rhs) },
+            { TokenKind.Caret,               () => new LogicalXorExpressionNode(lhs, rhs) },
 
             { TokenKind.Equals,              () => new AssignmentExpressionNode(lhs, rhs) },
             { TokenKind.QuestionQuestion,    () => new NullCoalescingExpressionNode(lhs, rhs) },
@@ -590,7 +622,7 @@ public class Parser
         return operators[binaryOperator.Kind]();
     }
 
-    private static ExpressionNode ResolveMemberAccess(List<MemberData> members, ExpressionNode? lhsExpr = null)
+    private static ExpressionNode ResolveMemberAccess(List<MemberData> members, ExpressionNode? lhsExpr = null, bool lhsConditional = false)
     {
         var member = members[^1];
         ExpressionNode identifier = new IdentifierExpression(member.Token.Lexeme);
@@ -606,7 +638,9 @@ public class Parser
         if (members.Count == 1 && lhsExpr is null)
             return identifier;
         else if (members.Count == 1 && lhsExpr is not null)
-            return new MemberAccessExpressionNode(lhsExpr, identifier);
+            return lhsConditional
+                ? new ConditionalMemberAccessExpressionNode(lhsExpr, identifier)
+                : new MemberAccessExpressionNode(lhsExpr, identifier);
 
         members.Remove(member);
 
@@ -622,8 +656,16 @@ public class Parser
             );
     }
 
-    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null)
+    private ExpressionNode ResolveIdentifier(bool isMaybeGeneric = false, bool isInNamespaceOrType = false, ExpressionNode? lhs = null, bool lhsConditional = false)
     {
+        var isGlobal = MatchesLexeme("global") && Matches(TokenKind.ColonColon, 1);
+
+        if (isGlobal)
+        {
+            Consume();
+            Expect(TokenKind.ColonColon);
+        }
+
         List<MemberData> members = [];
 
         do
@@ -650,20 +692,12 @@ public class Parser
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
-        return ResolveMemberAccess(members, lhs);
-    }
+        var memberAccess = ResolveMemberAccess(members, lhs, lhsConditional);
 
-    [Obsolete]
-    private ExpressionNode ResolveMaybeGenericIdentifier(bool isInNamespaceOrType)
-    {
-        var identifier = ResolveIdentifier();
+        if (isGlobal)
+            memberAccess = new GlobalNamespaceQualifierNode(memberAccess);
 
-        if (Matches(TokenKind.LessThan) && PossiblyParseTypeArgumentList(out var typeArguments, isInNamespaceOrType))
-        {
-            return new GenericNameNode(identifier, typeArguments);
-        }
-
-        return identifier;
+        return memberAccess;
     }
 
     private InvocationExpressionNode ParseInvocation(ExpressionNode lhs)
@@ -684,7 +718,7 @@ public class Parser
             ? expr
             : ToIndexExpression(expr)!;
 
-        var args = new BracketedArgumentList([new ArgumentNode(expr, null)]);
+        var args = new BracketedArgumentList([new ArgumentNode(expr)]);
 
         Expect(TokenKind.CloseBracket);
 
@@ -739,10 +773,15 @@ public class Parser
         // Object creation expression
         if (ConsumeIfMatch(TokenKind.NewKeyword))
         {
+            bool isArrayCreation = false;
+            if (ConsumeIfMatch(TokenKind.OpenBracket))
+            {
+                isArrayCreation = true;
+                Expect(TokenKind.CloseBracket);
+            }
             TypeNode? type = null;
 
-            if (IsMaybeType(PeekCurrent(), true))
-                type = ParseType();
+            bool _ = IsMaybeType(PeekCurrent(), true) && TryParseTypeOrBacktrack(out type);
 
             ArgumentListNode? args = null;
 
@@ -796,7 +835,7 @@ public class Parser
                 Expect(TokenKind.CloseBrace);
             }
 
-            return new ObjectCreationExpressionNode(type, args, initializer);
+            return new ObjectCreationExpressionNode(type, isArrayCreation, args, initializer);
         }
         else if (ConsumeIfMatch(TokenKind.OpenBracket))
         {
@@ -885,6 +924,11 @@ public class Parser
             return ParseIndexExpressionFromEnd();
         }
 
+        if (Matches(TokenKind.ThrowKeyword))
+        {
+            return ParseThrowExpression();
+        }
+
         return null;
     }
 
@@ -903,7 +947,7 @@ public class Parser
         return new NullForgivingExpressionNode(lhs);
     }
 
-    private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier)
+    private ExpressionNode? TryParsePrimaryPostfixExpression(ExpressionNode resolvedIdentifier, bool isParsingPattern)
     {
         // Invocation
         if (Matches(TokenKind.OpenParen))
@@ -916,7 +960,7 @@ public class Parser
         if (Matches(TokenKind.Question) && Matches(TokenKind.OpenBracket, 1))
             return ParseElementAccess(resolvedIdentifier);
 
-        if (Matches(TokenKind.EqualsGreaterThan))
+        if (Matches(TokenKind.EqualsGreaterThan) && !isParsingPattern && resolvedIdentifier is IdentifierExpression)
             return ParseLambdaExpressionSingleParam(resolvedIdentifier);
 
         return null;
@@ -928,7 +972,55 @@ public class Parser
 
         var pattern = ParsePattern()!;
 
-        return new IsExpressionNode(pattern);
+        return new IsExpressionNode(lhs, pattern);
+    }
+
+    private bool TryParseTupleExpression([NotNullWhen(true)] out TupleExpressionNode? tupleExpression)
+    {
+        var start = Tell();
+
+        List<TupleArgumentNode> tupleArguments = [];
+
+        tupleExpression = null;
+
+        do
+        {
+            var isNamed = Matches(TokenKind.Colon, 1);
+
+            if (isNamed && !Matches(TokenKind.Identifier))
+            {
+                Seek(start);
+                return false;
+            }
+
+            string? name = null;
+
+            if (isNamed)
+            {
+                name = Consume().Lexeme;
+                Expect(TokenKind.Colon);
+            }
+
+            var expr = ParseExpression();
+
+            if (expr is null)
+            {
+                Seek(start);
+                return false;
+            }
+
+            tupleArguments.Add(new TupleArgumentNode(expression: expr, name: name));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseParen) || tupleArguments.Count < 2)
+        {
+            Seek(start);
+            return false;
+        }
+
+        tupleExpression = new TupleExpressionNode(tupleArguments);
+        return true;
     }
 
     private ExpressionNode? ParseStartParenthesisExpression()
@@ -951,14 +1043,28 @@ public class Parser
 
             // @note: besides checking whether it may be a type it also checks if the next token is an identifier
             // because we don't have knowledge about which identifiers may be types
+
+            /*
             var type = IsMaybeType(PeekCurrent(), true) && Matches(TokenKind.Identifier, 1)
-                ? ParseType()
+                ? ParseType(
                 : null;
+            */
+
+            // check for a,b => or
+            var hasType = !Matches(TokenKind.Comma, 1) &&
+                !Matches(TokenKind.EqualsGreaterThan, 1) &&
+                !Matches(TokenKind.CloseParen, 1);
+
+            TypeNode? type = null;
+            
+            if (hasType)
+                hasType = TryParseType(out type);
+
 
             if (isFirst)
-                isImplicit = type is null;
+                isImplicit = !hasType;
 
-            if (type is null != isImplicit) // must all be implicit/explicit, exit as early as possible if not the case
+            if (!hasType != isImplicit) // must all be implicit/explicit, exit as early as possible if not the case
             {
                 maybeLambda = false;
                 break;
@@ -987,16 +1093,21 @@ public class Parser
 
             var maybeCast = true;
             {
-                var type = ParseType();
+                bool isType = TryParseType(out var type);
 
-                maybeCast &= type is not null && ConsumeIfMatch(TokenKind.CloseParen);
+                maybeCast &= isType && ConsumeIfMatch(TokenKind.CloseParen);
                 var rhs = ParseExpression(null, true);
                 maybeCast &= rhs is not null;
 
                 if (maybeCast)
                     return new CastExpressionNode(type!, rhs!);
-                else
-                    Seek(start);
+                
+                Seek(start);
+            }
+
+            if (TryParseTupleExpression(out var tupleExpr))
+            {
+                return tupleExpr;
             }
 
             var expr = new ParenthesizedExpressionNode(ParseExpression()!);
@@ -1044,8 +1155,7 @@ public class Parser
 
     private bool IsTernaryOperator()
     {
-        // Unary/Binary operators like ?. and ?? should be handled already so don't check for them
-        return Matches(TokenKind.Question);
+        return Matches(TokenKind.Question) && !Matches(TokenKind.Dot, 1) && !Matches(TokenKind.Question, 1);
     }
 
     private readonly List<string> _contextualKeywords = [
@@ -1099,11 +1209,20 @@ public class Parser
     }
 
     // @note: pretty much everything in C# is an expression so we probably want to split this up
-    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false, bool isParsingIndex = false)
+    private ExpressionNode? ParseExpression(ExpressionNode? possibleLHS = null, bool onlyParseSingle = false, bool isParsingIndex = false, bool isParsingPattern = false)
     {
         var token = PeekCurrent();
 
-        if (token.Kind == TokenKind.OpenParen)
+        if (ConsumeIfMatch(TokenKind.ThisKeyword))
+        {
+            possibleLHS = new ThisExpressionNode();
+        }
+        else if (ConsumeIfMatch(TokenKind.BaseKeyword))
+        {
+            possibleLHS = new BaseExpressionNode();
+        }
+
+        if (token.Kind == TokenKind.OpenParen && possibleLHS is null)
         {
             // Could be plain parenthesis around a subexpression, a lambda's argument list, or a tuple
             /*
@@ -1117,7 +1236,7 @@ public class Parser
             possibleLHS = expr; // @todo: only if it isn't a lambda
         }
 
-        bool isCurrentTokenIdentifier = token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
+        bool isCurrentTokenIdentifier = (token.Kind == TokenKind.Identifier || TypeList.Contains(token.Kind)) && !_contextualKeywords.Contains(token.Lexeme);
         ExpressionNode? resolvedIdentifier = null;
 
         if (isCurrentTokenIdentifier && possibleLHS is null)
@@ -1133,14 +1252,17 @@ public class Parser
         if (primaryExpression is not null)
         {
             possibleLHS = primaryExpression;
+            return ParseExpression(possibleLHS);
         }
-        else if (resolvedIdentifier is not null)
+        else if (possibleLHS is not null)
         {
-            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(resolvedIdentifier);
+            var primaryPostfixExpression = TryParsePrimaryPostfixExpression(possibleLHS, isParsingPattern);
             if (primaryPostfixExpression is not null)
             {
                 possibleLHS = primaryPostfixExpression;
+                return ParseExpression(possibleLHS);
             }
+
         }
 
         var isLiteral = PeekLiteralExpression(out var literal);
@@ -1178,7 +1300,7 @@ public class Parser
             possibleLHS = ParseAsExpression(possibleLHS!);
         }
 
-        bool isBinary = !onlyParseSingle && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
+        bool isBinary = !onlyParseSingle && !isParsingPattern && IsBinaryOperator(/*(possibleLHS is null && !isCurrentTokenIdentifier) ? 1 :*/ 0);
         //bool isTernary = false;
 
         if (possibleLHS is not null && Matches(TokenKind.Exclamation) && !isBinary)
@@ -1202,11 +1324,21 @@ public class Parser
             possibleLHS = ParseTernaryExpression(possibleLHS!);
         }
 
-        if (possibleLHS is not null && Matches(TokenKind.Dot) && Matches(TokenKind.Identifier, 1))
+        if (possibleLHS is not null && (
+            Matches(TokenKind.Dot) && Matches(TokenKind.Identifier, 1) ||
+            Matches(TokenKind.Question) && Matches(TokenKind.Dot, 1)
+            ))
         {
             // Resolve member access
+            bool isConditional = Matches(TokenKind.Question);
+
+            if (isConditional)
+                Expect(TokenKind.Question);
+            
             Expect(TokenKind.Dot);
-            possibleLHS = ResolveIdentifier(isMaybeGeneric: true, lhs: possibleLHS);
+
+            possibleLHS = ResolveIdentifier(isMaybeGeneric: true, lhs: possibleLHS, lhsConditional: isConditional);
+            return ParseExpression(possibleLHS);
         }
 
         if (Matches(TokenKind.SwitchKeyword))
@@ -1238,7 +1370,8 @@ public class Parser
         TokenKind.BoolKeyword,
         TokenKind.StringKeyword,
         TokenKind.CharKeyword,
-        TokenKind.VoidKeyword
+        TokenKind.VoidKeyword,
+        TokenKind.ObjectKeyword
     ];
 
     private bool IsMaybeType(Token token, bool excludeVar)
@@ -1248,31 +1381,9 @@ public class Parser
         maybeType |= !excludeVar && (token.Kind == TokenKind.Identifier && token.Lexeme == "var");
         maybeType |= TypeList.Contains(token.Kind);
         maybeType |= token.Kind == TokenKind.Identifier && !_contextualKeywords.Contains(token.Lexeme);
+        maybeType |= token.Kind == TokenKind.OpenParen; // tuples, this will get a lot of false positives though
 
         return maybeType;
-    }
-
-    private bool IsDeclarationStatement()
-    {
-        var token = PeekCurrent();
-
-        bool maybeType = IsMaybeType(token, false);
-        bool maybeDeclaration = false;
-
-        int pos = Tell();
-
-        if (maybeType)
-        {
-            ParseType();
-            if (ConsumeIfMatch(TokenKind.Identifier) && ConsumeIfMatch(TokenKind.Equals))
-            {
-                maybeDeclaration = true;
-            }
-        }
-
-        Seek(pos);
-
-        return maybeDeclaration;
     }
 
     private readonly List<TokenKind> _disambiguatingTokenList = [
@@ -1329,20 +1440,42 @@ public class Parser
                 return false;
             }
 
-            var identifier = ResolveIdentifier();
-
-            TypeArgumentsNode? nestedTypes = null;
-
-            if (Matches(TokenKind.LessThan))
+            /*
+            if (ConsumeIfMatch(TokenKind.OpenParen))
             {
-                if (!PossiblyParseTypeArgumentList(out nestedTypes, isInNamespaceOrTypeName))
+                if (!TryParseTupleType(out var tupleType))
                 {
                     Seek(startPosition);
                     return false;
                 }
+                temp.Add(new TypeNode(tupleType));
+            }
+            else
+            {
+                var identifier = ResolveIdentifier();
+
+                TypeArgumentsNode? nestedTypes = null;
+
+                if (Matches(TokenKind.LessThan))
+                {
+                    if (!PossiblyParseTypeArgumentList(out nestedTypes, isInNamespaceOrTypeName))
+                    {
+                        Seek(startPosition);
+                        return false;
+                    }
+                }
+
+                temp.Add(new TypeNode(baseType: identifier, typeArguments: nestedTypes));
+            }
+            */
+            
+            if (!TryParseType(out var type))
+            {
+                Seek(startPosition);
+                return false;
             }
 
-            temp.Add(new TypeNode(baseType: identifier, typeArguments: nestedTypes));
+            temp.Add(type);
 
             if (!ConsumeIfMatch(TokenKind.Comma))
             {
@@ -1376,9 +1509,63 @@ public class Parser
         return true;
     }
 
-    private TypeNode ParseType()
+    private bool TryParseTupleType([NotNullWhen(true)] out TupleTypeNode? tupleType)
     {
-        var baseType = ResolveIdentifier();
+        List<TupleTypeElementNode> elements = [];
+        tupleType = null;
+
+        do
+        {
+            if (!TryParseType(out TypeNode? elementType))
+            {
+                return false;
+            }
+
+            string? identifier = null;
+
+            if (Matches(TokenKind.Identifier))
+            {
+                identifier = Consume().Lexeme;
+            }
+
+            elements.Add(new TupleTypeElementNode(elementType, identifier));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseParen))
+            return false;
+
+        tupleType = new TupleTypeNode(elements);
+        return true;
+    }
+
+    /**
+     * Attempts to parse a type
+     * Does NOT backtrack in case of failure, it will only return false
+     */
+    private bool TryParseType([NotNullWhen(true)] out TypeNode? type)
+    {
+        type = null;
+
+        if (ConsumeIfMatch(TokenKind.OpenParen))
+        {
+            if (TryParseTupleType(out var tuple))
+            {
+                type = new TypeNode(tuple);
+                return true;
+            }
+
+            return false;
+        }
+
+        var baseType = IsMaybeType(PeekCurrent(), true) ? ResolveIdentifier() : null;
+
+        type = null;
+
+        if (baseType is null)
+        {
+            return false;
+        }
 
         var maybeGeneric = Matches(TokenKind.LessThan);
 
@@ -1389,18 +1576,20 @@ public class Parser
 
         }
 
+        bool maybeArrayNullable = ConsumeIfMatch(TokenKind.Question);
+
         var arrayData = new ArrayTypeData();
 
         // Array type
         if (ConsumeIfMatch(TokenKind.OpenBracket))
         {
             arrayData.IsArray = true;
+            arrayData.IsInnerTypeNullable = maybeArrayNullable;
 
-            if (Matches(TokenKind.NumericLiteral))
+            if (!Matches(TokenKind.CloseBracket))
             {
-                var literal = Consume();
-                arrayData.ArrayRank = (int)literal.Value!;
-                arrayData.RankOmitted = false;
+                arrayData.ArrayRank = ParseExpression();
+                arrayData.RankOmitted = arrayData.ArrayRank is null;
 
                 if (Matches(TokenKind.Comma))
                 {
@@ -1408,7 +1597,10 @@ public class Parser
                 }
             }
 
-            Expect(TokenKind.CloseBracket);
+            if (!ConsumeIfMatch(TokenKind.CloseBracket))
+            {
+                return false;
+            }
 
             if (Matches(TokenKind.OpenBracket))
             {
@@ -1418,18 +1610,170 @@ public class Parser
 
         bool isNullable = ConsumeIfMatch(TokenKind.Question);
 
-        return new TypeNode(baseType, typeArguments, arrayData, isNullable);
+        type = new TypeNode(baseType, typeArguments, arrayData, isNullable || (maybeArrayNullable && !arrayData.IsArray));
+        return true;
     }
 
-    private StatementNode ParseDeclarationStatement()
+    private bool TryParseTypeOrBacktrack([NotNullWhen(true)] out TypeNode? type)
     {
-        var type = ParseType();
-        var identifier = Consume();
-        Expect(TokenKind.Equals);
-        var expr = ParseExpression();
-        Expect(TokenKind.Semicolon);
+        var start = Tell();
+        var success = TryParseType(out type);
 
-        return new VariableDeclarationStatement(type, identifier.Lexeme, expr!);
+        if (!success)
+            Seek(start);
+
+        return success;
+    }
+
+    private TypeNode ParseType()
+    {
+        return !TryParseType(out var type) 
+            ? throw new ParseException("Failed to parse expected type") 
+            : type;
+    }
+
+    private bool TryParseDeclarationStatement([NotNullWhen(true)] out StatementNode? statement, bool onlyParseDeclarator=false)
+    {
+        var start = Tell();
+
+        statement = null;
+
+        bool isConst = ConsumeIfMatch(TokenKind.ConstKeyword);
+
+        if (!TryParseType(out var type))
+        {
+            Seek(start);
+            return false;
+        }
+
+        var declarators = new List<VariableDeclaratorNode>();
+
+        do
+        {
+            if (!Matches(TokenKind.Identifier))
+            {
+                Seek(start);
+                return false;
+            }
+
+            var identifier = Consume().Lexeme;
+            bool hasDefinition = ConsumeIfMatch(TokenKind.Equals);
+            ExpressionNode? value = null;
+
+            if (hasDefinition)
+            {
+                value = ParseExpression();
+
+                if (value is null)
+                {
+                    Seek(start);
+                    return false;
+                }
+            }
+
+            declarators.Add(new VariableDeclaratorNode(identifier, value));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!onlyParseDeclarator && !ConsumeIfMatch(TokenKind.Semicolon))
+        {
+            Seek(start);
+            return false;
+        }
+
+        statement = new VariableDeclarationStatement(type, declarators, isConst);
+        return true;
+    }
+    private bool ParseTupleDesignations(out List<TupleElementNode> designations)
+    {
+        designations = [];
+
+        do
+        {
+            bool hasType = !Matches(TokenKind.Comma, 1) && !Matches(TokenKind.CloseParen, 1);
+
+            TypeNode? elementType = null;
+
+            if (hasType && !TryParseType(out elementType))
+            {
+                return false;
+            }
+
+            if (!Matches(TokenKind.Identifier))
+            {
+                return false;
+            }
+
+            var identifier = Consume().Lexeme;
+
+            designations.Add(new TupleElementNode(identifier, elementType));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        return true;
+    }
+
+    private bool TryParseTupleDeconstruction([NotNullWhen(true)] out TupleDeconstructStatementNode? tupleDeconstruction)
+    {
+        tupleDeconstruction = null;
+
+        var start = Tell();
+
+        // Type may be null here, that's valid syntax
+        // Like (string a, int b) = QueryData();
+        // Or even (a, b) = SomeFunc(); assuming *a* and *b* have already been declared
+        TryParseType(out var type);
+
+        if (!ConsumeIfMatch(TokenKind.OpenParen))
+        {
+            Seek(start);
+            return false;
+        }
+
+        List<TupleElementNode> designations = [];
+
+        do
+        {
+            bool hasType = !Matches(TokenKind.Comma, 1) && !Matches(TokenKind.CloseParen, 1);
+
+            TypeNode? elementType = null;
+
+            if (hasType && !TryParseType(out elementType))
+            {
+                Seek(start);
+                return false;
+            }
+
+            if (!Matches(TokenKind.Identifier))
+            {
+                Seek(start);
+                return false;
+            }
+
+            var identifier = Consume().Lexeme;
+
+            designations.Add(new TupleElementNode(identifier, elementType));
+
+        } while (ConsumeIfMatch(TokenKind.Comma));
+
+        if (!ConsumeIfMatch(TokenKind.CloseParen) || !ConsumeIfMatch(TokenKind.Equals))
+        {
+            Seek(start);
+            return false;
+        }
+
+        var expr = ParseExpression();
+
+        if (expr is null)
+        {
+            Seek(start);
+            return false;
+        }
+
+        Expect(TokenKind.Semicolon); // should be tuple at this point
+
+        tupleDeconstruction = new TupleDeconstructStatementNode(designations, expr, specifiedType: type);
+        return true;
     }
 
     private ExpressionStatementNode ParseExpressionStatement(bool expectSemicolon = true)
@@ -1454,6 +1798,64 @@ public class Parser
     {
         // Could be either an embedded statement or a block?
         return PeekCurrent().Kind == TokenKind.OpenBrace ? ParseBlock() : ParseStatement(isEmbeddedStatement: true);
+    }
+
+    private readonly Dictionary<string, GenericConstraintType> _constraintTypes = new()
+    {
+        ["struct"] = GenericConstraintType.Struct,
+        ["class"] = GenericConstraintType.Class,
+        ["class?"] = GenericConstraintType.NullableClass,
+        ["notnull"] = GenericConstraintType.NotNull,
+        ["unmanaged"] = GenericConstraintType.Unmanaged,
+        ["new()"] = GenericConstraintType.New,
+        ["default"] = GenericConstraintType.Default
+    };
+
+    private List<WhereConstraintNode> ParseGenericConstraints()
+    {
+        List<WhereConstraintNode> whereConstraints = [];
+
+        while (ConsumeIfMatchLexeme("where"))
+        {
+            var target = ParseType()!; // is this needed? it's just an identifier right?
+            Expect(TokenKind.Colon);
+
+            List<GenericConstraintNode> constraints = [];
+
+            do
+            {
+                GenericConstraintType? constraintType;
+                TypeNode? baseType = null;
+
+                // new()
+                if (ConsumeIfMatchSequence(TokenKind.NewKeyword, TokenKind.OpenParen, TokenKind.CloseParen))
+                {
+                    constraintType = GenericConstraintType.New;
+                }
+                // class?
+                else if (ConsumeIfMatchSequence(TokenKind.ClassKeyword, TokenKind.OpenParen))
+                {
+                    constraintType = GenericConstraintType.NullableClass;
+                }
+                else if (_constraintTypes.TryGetValue(PeekCurrent().Lexeme, out var temp))
+                {
+                    Consume();
+                    constraintType = temp;
+                }
+                else
+                {
+                    constraintType = GenericConstraintType.Type;
+                    baseType = ParseType();
+                }
+
+                constraints.Add(new GenericConstraintNode(constraintType.Value, baseType));
+
+            } while (ConsumeIfMatch(TokenKind.Comma));
+
+            whereConstraints.Add(new WhereConstraintNode(target, constraints));
+        }
+
+        return whereConstraints;
     }
 
     private AstNode ParseMethodBody()
@@ -1554,10 +1956,33 @@ public class Parser
                 name = current.Lexeme;
             }
 
+            ParameterType parameterType = ParameterType.Regular;
+            TypeNode? targetType = null;
+
+            if (ConsumeIfMatchSequence(TokenKind.RefKeyword, TokenKind.ReadonlyKeyword))
+            {
+                parameterType = ParameterType.RefReadonly;
+            }
+            else if (!Matches(TokenKind.ThisKeyword) && _parameterTypes.TryGetValue(PeekCurrent().Lexeme, out var value))
+            {
+                Consume();
+                parameterType = value;
+            }
+
+            if (
+                parameterType == ParameterType.Out && 
+                IsMaybeType(PeekCurrent(), false) && 
+                !Matches(TokenKind.Comma, 1) &&
+                TryParseType(out var type))
+            {
+                // Try parse a type
+                targetType = type;
+            }
+
             var expr = ParseExpression();
 
             if (expr is not null)
-                expressions.Add(new ArgumentNode(expr, name));
+                expressions.Add(new ArgumentNode(expr, parameterType, targetType, name));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 
@@ -1573,9 +1998,9 @@ public class Parser
         // Like "for (i = 3, Console.WriteLine("test"), i++; i < 10; i++)"
 
         // "Sane" path of variable declaration
-        if (IsDeclarationStatement())
+        if (TryParseDeclarationStatement(out var statement))
         {
-            return ParseDeclarationStatement();
+            return statement;
         }
 
         var result = ParseCommaSeperatedExpressionStatements();
@@ -1612,13 +2037,28 @@ public class Parser
         Expect(TokenKind.ForeachKeyword);
         Expect(TokenKind.OpenParen);
         var type = ParseType();
-        var identifier = Consume();
+        bool isTupleDesignation = ConsumeIfMatch(TokenKind.OpenParen);
+
+        AstNode? identifier = null;
+
+        if (isTupleDesignation)
+        {
+            if (ParseTupleDesignations(out var temp))
+                identifier = new TupleVariableDesignationsNode(temp);
+
+            Expect(TokenKind.CloseParen);
+        }
+        else
+        {
+            identifier = ResolveIdentifier();
+        }
+
         Expect(TokenKind.InKeyword);
         var collection = ParseExpression()!;
         Expect(TokenKind.CloseParen);
         var body = ParseBody();
 
-        return new ForEachStatementNode(type, identifier.Lexeme, collection, body);
+        return new ForEachStatementNode(type, identifier!, collection, body);
     }
 
     private WhileStatementNode ParseWhileStatement()
@@ -1662,6 +2102,13 @@ public class Parser
 
     private UsingDirectiveNode ParseUsingDirective()
     {
+        bool isGlobal = MatchesLexeme("global");
+
+        if (isGlobal)
+        {
+            Expect(TokenKind.Identifier); // global
+        }
+
         Expect(TokenKind.UsingKeyword);
 
         var hasAlias = PeekSafe().Kind == TokenKind.Equals;
@@ -1673,10 +2120,46 @@ public class Parser
             Expect(TokenKind.Equals);
         }
 
+        bool isNamespaceGlobal = MatchesLexeme("global");
+
+        if (isNamespaceGlobal)
+        {
+            Expect(TokenKind.Identifier); // global
+            Expect(TokenKind.ColonColon);
+        }
+
+        bool isNamespace = true;
+
+        if (hasAlias && !isNamespaceGlobal)
+        {
+            bool expectsIdentifier = true;
+            int i = 0;
+
+            do
+            {
+                isNamespace &= expectsIdentifier
+                    ? Matches(TokenKind.Identifier, i++)
+                    : Matches(TokenKind.Dot, i++);
+
+                expectsIdentifier = !expectsIdentifier;
+
+                if (!isNamespace)
+                    break;
+
+            } while (!Matches(TokenKind.Semicolon, i));
+        }
+
+        if (hasAlias && !isNamespace)
+        {
+            var type = ParseType();
+            Expect(TokenKind.Semicolon);
+            return new UsingDirectiveNode(type, alias, isGlobal, isNamespaceGlobal);
+        }
+
         var ns = ParseQualifiedName();
         Expect(TokenKind.Semicolon);
 
-        return new UsingDirectiveNode(ns, alias);
+        return new UsingDirectiveNode(ns, alias, isGlobal, isNamespaceGlobal);
     }
 
     private ReturnStatementNode ParseReturnStatement()
@@ -1703,11 +2186,12 @@ public class Parser
         Expect(TokenKind.OpenParen);
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
+        var genericConstraints = ParseGenericConstraints();
         var body = ParseMethodBody();
 
         Debug.Assert(body is not null);
 
-        return new LocalFunctionDeclarationNode(modifiers, identifier, type, parms, body);
+        return new LocalFunctionDeclarationNode(modifiers, identifier, type, parms, body, genericConstraints);
     }
 
     private ParenthesizedPatternNode ParseParenthesizedPattern()
@@ -1745,9 +2229,39 @@ public class Parser
 
     private ConstantPatternNode ParseConstantPattern()
     {
-        var value = ParseExpression()!;
+        var value = ParseExpression(isParsingPattern: true)!;
 
         return new ConstantPatternNode(value);
+    }
+
+    private readonly List<string> _contextualKeywordsForPatterns = ["and", "or", "not", "when"];
+
+    private bool TryParseDeclarationPattern([NotNullWhen(true)] out DeclarationPatternNode? declarationPattern)
+    {
+        var start = Tell();
+
+        declarationPattern = null;
+
+        if (_contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
+        {
+            Seek(start);
+            return false;
+        }
+
+        if (!TryParseType(out var type))
+        {
+            Seek(start);
+            return false;
+        }
+
+        if (!Matches(TokenKind.Identifier) || _contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
+        {
+            Seek(start);
+            return false;
+        }
+
+        declarationPattern = new DeclarationPatternNode(type, Consume().Lexeme);
+        return true;
     }
 
     private DiscardPatternNode ParseDiscardPattern()
@@ -1757,10 +2271,8 @@ public class Parser
     }
 
     // Parsing patterns is quite similar to parsing expressions
-    private PatternNode? ParsePattern()
+    private PatternNode? ParsePattern(PatternNode? possibleLHS = null)
     {
-        PatternNode? possibleLHS = null;
-
         var isIdentifier = Matches(TokenKind.Identifier);
         var isLiteral = PeekLiteralExpression(out var literal);
 
@@ -1777,6 +2289,22 @@ public class Parser
         if (possibleLHS is null && IsRelationalPattern(PeekCurrent()))
         {
             possibleLHS = ParseRelationalPattern();
+        }
+
+        if (TryParseDeclarationPattern(out var declarationPattern))
+        {
+            return declarationPattern;
+        }
+
+        if (possibleLHS is null && (isIdentifier || isLiteral || IsMaybeType(PeekCurrent(), true)) &&
+            !_contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
+        {
+            // @note: Roslyn doesn't parse this as a constant pattern so I assume this is 'technically wrong'
+            // but for the analyzer this makes things more simple and AFAIK there's little difference between
+            // an old switch case/constant pattern anyways, might need refactoring if this proves to be wrong
+            // in the future
+            possibleLHS = ParseConstantPattern();
+            //return ParsePattern(possibleLHS); // we may want to parse relational patterns after constant patterns
         }
 
         var token = PeekCurrent();
@@ -1804,15 +2332,6 @@ public class Parser
             Debug.Assert(possibleLHS is not null);
             Consume();
             return new OrPatternNode(possibleLHS!, ParsePattern()!);
-        }
-
-        if (isIdentifier || isLiteral)
-        {
-            // @note: Roslyn doesn't parse this as a constant pattern so I assume this is 'technically wrong'
-            // but for the analyzer this makes things more simple and AFAIK there's little difference between
-            // an old switch case/constant pattern anyways, might need refactoring if this proves to be wrong
-            // in the future
-            return ParseConstantPattern();
         }
 
         return possibleLHS;
@@ -1880,12 +2399,18 @@ public class Parser
         return new BreakStatementNode();
     }
 
-    private ThrowStatementNode ParseThrowStatement()
+    private ContinueStatementNode ParseContinueStatement()
+    {
+        Expect(TokenKind.ContinueKeyword);
+        Expect(TokenKind.Semicolon);
+        return new ContinueStatementNode();
+    }
+
+    private ThrowExpressionNode ParseThrowExpression()
     {
         Expect(TokenKind.ThrowKeyword);
         var expression = ParseExpression();
-        Expect(TokenKind.Semicolon);
-        return new ThrowStatementNode(expression);
+        return new ThrowExpressionNode(expression);
     }
 
     private TryStatementNode ParseTryStatement()
@@ -1895,21 +2420,26 @@ public class Parser
 
         List<CatchClauseNode> catchClauses = [];
         FinallyClauseNode? finallyClause = null;
+        ExpressionNode? whenClause = null;
 
         while (ConsumeIfMatch(TokenKind.CatchKeyword))
         {
-            Expect(TokenKind.OpenParen);
-            var type = ParseType();
-            var identifier = Consume().Lexeme;
-            ExpressionNode? whenClause = null;
-            Expect(TokenKind.CloseParen);
-
-            if (MatchesLexeme("when"))
+            TypeNode? type = null;
+            string? identifier = null;
+            if (ConsumeIfMatch(TokenKind.OpenParen))
             {
-                Consume();
-                Expect(TokenKind.OpenParen);
-                whenClause = ParseExpression();
+                type = ParseType();
+                identifier = Consume().Lexeme;
+
                 Expect(TokenKind.CloseParen);
+
+                if (MatchesLexeme("when"))
+                {
+                    Consume();
+                    Expect(TokenKind.OpenParen);
+                    whenClause = ParseExpression();
+                    Expect(TokenKind.CloseParen);
+                }
             }
 
             var catchBlock = ParseBlock();
@@ -1924,6 +2454,34 @@ public class Parser
         }
 
         return new TryStatementNode(block, catchClauses, finallyClause);
+    }
+
+    private UsingStatementNode ParseUsingStatement()
+    {
+        Expect(TokenKind.UsingKeyword);
+        var isDeclaration = !Matches(TokenKind.OpenParen);
+
+        if (!isDeclaration)
+            Expect(TokenKind.OpenParen);
+
+        VariableDeclarationStatement? declarator = null;
+        ExpressionNode? expression = null;
+        AstNode? body = null;
+
+        if (TryParseDeclarationStatement(out var statement, true))
+            declarator = (VariableDeclarationStatement)statement;
+        else
+            expression = ParseExpression();
+
+        if (!isDeclaration)
+            Expect(TokenKind.CloseParen);
+        else
+            Expect(TokenKind.Semicolon);
+
+        if (!isDeclaration)
+            body = ParseBody();
+
+        return new UsingStatementNode(declarator, expression, body);
     }
 
     private EmptyStatementNode ParseEmptyStatement()
@@ -1953,8 +2511,11 @@ public class Parser
          * Empty statement (;)
          */
 
-        if (!isEmbeddedStatement && IsDeclarationStatement())
-            return ParseDeclarationStatement();
+        if (TryParseTupleDeconstruction(out var tupleDeconstruct))
+            return tupleDeconstruct;
+
+        if (!isEmbeddedStatement && TryParseDeclarationStatement(out var statement))
+            return statement;
 
         if (!isEmbeddedStatement && Matches(TokenKind.OpenBrace))
             return ParseBlock();
@@ -1974,20 +2535,39 @@ public class Parser
             TokenKind.WhileKeyword => ParseWhileStatement(),
             TokenKind.SwitchKeyword => ParseSwitchStatement(),
             TokenKind.BreakKeyword => ParseBreakStatement(),
+            TokenKind.ContinueKeyword => ParseContinueStatement(),
             TokenKind.ReturnKeyword => ParseReturnStatement(),
             TokenKind.Semicolon => ParseEmptyStatement(),
-            TokenKind.ThrowKeyword => ParseThrowStatement(),
             TokenKind.TryKeyword => ParseTryStatement(),
+            TokenKind.UsingKeyword => ParseUsingStatement(),
             // If no matches parse as an expression statement
             _ => ParseExpressionStatement(),
         };
+    }
+
+    // Try not to accidentally parse using statements
+    private bool IsUsingDirective()
+    {
+        if (MatchesLexeme("global") && Matches(TokenKind.UsingKeyword, 1))
+            return true;
+
+        if (Matches(TokenKind.UsingKeyword) && MatchesLexeme("global", peekOffset: 1))
+            return true;
+
+        bool isUsingDirective = true;
+
+        isUsingDirective &= Matches(TokenKind.UsingKeyword);
+        isUsingDirective &= Matches(TokenKind.Identifier, 1);
+        isUsingDirective &= Matches(TokenKind.Equals, 2) || Matches(TokenKind.Dot, 2) || Matches(TokenKind.Semicolon, 2);
+
+        return isUsingDirective;
     }
 
     private List<UsingDirectiveNode> ParseUsingDirectives()
     {
         List<UsingDirectiveNode> directives = [];
 
-        while (!IsAtEnd() && Matches(TokenKind.UsingKeyword))
+        while (!IsAtEnd() && IsUsingDirective())
         {
             directives.Add(ParseUsingDirective());
         }
@@ -2099,15 +2679,15 @@ public class Parser
         while (IsValidLocalFunctionModifier(PeekCurrent()))
             Consume();
 
-        if (!IsMaybeType(PeekCurrent(), true))
+        if (!IsMaybeType(PeekCurrent(), true) || !TryParseType(out _))
         {
             Seek(startPos);
             return false;
         }
 
-        ParseType();
-
-        var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
+        var identifier = Matches(TokenKind.Identifier)
+            ? ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true)
+            : null;
 
         if (identifier is null)
         {
@@ -2377,7 +2957,25 @@ public class Parser
 
     private MemberNode ParseProperty(string propertyName, AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode propertyType, List<AttributeNode> attributes)
     {
-        Expect(TokenKind.OpenBrace);
+        ConsumeIfMatch(TokenKind.OpenBrace);
+
+        bool isOnlyGetter = ConsumeIfMatch(TokenKind.EqualsGreaterThan);
+
+        if (isOnlyGetter)
+        {
+            var expr = ParseExpression();
+            Expect(TokenKind.Semicolon);
+
+            var autoGetter = new PropertyAccessorNode(
+                PropertyAccessorType.ExpressionBodied,
+                AccessModifier.Public,
+                expr,
+                null,
+                false
+            );
+
+            return new PropertyMemberNode(accessModifier, modifiers, propertyName, propertyType, autoGetter, null, null, attributes);
+        }
 
         PropertyAccessorNode? getter = null;
         PropertyAccessorNode? setter = null;
@@ -2415,6 +3013,7 @@ public class Parser
         { "in", ParameterType.In },
         { "out", ParameterType.Out },
         { "this", ParameterType.This },
+        { "params", ParameterType.Params }
     };
 
     private ParameterListNode ParseParameterList()
@@ -2448,7 +3047,14 @@ public class Parser
             var type = ParseType();
             var identifier = Consume();
 
-            parameters.Add(new ParameterNode(type, identifier.Lexeme, attributes, parameterType));
+            ExpressionNode? defaultValue = null;
+
+            if (ConsumeIfMatch(TokenKind.Equals))
+            {
+                defaultValue = ParseExpression();
+            }
+
+            parameters.Add(new ParameterNode(type, identifier.Lexeme, defaultValue, attributes, parameterType));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Comma));
 
@@ -2461,9 +3067,28 @@ public class Parser
         Expect(TokenKind.OpenParen);  // parms
         var parms = ParseParameterList();
         Expect(TokenKind.CloseParen);
+
+        ArgumentListNode? baseArguments = null;
+        ConstructorArgumentsType type = ConstructorArgumentsType.None;
+
+        if (ConsumeIfMatch(TokenKind.Colon))
+        {
+            var isBase = ConsumeIfMatch(TokenKind.BaseKeyword);
+            var isThis = !isBase && ConsumeIfMatch(TokenKind.ThisKeyword);
+
+            if (!isBase && !isThis)
+                throw new ParseException("Expected base or this keywords after constructor :");
+
+            Expect(TokenKind.OpenParen);
+            baseArguments = ParseArgumentList();
+            Expect(TokenKind.CloseParen);
+
+            type = isBase ? ConstructorArgumentsType.Base : ConstructorArgumentsType.This;
+        }
+
         var body = ParseMethodBody();
 
-        return new ConstructorNode(accessModifier, parms, body, attributes);
+        return new ConstructorNode(accessModifier, parms, baseArguments, body, type, attributes);
     }
 
     private MethodNode ParseMethod(AccessModifier accessModifier, List<OptionalModifier> modifiers, TypeNode returnType, AstNode methodName, List<AttributeNode> attributes)
@@ -2473,10 +3098,12 @@ public class Parser
         Expect(TokenKind.CloseParen);
         AstNode? body = null;
 
+        var genericConstraints = ParseGenericConstraints();
+
         if (!ConsumeIfMatch(TokenKind.Semicolon))
             body = ParseMethodBody();
 
-        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body, attributes);
+        return new MethodNode(accessModifier, modifiers, returnType, methodName, parms, body, attributes, genericConstraints);
     }
 
     private EnumMemberNode ParseEnumMember(List<AttributeNode> attributes)
@@ -2524,7 +3151,7 @@ public class Parser
         var type = ParseType();
         var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
         var isMethod = Matches(TokenKind.OpenParen);
-        var isProperty = Matches(TokenKind.OpenBrace);
+        var isProperty = Matches(TokenKind.OpenBrace) || Matches(TokenKind.EqualsGreaterThan);
         var isField = !isMethod && !isProperty; // @todo: events?
 
         if (isField)
@@ -2592,6 +3219,8 @@ public class Parser
             }
         }
 
+        var genericConstraints = ParseGenericConstraints();
+
         Expect(TokenKind.OpenBrace);
 
         var kind = type switch
@@ -2609,10 +3238,10 @@ public class Parser
 
         return type switch
         {
-            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments),
+            TokenKind.ClassKeyword => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
             TokenKind.EnumKeyword => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attributes),
-            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes),
-            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments),
+            TokenKind.InterfaceKeyword => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, genericConstraints),
+            TokenKind.StructKeyword => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
             _ => throw new NotImplementedException(),
         };
     }
@@ -2660,10 +3289,41 @@ public class Parser
         return ns;
     }
 
+    private readonly List<string> _topLevelAttributeTargets = [
+        "module",
+        "assembly"
+    ];
+
+    private List<AttributeNode> ParseTopLevelAttributes()
+    {
+        var attributes = new List<AttributeNode>();
+
+        while (Matches(TokenKind.OpenBracket))
+        {
+            var marker = Tell();
+
+            if (!TryParseSingleAttribute(out var attribute) || 
+                attribute.Target is null ||
+                !_topLevelAttributeTargets.Contains(attribute.Target))
+            {
+                Seek(marker);
+                break;
+            }
+
+            attributes.Add(attribute);
+        }
+
+        return attributes;
+    }
+
     private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, bool allowTopLevelStatements = false)
     {
         var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped);
         var directives = ParseUsingDirectives();
+
+        // try parse assembly/module
+
+        var attributes = ParseTopLevelAttributes();
 
         // the 'rule' in C# is that top-level statements must precede any type declarations and namespaces
         // this method stops the moment it encounters a type declaration
@@ -2681,6 +3341,7 @@ public class Parser
         var namespaces = declarationsAndNamespaces.OfType<NamespaceNode>().ToList();
 
         ns.UsingDirectives.AddRange(directives);
+        ns.Attributes.AddRange(attributes);
         ns.TypeDeclarations.AddRange(typeDeclarations);
         ns.Namespaces.AddRange(namespaces);
 

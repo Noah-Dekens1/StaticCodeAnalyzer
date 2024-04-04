@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
-using ObservingStringType = (bool IsInterpolated, bool IsVerbatim);
-
 struct StringData
 {
     public bool IsInterpolated { get; set; }
@@ -25,6 +23,12 @@ struct StringData
     public int DollarSignCount { get; set; }
 
     public int DQouteCount { get; set; }
+}
+
+readonly struct StackString(bool isCode, StringData? stringData)
+{
+    public readonly bool IsCode = isCode;
+    public readonly StringData? StringData = stringData;
 }
 
 public class UnexpectedCharacterException : Exception
@@ -619,7 +623,7 @@ public class Lexer(string fileContent)
         return result;
     }
 
-    private (string lexeme, object? value) ReadNumericLiteral()
+    private void ReadNumericLiteral(out string lexeme, out object? value)
     {
         bool isHexadecimal = false;
         bool isBinary = false;
@@ -705,9 +709,8 @@ public class Lexer(string fileContent)
         if (numericLiteral.Last() == '_')
             throw new Exception("Invalid trailing underscore in numeric literal");
 
-        var value = ParseNumericLiteral(numericLiteral);
-
-        return (numericLiteral, value);
+        lexeme = numericLiteral;
+        value = ParseNumericLiteral(numericLiteral);
     }
 
     public bool ConsumeIfMatchSequence(char[] s, bool includeConsumed = false)
@@ -733,8 +736,8 @@ public class Lexer(string fileContent)
         var literalBuilder = new StringBuilder();
         //var stringStart = _index;
 
-        Stack<(bool IsCode, StringData?)> stack = [];
-        stack.Push((false, topString));
+        Stack<StackString> stack = [];
+        stack.Push(new StackString(false, topString));
 
         bool MatchString(out StringData str, bool includeConsumed)
         {
@@ -802,9 +805,10 @@ public class Lexer(string fileContent)
 
             //literalBuilder.Append(c);
 
-            var (isCode, str) = stack.Peek();
+            var strData = stack.Peek();
+            var str = strData.StringData;
 
-            if (isCode)
+            if (strData.IsCode)
             {
                 var possibleMatchStart = _index;
 
@@ -815,13 +819,13 @@ public class Lexer(string fileContent)
                     if (item.IsCode)
                         continue;
 
-                    lastStr = item.Item2;
+                    lastStr = item.StringData;
                     break;
                 }
 
                 if (MatchString(out var stringData, false))
                 {
-                    stack.Push((false, stringData));
+                    stack.Push(new StackString(false, stringData));
                 }
                 else if (((lastStr.HasValue && !lastStr.Value.IsRaw) || !lastStr.HasValue) && ConsumeIfMatch('}'))
                 {
@@ -876,7 +880,7 @@ public class Lexer(string fileContent)
 
                 if (str.Value.IsInterpolated && ConsumeIfMatchGreedy('{', dollarSignCount, dollarSignCount) != -1)
                 {
-                    stack.Push((true, null));
+                    stack.Push(new StackString(true, null));
                     continue;
                 }
 
@@ -919,7 +923,7 @@ public class Lexer(string fileContent)
                 {
                     if (!ConsumeIfMatch('{'))
                     {
-                        stack.Push((true, null));
+                        stack.Push(new StackString(true, null));
                     }
                 }
                 else
@@ -1012,15 +1016,17 @@ public class Lexer(string fileContent)
             isInterpolated = true;
 
 
-        if (ConsumeIfMatch('@')) // ugly hack to handle @$ and $@, this is fine though for this test project
+        if (ConsumeIfMatch('@'))
             isVerbatim = true;
 
-        var dquoteCount = ConsumeIfMatchGreedy('"', 3);
+        var dquoteCount = isVerbatim ? -1 : ConsumeIfMatchGreedy('"', 3);
 
         if (dquoteCount == -1)
         {
             if (!ConsumeIfMatch('"'))
                 throw new Exception("Tried to read invalid string literal");
+
+            dquoteCount = 1;
         }
 
         // 1 "    -> regular string start
@@ -1126,8 +1132,8 @@ public class Lexer(string fileContent)
 
                     if (char.IsDigit(Peek(1)))
                     {
-                        var numericLiteral = ReadNumericLiteral();
-                        Emit(TokenKind.NumericLiteral, numericLiteral.lexeme, numericLiteral.value);
+                        ReadNumericLiteral(out var lexeme, out var value);
+                        Emit(TokenKind.NumericLiteral, lexeme, value);
                         continue;
                     }
 
@@ -1143,8 +1149,8 @@ public class Lexer(string fileContent)
                     break;
                 case (>= '0' and <= '9'):
                     {
-                        var result = ReadNumericLiteral();
-                        Emit(TokenKind.NumericLiteral, result.lexeme, result.value);
+                        ReadNumericLiteral(out var lexeme, out var value);
+                        Emit(TokenKind.NumericLiteral, lexeme, value);
                     }
                     break;
                 case '"':

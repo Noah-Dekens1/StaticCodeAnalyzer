@@ -258,6 +258,7 @@ public class LexerTests
     [DataRow("\"::{645FF040-5081-101B-9F08-00AA002F954E}\";")]
     // the ending """ isn't a multiline string, it's a verbatim "" escape and an end quote "
     [DataRow(""""@"""Hello world!""";"""")]
+    [DataRow(""""@"""Hello world!"" $""Basic interpolated string {value}"" @""Verbatim string literal"" ";"""")]
 
     public void Lex_StringLiterals_ReturnCorrectTokens(string str)
     {
@@ -274,6 +275,7 @@ public class LexerTests
     }
 
     [DataTestMethod]
+    [DataRow("""$"{(IsPrefix ? OperatorForDbg : "")}{Expression}{(!IsPrefix ? OperatorForDbg : "")}";""")]
     [DataRow(""""$$"""Hello world! {{"interpolated!"}}""";"""")]
     [DataRow("""""$$$$$"""" Hello {{{{{@$"multiline {"world!" + """}}""" + $"""{"Test!" + @" ""abc"" "}"""}"}}}}} """;"""";""""")]
     [DataRow("""$"t \" {"simple"} {{ }}\"\"";""")]
