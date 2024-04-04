@@ -553,6 +553,8 @@ public class Parser
             // Binary
             case TokenKind.Caret:
             case TokenKind.CaretEquals:
+            case TokenKind.Ampersand:
+            case TokenKind.Bar:
 
 
                 // ...
