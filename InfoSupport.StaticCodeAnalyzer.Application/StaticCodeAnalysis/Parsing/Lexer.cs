@@ -1315,7 +1315,7 @@ public class Lexer(string fileContent)
 
         Emit(TokenKind.EndOfFile, string.Empty);
 
-        Console.WriteLine($"Successfully finished lexing {_tokens.Count} tokens!");
+        //Console.WriteLine($"Successfully finished lexing {_tokens.Count} tokens!");
 
         return _tokens;
     }
