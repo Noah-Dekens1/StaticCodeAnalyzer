@@ -2232,6 +2232,12 @@ public class Parser
 
         declarationPattern = null;
 
+        if (_contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
+        {
+            Seek(start);
+            return false;
+        }
+
         if (!TryParseType(out var type))
         {
             Seek(start);
@@ -2255,10 +2261,8 @@ public class Parser
     }
 
     // Parsing patterns is quite similar to parsing expressions
-    private PatternNode? ParsePattern()
+    private PatternNode? ParsePattern(PatternNode? possibleLHS = null)
     {
-        PatternNode? possibleLHS = null;
-
         var isIdentifier = Matches(TokenKind.Identifier);
         var isLiteral = PeekLiteralExpression(out var literal);
 
@@ -2275,6 +2279,22 @@ public class Parser
         if (possibleLHS is null && IsRelationalPattern(PeekCurrent()))
         {
             possibleLHS = ParseRelationalPattern();
+        }
+
+        if (TryParseDeclarationPattern(out var declarationPattern))
+        {
+            return declarationPattern;
+        }
+
+        if (possibleLHS is null && (isIdentifier || isLiteral || IsMaybeType(PeekCurrent(), true)) &&
+            !_contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
+        {
+            // @note: Roslyn doesn't parse this as a constant pattern so I assume this is 'technically wrong'
+            // but for the analyzer this makes things more simple and AFAIK there's little difference between
+            // an old switch case/constant pattern anyways, might need refactoring if this proves to be wrong
+            // in the future
+            possibleLHS = ParseConstantPattern();
+            //return ParsePattern(possibleLHS); // we may want to parse relational patterns after constant patterns
         }
 
         var token = PeekCurrent();
@@ -2302,21 +2322,6 @@ public class Parser
             Debug.Assert(possibleLHS is not null);
             Consume();
             return new OrPatternNode(possibleLHS!, ParsePattern()!);
-        }
-
-        if (TryParseDeclarationPattern(out var declarationPattern))
-        {
-            return declarationPattern;
-        }
-
-        if ((isIdentifier || isLiteral || IsMaybeType(PeekCurrent(), true)) && 
-            !_contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
-        {
-            // @note: Roslyn doesn't parse this as a constant pattern so I assume this is 'technically wrong'
-            // but for the analyzer this makes things more simple and AFAIK there's little difference between
-            // an old switch case/constant pattern anyways, might need refactoring if this proves to be wrong
-            // in the future
-            return ParseConstantPattern();
         }
 
         return possibleLHS;
