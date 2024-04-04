@@ -1,8 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Diagnostics;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
+using InfoSupport.StaticCodeAnalyzer.Domain;
 
 
 //var lexer = new Lexer(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Parsing\Lexer.cs"));
@@ -11,11 +13,15 @@ var _ = Lexer.Lex(File.ReadAllText(@"C:\Users\NoahD\source\repos\InfoSupport.Sta
 //return;
 
 //var directory = @"C:\Users\NoahD\source\repos\Files\src";
-//var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
+var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
 //var directory = @"C:\Users\NoahD\source\repos\NestedStringsTesting\NestedStringsTesting";
 //var directory = @"C:\Users\NoahD\source\repos\RoslynTest\RoslynTest";
 //var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
-var directory = @"C:\Users\NoahD\source\repos\UAssetAPI";
+//var directory = @"C:\Users\NoahD\source\repos\UAssetAPI";
+
+Runner.RunAnalysis(new Project("Example", directory));
+
+/*
 
 string[] paths = Directory
     .GetFiles(directory, "*.cs", SearchOption.AllDirectories);
@@ -41,3 +47,4 @@ foreach (string path in paths)
 }
 
 Console.WriteLine($"Successfully parsed all {paths.Length} files in directory consisting of {tokensLexed} tokens!");
+*/

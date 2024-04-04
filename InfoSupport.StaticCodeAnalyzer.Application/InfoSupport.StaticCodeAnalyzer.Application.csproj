@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Domain\InfoSupport.StaticCodeAnalyzer.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
