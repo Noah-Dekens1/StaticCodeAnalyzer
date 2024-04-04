@@ -2224,6 +2224,8 @@ public class Parser
         return new ConstantPatternNode(value);
     }
 
+    private readonly List<string> _contextualKeywordsForPatterns = ["and", "or", "not", "when"];
+
     private bool TryParseDeclarationPattern([NotNullWhen(true)] out DeclarationPatternNode? declarationPattern)
     {
         var start = Tell();
@@ -2236,7 +2238,7 @@ public class Parser
             return false;
         }
 
-        if (!Matches(TokenKind.Identifier))
+        if (!Matches(TokenKind.Identifier) || _contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
         {
             Seek(start);
             return false;
@@ -2307,7 +2309,8 @@ public class Parser
             return declarationPattern;
         }
 
-        if (isIdentifier || isLiteral)
+        if ((isIdentifier || isLiteral || IsMaybeType(PeekCurrent(), true)) && 
+            !_contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
         {
             // @note: Roslyn doesn't parse this as a constant pattern so I assume this is 'technically wrong'
             // but for the analyzer this makes things more simple and AFAIK there's little difference between
