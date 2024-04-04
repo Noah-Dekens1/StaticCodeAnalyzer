@@ -4212,7 +4212,7 @@ public class ParserTests
                 className: AstUtils.SimpleName("Example"),
                 members: [
                     new FieldMemberNode(
-                        accessModifier: AccessModifier.Public,
+                        accessModifier: AccessModifier.Private,
                         modifiers: [],
                         fieldName: "_counter",
                         fieldType: AstUtils.SimpleNameAsType("int"),
