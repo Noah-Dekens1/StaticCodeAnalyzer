@@ -27,6 +27,16 @@ public class ParserTests
         return (T)ast.Root.GlobalStatements[index].Statement;
     }
 
+    private static void CheckNodesEmittedRecursive(AstNode node)
+    {
+        Assert.IsTrue(node.ConstructedInEmit, $"Node of type {node.GetType().Name} was not cnstructed in an Emit() method, this will break code locations!");
+
+        foreach (var child in node.Children)
+        {
+            CheckNodesEmittedRecursive(child);
+        }
+    }
+
     [DebuggerHidden]
     private static void AssertStandardASTEquals(AST expected, AST actual)
     {
@@ -39,6 +49,8 @@ public class ParserTests
             .IgnorePropertyOfType<AstNode>(n => n.ConstructedInEmit)
 #endif
             .Compare(expected, actual);
+
+        CheckNodesEmittedRecursive(actual.Root);
     }
 
     [TestMethod]
@@ -3325,7 +3337,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(actual, expected);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -4640,7 +4652,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(actual, expected);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -4675,7 +4687,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(actual, expected);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -4710,7 +4722,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(actual, expected);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -4778,7 +4790,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(actual, expected);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]
@@ -4884,7 +4896,7 @@ public class ParserTests
             )
         );
 
-        AssertStandardASTEquals(actual, expected);
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]

@@ -88,13 +88,13 @@ public static class AstExtensions
     {
         var matches = new List<T>();
 
+        if (node is T match)
+        {
+            matches.Add(match);
+        }
+
         foreach (var child in node.Children)
         {
-            if (node is T match)
-            {
-                matches.Add(match);
-            }
-
             matches.AddRange(child.GetAllDescendantsOfType<T>());
         }
 

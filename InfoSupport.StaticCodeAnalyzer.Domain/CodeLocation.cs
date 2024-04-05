@@ -12,6 +12,16 @@ public struct Position(ulong line, ulong column)
 {
     public ulong Line { get; set; } = line;
     public ulong Column { get; set; } = column;
+
+    public Position() : this(1, 1)
+    {
+    }
+
+    public void Add(Position other)
+    {
+        Line += other.Line;
+        Column += other.Column;
+    }
 }
 
 public readonly struct CodeLocation(Position start, Position end)

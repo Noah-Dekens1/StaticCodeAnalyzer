@@ -11,7 +11,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis
 
 public class CodeDisplayCLI
 {
-    public static void DisplayCode(string fileContent, AST ast, CodeLocation highlight)
+    public static void DisplayCode(string fileContent, AST ast, List<CodeLocation> highlights)
     {
         var lines = fileContent.Split('\n');
 
@@ -24,24 +24,31 @@ public class CodeDisplayCLI
                 var column = line[j];
 
                 // line/column start at 1 (but indexed on 0)
-                var cLine = (ulong)i + 1;
-                var cColumn = (ulong)j + 1;
+                var isAnyHighlight = false;
 
-                var start = highlight.Start;
-                var end = highlight.End;
+                foreach (var highlight in highlights)
+                {
+                    var cLine = (ulong)i + 1;
+                    var cColumn = (ulong)j + 1;
 
-                var isHighlight = cLine >= start.Line && cLine <= end.Line;
-                isHighlight &= cLine != start.Line || cColumn >= start.Column;
-                isHighlight &= cLine != end.Line   || cColumn <= end.Column;
+                    var start = highlight.Start;
+                    var end = highlight.End;
 
-                if (isHighlight)
+                    var isHighlight = cLine >= start.Line && cLine <= end.Line;
+                    isHighlight &= cLine != start.Line || cColumn >= start.Column;
+                    isHighlight &= cLine != end.Line || cColumn <= end.Column;
+
+                    isAnyHighlight |= isHighlight;
+                }
+
+                if (isAnyHighlight)
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
                 }
 
                 Console.Write(column);
 
-                if (isHighlight)
+                if (isAnyHighlight)
                 {
                     Console.ResetColor();
                 }

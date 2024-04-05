@@ -21,6 +21,13 @@ public abstract class AstNode
 
 #if DEBUG
     public bool ConstructedInEmit { get; set; }
+
+    public static T Construct<T>(T node)
+        where T : AstNode
+    {
+        node.ConstructedInEmit = true;
+        return node;
+    }
 #endif
 }
 
@@ -911,7 +918,7 @@ public class CollectionInitializerNode(List<CollectionInitializerElementNode> va
 public class ObjectCreationExpressionNode(TypeNode? type, bool isArrayCreation=false, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
 {
     public TypeNode? Type { get; } = type;
-    public ArgumentListNode Arguments { get; } = arguments ?? new ArgumentListNode([]);
+    public ArgumentListNode Arguments { get; } = arguments ?? Construct(new ArgumentListNode([]));
     public CollectionInitializerNode? CollectionInitializer = initializer;
     public bool IsArrayCreation { get; } = isArrayCreation;
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type, Arguments, CollectionInitializer);
@@ -1170,8 +1177,8 @@ public class BasicDeclarationNode(
     public List<MemberNode> Members { get; } = members;
 
     // Primary Constructor parameters
-    public ParameterListNode Parameters { get; } = parameters ?? new([]);
-    public ArgumentListNode BaseArguments { get; } = baseArguments ?? new([]);
+    public ParameterListNode Parameters { get; } = parameters ?? Construct<ParameterListNode>(new([]));
+    public ArgumentListNode BaseArguments { get; } = baseArguments ?? Construct<ArgumentListNode>(new([]));
 
     public List<WhereConstraintNode> GenericConstraints { get; } = genericConstraints ?? [];
 

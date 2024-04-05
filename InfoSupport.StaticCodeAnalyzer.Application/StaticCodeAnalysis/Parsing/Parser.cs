@@ -240,7 +240,7 @@ public class Parser
         return subParser.ParseExpression()!;
     }
 
-    private static StringInterpolationNode ParseInterpolation(string str, out int read, int expectedBraces = 1)
+    private static StringInterpolationNode ParseInterpolation(string str, out int read, Position locationStart, int expectedBraces = 1)
     {
         read = 0;
 
@@ -268,7 +268,7 @@ public class Parser
 
                 // Parse string starting from beginning
                 // (i may be after $/@ already which is why we look back for j)
-                var inner = ParseStringLiteral(str[(j + 1)..]);
+                var inner = ParseStringLiteral(str[(j + 1)..], new CodeLocation());
 
                 interpolationBuilder.Append(str[i..(j + 1 + inner.Consumed - inner.QuoteCount)]);
                 interpolationBuilder.Append('"', inner.QuoteCount);
@@ -292,20 +292,24 @@ public class Parser
             i++;
         }
 
-        var tokens = Lexer.Lex(interpolationBuilder.ToString());
+        var tokens = Lexer.Lex(interpolationBuilder.ToString(), locationStart);
         var expr = ParseExpressionFromTokens(tokens);
 
         read = i + 1; // include trailing }
 
-        return new StringInterpolationNode(expr);
+        // @fixme: this will break on multiline interpolated strings
+        return EmitStatic(new StringInterpolationNode(expr), locationStart, new Position(locationStart.Line, locationStart.Column + (ulong)i - 1));
     }
 
-    private static StringLiteralData ParseStringLiteral(string str)
+    private static StringLiteralData ParseStringLiteral(string str, CodeLocation location)
     {
         int i = 0;
         int dollarSigns = 0;
         int quotes = 0;
         bool isVerbatim = false;
+
+        int lineOffset = 0;
+        int columnOffset = 0;
 
         List<StringInterpolationNode> interpolations = [];
 
@@ -343,10 +347,26 @@ public class Parser
         int bracesSeen = 0;
         int quotesSeen = 1;
 
+        columnOffset = i;
+
+        int lastIndex = i - 1;
+
         while (i < str.Length)
         {
             var c = str[i];
             var n = i + 1 < str.Length ? str[i + 1] : '\0';
+
+            if (c == '\n')
+            {
+                lineOffset++;
+                columnOffset = 0;
+            }
+            else
+            {
+                columnOffset += i - lastIndex;
+            }
+
+            lastIndex = i;
 
             if (isInterpolated)
             {
@@ -368,7 +388,10 @@ public class Parser
                         if (isInterpolated && bracesSeen == dollarSigns)
                         {
                             var target = str[i..];
-                            interpolations.Add(ParseInterpolation(target, out var read, expectedBraces: 1));
+                            var interpolationStart = new Position(location.Start.Line, location.Start.Column);
+                            interpolationStart.Add(new Position((ulong)lineOffset, (ulong)columnOffset));
+
+                            interpolations.Add(ParseInterpolation(target, out var read, interpolationStart, expectedBraces: 1));
                             i += read;
                             sb.Append(target[..read]);
                             bracesSeen = 0;
@@ -438,12 +461,12 @@ public class Parser
         if (kind == TokenKind.NumericLiteral)
         {
             //Consume();
-            literal = new NumericLiteralNode(token.Value);
+            literal = EmitStatic(new NumericLiteralNode(token.Value), token);
             return true;
         }
         else if (kind == TokenKind.StringLiteral || kind == TokenKind.InterpolatedStringLiteral)
         {
-            var data = ParseStringLiteral(token.Lexeme);
+            var data = ParseStringLiteral(token.Lexeme, new CodeLocation(token.Start, token.End));
 
             literal = data.IsInterpolated
                 ? Emit(new InterpolatedStringLiteralNode(data.Content, data.Interpolations), start, end)
@@ -781,7 +804,7 @@ public class Parser
             ? expr
             : ToIndexExpression(expr)!;
 
-        var args = Emit(new BracketedArgumentList([new ArgumentNode(expr)]), start);
+        var args = Emit(new BracketedArgumentList([EmitStatic(new ArgumentNode(expr), expr.Location)]), start);
 
         Expect(TokenKind.CloseBracket);
 
@@ -864,6 +887,7 @@ public class Parser
             // Could be collection initializer
             if (ConsumeIfMatch(TokenKind.OpenBrace))
             {
+                var initializerStart = GetStartPosition();
                 // What kind is it? List, indexed, grouped?
 
                 // If the current token is { again we can parse as a (list of?) complex initializer expressions
@@ -898,12 +922,12 @@ public class Parser
                     }
                 } while (ConsumeIfMatch(TokenKind.Comma));
 
-                initializer = Emit(new CollectionInitializerNode(values), start);
+                initializer = Emit(new CollectionInitializerNode(values), initializerStart);
 
                 Expect(TokenKind.CloseBrace);
             }
 
-            return new ObjectCreationExpressionNode(type, isArrayCreation, args, initializer);
+            return Emit(new ObjectCreationExpressionNode(type, isArrayCreation, args, initializer), start);
         }
         else if (ConsumeIfMatch(TokenKind.OpenBracket))
         {
@@ -1294,11 +1318,11 @@ public class Parser
 
         if (ConsumeIfMatch(TokenKind.ThisKeyword))
         {
-            possibleLHS = new ThisExpressionNode();
+            possibleLHS = Emit(new ThisExpressionNode(), start);
         }
         else if (ConsumeIfMatch(TokenKind.BaseKeyword))
         {
-            possibleLHS = new BaseExpressionNode();
+            possibleLHS = Emit(new BaseExpressionNode(), start);
         }
 
         if (token.Kind == TokenKind.OpenParen && possibleLHS is null)
@@ -1990,7 +2014,7 @@ public class Parser
         var statements = new List<ExpressionStatementNode>();
 
         if (Matches(TokenKind.Semicolon) || Matches(TokenKind.CloseParen))
-            return new ExpressionStatementListNode(statements);
+            return Emit(new ExpressionStatementListNode(statements), start);
 
         do
         {
@@ -3134,7 +3158,7 @@ public class Parser
             var parameterStart = GetStartPosition();
             
             if (Matches(TokenKind.CloseParen))
-                return new ParameterListNode(parameters);
+                return Emit(new ParameterListNode(parameters), start);
 
             List<AttributeNode> attributes = [];
 
@@ -3464,7 +3488,7 @@ public class Parser
 
     private AST ParseInternal(Token[] tokens)
     {
-        var ast = new AST { Root = new() };
+        var ast = new AST { Root = EmitStatic<GlobalNamespaceNode>(new(), new CodeLocation()) };
 
         if (tokens.Length == 0)
             return ast;

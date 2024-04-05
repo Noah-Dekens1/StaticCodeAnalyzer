@@ -1039,9 +1039,15 @@ public class Lexer(string fileContent)
         return str;
     }
 
-    public static List<Token> Lex(string content)
+    public static List<Token> Lex(string content, Position? startPosition = null)
     {
-        var lexer = new Lexer(content);
+        startPosition ??= new Position();
+
+        var lexer = new Lexer(content)
+        {
+            _line = startPosition.Value.Line,
+            _column = startPosition.Value.Column
+        };
         return lexer.LexInternal();
     }
 
