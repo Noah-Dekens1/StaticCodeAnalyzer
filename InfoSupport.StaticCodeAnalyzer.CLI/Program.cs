@@ -21,8 +21,9 @@ var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
 //var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
 //var directory = @"C:\Users\NoahD\source\repos\UAssetAPI";
 
-//Runner.RunAnalysis(new Project("Example", directory));
+Runner.RunAnalysis(new Project("Example", directory));
 
+/*
 var testFilePath = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\UnitTests\LexerTests.cs";
 var testFile = File.ReadAllText(testFilePath);
 var tokens = Lexer.Lex(testFile);
@@ -42,7 +43,7 @@ CodeDisplayCLI.DisplayCode(
     .ToList()
     
     );
-
+*/
 /*
 
 string[] paths = Directory
