@@ -15,9 +15,39 @@ public class CodeDisplayCLI
     {
         var lines = fileContent.Split('\n');
 
-        foreach (var line in lines)
+        for (int i = 0; i < lines.Length; i++)
         {
-            Console.WriteLine(line);
+            var line = lines[i];
+
+            for (int j = 0; j < line.Length; j++)
+            {
+                var column = line[j];
+
+                // line/column start at 1 (but indexed on 0)
+                var cLine = (ulong)i + 1;
+                var cColumn = (ulong)j + 1;
+
+                var start = highlight.Start;
+                var end = highlight.End;
+
+                var isHighlight = cLine >= start.Line && cLine <= end.Line;
+                isHighlight &= cLine != start.Line || cColumn >= start.Column;
+                isHighlight &= cLine != end.Line   || cColumn <= end.Column;
+
+                if (isHighlight)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                }
+
+                Console.Write(column);
+
+                if (isHighlight)
+                {
+                    Console.ResetColor();
+                }
+            }
+
+            Console.WriteLine();
         }
     }
 }

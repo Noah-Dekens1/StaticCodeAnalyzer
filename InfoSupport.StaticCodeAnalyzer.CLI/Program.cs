@@ -27,7 +27,7 @@ var testFilePath = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\
 var testFile = File.ReadAllText(testFilePath);
 var tokens = Lexer.Lex(testFile);
 var ast = Parser.Parse(tokens);
-CodeDisplayCLI.DisplayCode(testFile, ast, ast.GetClasses().SelectMany(c => c.GetAllDescendantsOfType<InvocationExpressionNode>()).First().Location);
+CodeDisplayCLI.DisplayCode(testFile, ast, ast.GetClasses().SelectMany(c => c.GetAllDescendantsOfType<MethodNode>()).First().Location);
 
 /*
 

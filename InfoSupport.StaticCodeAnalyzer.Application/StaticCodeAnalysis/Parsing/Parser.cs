@@ -54,7 +54,7 @@ public class Parser
 
     private Position GetEndPosition()
     {
-        return _input[_index].End;
+        return _input[_index - 1].End;
     }
 
     private static T EmitInternal<T>(T node, Position start, Position end) where T : AstNode
@@ -3432,7 +3432,7 @@ public class Parser
 
     private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, Position start, bool allowTopLevelStatements = false)
     {
-        var ns = Emit(isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped), start);
+        var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped);
         var directives = ParseUsingDirectives();
 
         // try parse assembly/module
@@ -3459,7 +3459,7 @@ public class Parser
         ns.TypeDeclarations.AddRange(typeDeclarations);
         ns.Namespaces.AddRange(namespaces);
 
-        return ns;
+        return Emit(ns, start);
     }
 
     private AST ParseInternal(Token[] tokens)
