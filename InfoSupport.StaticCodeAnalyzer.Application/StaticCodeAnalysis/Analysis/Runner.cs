@@ -41,6 +41,8 @@ public class Runner
                 analyzer.Analyze(project, ast, fileIssues);
                 projectFile.Issues.AddRange(fileIssues);
             }
+
+            projectFiles.Add(projectFile);
         }
 
         return new Report(project, projectFiles);

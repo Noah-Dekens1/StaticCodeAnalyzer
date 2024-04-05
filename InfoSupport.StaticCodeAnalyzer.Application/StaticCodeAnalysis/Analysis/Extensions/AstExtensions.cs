@@ -83,19 +83,19 @@ public static class AstExtensions
         return false;
     }
 
-    public static List<T> GetAllDescendantsOfType<T>(this AstNode node)
+    public static List<T> GetAllDescendantsOfType<T>(this AstNode node, bool includeSelf = false)
         where T : AstNode
     {
         var matches = new List<T>();
 
-        if (node is T match)
+        if (includeSelf && node is T match)
         {
             matches.Add(match);
         }
 
         foreach (var child in node.Children)
         {
-            matches.AddRange(child.GetAllDescendantsOfType<T>());
+            matches.AddRange(child.GetAllDescendantsOfType<T>(true));
         }
 
         return matches;
