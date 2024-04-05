@@ -23,11 +23,25 @@ var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
 
 //Runner.RunAnalysis(new Project("Example", directory));
 
-var testFilePath = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Analysis\Runner.cs";
+var testFilePath = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\UnitTests\LexerTests.cs";
 var testFile = File.ReadAllText(testFilePath);
 var tokens = Lexer.Lex(testFile);
 var ast = Parser.Parse(tokens);
-CodeDisplayCLI.DisplayCode(testFile, ast, ast.GetClasses().SelectMany(c => c.GetAllDescendantsOfType<StringInterpolationNode>()).Select(s => s.Location).ToList());
+CodeDisplayCLI.DisplayCode(
+    testFile, 
+    ast.Root
+    .GetAllDescendantsOfType<MethodNode>()
+    .Where(m => 
+        m.HasAttribute("DataTestMethod")
+    )
+    .Select(s => s.Location)
+    .Concat(
+        ast.Root.GetAllDescendantsOfType<ObjectCreationExpressionNode>()
+        .Select(s => s.Location)
+    )
+    .ToList()
+    
+    );
 
 /*
 

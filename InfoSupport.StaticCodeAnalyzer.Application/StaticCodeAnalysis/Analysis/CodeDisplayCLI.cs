@@ -11,7 +11,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis
 
 public class CodeDisplayCLI
 {
-    public static void DisplayCode(string fileContent, AST ast, List<CodeLocation> highlights)
+    public static void DisplayCode(string fileContent, List<CodeLocation> highlights)
     {
         var lines = fileContent.Split('\n');
 

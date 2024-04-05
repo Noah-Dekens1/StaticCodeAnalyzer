@@ -26,8 +26,6 @@ public class Runner
     {
         var paths = GetFilesInProject(project);
 
-        var example = $"hello {"world!!" + "test2"}";
-
         var projectFiles = new List<ProjectFile>();
 
         foreach (var path in paths)
