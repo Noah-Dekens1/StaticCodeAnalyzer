@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Domain;
+
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 struct StringData
@@ -173,18 +175,6 @@ public enum TokenKind
     WhileKeyword
 }
 
-[DebuggerDisplay("Ln: {Line} Col: {Column}")]
-public struct Position
-{
-    public ulong Line { get; set; }
-    public ulong Column { get; set; }
-
-    public Position(ulong line, ulong column)
-    {
-        Line = line;
-        Column = column;
-    }
-}
 
 [DebuggerDisplay("{Kind} {Lexeme} {Start} {End}")]
 public struct Token
@@ -1049,9 +1039,15 @@ public class Lexer(string fileContent)
         return str;
     }
 
-    public static List<Token> Lex(string content)
+    public static List<Token> Lex(string content, Position? startPosition = null)
     {
-        var lexer = new Lexer(content);
+        startPosition ??= new Position();
+
+        var lexer = new Lexer(content)
+        {
+            _line = startPosition.Value.Line,
+            _column = startPosition.Value.Column
+        };
         return lexer.LexInternal();
     }
 
@@ -1315,7 +1311,7 @@ public class Lexer(string fileContent)
 
         Emit(TokenKind.EndOfFile, string.Empty);
 
-        Console.WriteLine($"Successfully finished lexing {_tokens.Count} tokens!");
+        //Console.WriteLine($"Successfully finished lexing {_tokens.Count} tokens!");
 
         return _tokens;
     }

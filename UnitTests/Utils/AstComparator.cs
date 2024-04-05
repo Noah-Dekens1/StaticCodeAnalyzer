@@ -14,7 +14,7 @@ namespace InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
 
 public class AstComparator
 {
-    private readonly Dictionary<Type, string> _ignoredProperties = [];
+    private readonly Dictionary<Type, List<string>> _ignoredProperties = [];
 
     [DebuggerHidden]
     public static AstComparator Create()
@@ -22,10 +22,31 @@ public class AstComparator
         return new AstComparator();
     }
 
-    [DebuggerHidden]
+    //[DebuggerHidden]
     public AstComparator IgnorePropertyOfType<T>(Expression<Func<T, object>> selector)
     {
-        _ignoredProperties.Add(typeof(T), ((MemberExpression)selector.Body).Member.Name);
+        var type = typeof(T);
+
+        // @note cast to UnaryExpression in case of value types since boxing occurs
+        var memberExpression = selector.Body as MemberExpression ??
+                           (selector.Body as UnaryExpression)?.Operand as MemberExpression;
+
+        if (memberExpression == null)
+        {
+            throw new ArgumentException("The provided selector does not refer to a property.");
+        }
+
+        var value = memberExpression.Member.Name;
+
+        if (_ignoredProperties.TryGetValue(type, out List<string>? list))
+        {
+            list.Add(value);
+        }
+        else
+        {
+            _ignoredProperties.Add(type, [value]);
+        }
+
         return this;
     }
 
@@ -51,7 +72,7 @@ public class AstComparator
         var expectedType = expected.GetType();
         var actualType = actual.GetType();
 
-        Console.WriteLine($"Checking {expectedType}");
+        //Console.WriteLine($"Checking {expectedType}");
 
         if (expectedType != actualType)
         {
@@ -67,15 +88,15 @@ public class AstComparator
 
         foreach (var property in properties)
         {
-            Console.WriteLine($"Checking property {property.Name}");
+            //Console.WriteLine($"Checking property {property.Name}");
             var expectedValue = property.GetValue(expected);
             var actualValue = property.GetValue(actual);
 
             var exclude = false;
 
-            foreach (var (classType, name) in _ignoredProperties)
+            foreach (var (classType, ignored) in _ignoredProperties)
             {
-                if (classType.IsAssignableFrom(type) && property.Name == name)
+                if (classType.IsAssignableFrom(type) && ignored.Contains(property.Name))
                 {
                     exclude = true;
                     break;
@@ -160,9 +181,9 @@ public class AstComparator
 
             var exclude = false;
 
-            foreach (var (classType, name) in _ignoredProperties)
+            foreach (var (classType, ignored) in _ignoredProperties)
             {
-                if (classType.IsAssignableFrom(type) && field.Name == name)
+                if (classType.IsAssignableFrom(type) && ignored.Contains(field.Name))
                 {
                     exclude = true;
                     break;

@@ -11,5 +11,5 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 public abstract class Analyzer
 {
-    public abstract bool Analyze(AST ast, List<Issue> issues);
+    public abstract bool Analyze(Project project, AST ast, List<Issue> issues);
 }

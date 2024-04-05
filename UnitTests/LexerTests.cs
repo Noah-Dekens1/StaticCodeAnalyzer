@@ -3,6 +3,7 @@ using System.Diagnostics.Metrics;
 using System.Runtime.InteropServices;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace UnitTests;
 

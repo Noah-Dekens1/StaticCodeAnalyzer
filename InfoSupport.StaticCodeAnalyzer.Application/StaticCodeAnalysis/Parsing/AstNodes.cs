@@ -8,6 +8,8 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Domain;
+
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 public abstract class AstNode
@@ -15,13 +17,25 @@ public abstract class AstNode
     public List<Token> Tokens { get; } = [];
 
     public abstract List<AstNode> Children { get; }
+    public CodeLocation Location { get; set; }
+
+#if DEBUG
+    public bool ConstructedInEmit { get; set; }
+
+    public static T Construct<T>(T node)
+        where T : AstNode
+    {
+        node.ConstructedInEmit = true;
+        return node;
+    }
+#endif
 }
 
 public class GlobalNamespaceNode() : NamespaceNode("global", true)
 {
     public List<GlobalStatementNode> GlobalStatements { get; } = [];
 
-    public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces];
+    public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces, ..Attributes];
 }
 
 [DebuggerDisplay("namespace {Name,nq}")]
@@ -41,7 +55,7 @@ public class NamespaceNode(
     public List<TypeDeclarationNode> TypeDeclarations { get; } = typeDeclarations ?? [];
     public List<NamespaceNode> Namespaces { get; } = namespaces ?? [];
 
-    public override List<AstNode> Children => [.. UsingDirectives, .. TypeDeclarations, .. Namespaces];
+    public override List<AstNode> Children => [.. UsingDirectives, .. TypeDeclarations, .. Namespaces, ..Attributes];
 }
 
 public class StatementNode : AstNode
@@ -555,7 +569,7 @@ public class TypeNode(AstNode baseType, TypeArgumentsNode? typeArguments = null,
     public ArrayTypeData ArrayType { get; } = arrayType ?? new();
     public bool IsNullable { get; } = isNullable;
 
-    public override List<AstNode> Children => Utils.ParamsToList(BaseType, TypeArgumentsNode);
+    public override List<AstNode> Children => Utils.ParamsToList(BaseType, TypeArgumentsNode, ArrayType.ArrayRank);
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => TypeArgumentsNode is not null
@@ -693,7 +707,7 @@ public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentif
     public ExpressionNode Collection { get; } = collection;
     public AstNode Body { get; } = body;
 
-    public override List<AstNode> Children => [Collection, Body];
+    public override List<AstNode> Children => [VariableType, VariableIdentifier, Collection, Body];
 }
 
 [DebuggerDisplay("while ({Condition,nq}) ...")]
@@ -745,7 +759,7 @@ public class ArgumentNode(ExpressionNode expression, ParameterType parameterType
     /** Type of out parameter */
     public TypeNode? TargetType { get; } = targetType;
 
-    public override List<AstNode> Children => [Expression];
+    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Expression, TargetType);
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => Name is not null
@@ -904,7 +918,7 @@ public class CollectionInitializerNode(List<CollectionInitializerElementNode> va
 public class ObjectCreationExpressionNode(TypeNode? type, bool isArrayCreation=false, ArgumentListNode? arguments = null, CollectionInitializerNode? initializer = null) : ExpressionNode
 {
     public TypeNode? Type { get; } = type;
-    public ArgumentListNode Arguments { get; } = arguments ?? new ArgumentListNode([]);
+    public ArgumentListNode Arguments { get; } = arguments ?? Construct(new ArgumentListNode([]));
     public CollectionInitializerNode? CollectionInitializer = initializer;
     public bool IsArrayCreation { get; } = isArrayCreation;
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(Type, Arguments, CollectionInitializer);
@@ -991,7 +1005,7 @@ public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifie
     public TypeNode FieldType { get; } = fieldType;
     public ExpressionNode? Value { get; } = value;
 
-    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(FieldType, Value);
+    public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList<AstNode>(FieldType, Value)];
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => Value is not null
@@ -1050,7 +1064,7 @@ public class PropertyMemberNode(
     public PropertyAccessorNode? Setter { get; } = setter;
     public ExpressionNode? Value { get; } = value;
 
-    public override List<AstNode> Children => Utils.ParamsToList<AstNode>(PropertyType, Getter, Setter, Value);
+    public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList<AstNode>(PropertyType, Getter, Setter, Value)];
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{PropertyType} {PropertyName}";
@@ -1062,7 +1076,7 @@ public class EnumMemberNode(string identifier, ExpressionNode? value, List<Attri
     public string Identifier { get; } = identifier;
     public ExpressionNode? Value { get; } = value;
 
-    public override List<AstNode> Children => Value is not null ? [Value] : [];
+    public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList<AstNode>(Value)];
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => Value is not null
@@ -1086,7 +1100,7 @@ public class ConstructorNode(AccessModifier accessModifier, ParameterListNode pa
     public ArgumentListNode? BaseArguments { get; } = baseArguments;
     public AstNode Body { get; } = body;
 
-    public override List<AstNode> Children => Utils.ParamsToList(Parameters, BaseArguments, Body);
+    public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList(Parameters, BaseArguments, Body)];
 }
 
 public enum GenericConstraintType
@@ -1147,7 +1161,7 @@ public class MethodNode(
     public AstNode? Body { get; } = body;
     public List<WhereConstraintNode> GenericConstraints = genericConstraints ?? [];
 
-    public override List<AstNode> Children => Utils.ParamsToList(ReturnType, MethodName, Parameters, Body);
+    public override List<AstNode> Children => [..Attributes, ..GenericConstraints, ..Utils.ParamsToList(ReturnType, MethodName, Parameters, Body)];
 }
 
 public class BasicDeclarationNode(
@@ -1163,12 +1177,12 @@ public class BasicDeclarationNode(
     public List<MemberNode> Members { get; } = members;
 
     // Primary Constructor parameters
-    public ParameterListNode Parameters { get; } = parameters ?? new([]);
-    public ArgumentListNode BaseArguments { get; } = baseArguments ?? new([]);
+    public ParameterListNode Parameters { get; } = parameters ?? Construct<ParameterListNode>(new([]));
+    public ArgumentListNode BaseArguments { get; } = baseArguments ?? Construct<ArgumentListNode>(new([]));
 
     public List<WhereConstraintNode> GenericConstraints { get; } = genericConstraints ?? [];
 
-    public override List<AstNode> Children => [.. Members];
+    public override List<AstNode> Children => [.. Members, Name, Parameters, BaseArguments, ..GenericConstraints, ..Utils.ParamsToList<AstNode>(ParentName)];
 }
 
 [DebuggerDisplay("class {Name,nq}")]
@@ -1214,7 +1228,7 @@ public class EnumDeclarationNode(
     public AstNode EnumName { get; } = enumName;
     public List<EnumMemberNode> Members { get; } = members;
 
-    public override List<AstNode> Children => [.. Members];
+    public override List<AstNode> Children => [.. Members, ..Utils.ParamsToList<AstNode>(ParentType, EnumName), ..Attributes];
 }
 
 public enum TypeKind
@@ -1240,7 +1254,7 @@ public class LocalFunctionDeclarationNode(
     public ParameterListNode Parameters { get; } = parameters;
     public AstNode Body { get; } = body;
 
-    public override List<AstNode> Children => [Name, ReturnType, Parameters, Body];
+    public override List<AstNode> Children => [Name, ReturnType, Parameters, Body, ..GenericConstraints];
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => $"{ReturnType} {Name}({Parameters})";
@@ -1298,7 +1312,7 @@ public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode 
     public List<LambdaParameterNode> Parameters { get; } = parameters;
     public AstNode Body { get; } = body;
 
-    public override List<AstNode> Children => [Body];
+    public override List<AstNode> Children => [..Parameters, Body];
 }
 
 public abstract class PatternNode : AstNode
@@ -1609,6 +1623,8 @@ public class TryStatementNode(BlockNode block, List<CatchClauseNode>? catchClaus
     public BlockNode Block { get; } = block;
     public List<CatchClauseNode> CatchClauses { get; } = catchClauses ?? [];
     public FinallyClauseNode? FinallyClause { get; } = finallyClause;
+
+    public override List<AstNode> Children => [..CatchClauses, ..Utils.ParamsToList<AstNode>(Block, FinallyClause)];
 
     public override string ToString() => $"try";
 }

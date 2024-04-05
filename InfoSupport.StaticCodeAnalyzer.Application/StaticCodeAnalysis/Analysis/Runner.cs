@@ -38,7 +38,7 @@ public class Runner
             foreach (var analyzer in Analyzers)
             {
                 var fileIssues = new List<Issue>();
-                analyzer.Analyze(ast, fileIssues);
+                analyzer.Analyze(project, ast, fileIssues);
                 projectFile.Issues.AddRange(fileIssues);
             }
         }
