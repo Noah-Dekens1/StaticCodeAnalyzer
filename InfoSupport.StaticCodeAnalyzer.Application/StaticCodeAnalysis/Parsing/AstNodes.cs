@@ -8,6 +8,8 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Domain;
+
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 public abstract class AstNode
@@ -15,6 +17,11 @@ public abstract class AstNode
     public List<Token> Tokens { get; } = [];
 
     public abstract List<AstNode> Children { get; }
+    public CodeLocation Location { get; set; }
+
+#if DEBUG
+    public bool ConstructedInEmit { get; set; }
+#endif
 }
 
 public class GlobalNamespaceNode() : NamespaceNode("global", true)
