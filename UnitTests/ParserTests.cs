@@ -33,6 +33,11 @@ public class ParserTests
         AstComparator.
             Create()
             .IgnorePropertyOfType<AstNode>(n => n.Tokens)
+            .IgnorePropertyOfType<AstNode>(n => n.Children)
+            .IgnorePropertyOfType<AstNode>(n => n.Location)
+#if DEBUG
+            .IgnorePropertyOfType<AstNode>(n => n.ConstructedInEmit)
+#endif
             .Compare(expected, actual);
     }
 

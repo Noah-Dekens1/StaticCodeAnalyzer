@@ -19,19 +19,17 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 readonly struct MemberData(
     Token token, 
+    CodeLocation location,
     TypeArgumentsNode? typeArguments = null, 
     bool isConditional = false, 
-    bool isNullForgiving = false,
-    CodeLocation? conditionalLocation = null,
-    CodeLocation? nullForgivingLocation = null
+    bool isNullForgiving = false
     )
 {
     public readonly Token Token = token;
     public readonly TypeArgumentsNode? TypeArguments = typeArguments;
     public readonly bool IsConditional = isConditional;
     public readonly bool IsNullForgiving = isNullForgiving;
-    public readonly CodeLocation? ConditionalLocation = conditionalLocation;
-    public readonly CodeLocation? NullForgivingLocation = nullForgivingLocation;
+    public readonly CodeLocation Location = location;
 }
 
 readonly struct StringLiteralData(string content, bool isInterpolated, List<StringInterpolationNode> interpolations, int consumed, int quoteCount)
@@ -51,12 +49,12 @@ public class Parser
 
     private Position GetStartPosition()
     {
-        return _input[_index-1].Start;
+        return _input[_index].Start;
     }
 
     private Position GetEndPosition()
     {
-        return _input[_index - 1].End;
+        return _input[_index].End;
     }
 
     private static T EmitInternal<T>(T node, Position start, Position end) where T : AstNode
@@ -691,10 +689,10 @@ public class Parser
             : EmitStatic(new GenericNameNode(identifier, member.TypeArguments), member.Token);
 
         identifier = member.IsNullForgiving
-            ? EmitStatic(new NullForgivingExpressionNode(identifier), member.NullForgivingLocation!.Value)
+            ? EmitStatic(new NullForgivingExpressionNode(identifier), member.Location)
             : identifier;
 
-        if (members.Count == 1 && lhsExpr is null)
+        if (members.Count == 1 && lhsExpr is null)   
             return identifier;
         else if (members.Count == 1 && lhsExpr is not null)
             return lhsConditional
@@ -731,6 +729,7 @@ public class Parser
 
         do
         {
+            var memberStart = GetStartPosition();
             var token = Consume();
 
             TypeArgumentsNode? typeArguments = null;
@@ -748,8 +747,9 @@ public class Parser
             }
 
             bool isForgiving = ConsumeIfMatch(TokenKind.Exclamation);
+            var location = new CodeLocation(memberStart, GetEndPosition());
 
-            members.Add(new MemberData(token, typeArguments, isConditional, isForgiving));
+            members.Add(new MemberData(token, location, typeArguments, isConditional, isForgiving));
 
         } while (!IsAtEnd() && ConsumeIfMatch(TokenKind.Dot) && Matches(TokenKind.Identifier));
 
