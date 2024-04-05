@@ -32,8 +32,8 @@ foreach (var projectFile in report.ProjectFiles)
 
     if (issues.Count > 0)
     {
-        Console.WriteLine($"{projectFile.Name} ----");
-        CodeDisplayCLI.DisplayCode(File.ReadAllText(projectFile.Path), issues.Select(i => i.Location).ToList());
+        //Console.WriteLine($"{projectFile.Name} ----");
+        CodeDisplayCLI.DisplayCode(File.ReadAllText(projectFile.Path), issues, projectFile.Name);
     }
 }
 

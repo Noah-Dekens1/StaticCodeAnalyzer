@@ -39,13 +39,24 @@ public static class AstExtensions
         return ast.GetNamespaces().SelectMany(ns => ns.TypeDeclarations).OfType<ClassDeclarationNode>().ToList();
     }
 
-    private static string? AsIdentifier(this ExpressionNode expression)
+    public static string? AsIdentifier(this ExpressionNode expression)
     {
         if (expression is IdentifierExpression expr)
             return expr.Identifier;
 
         if (expression is MemberAccessExpressionNode memberAccess)
             return ((IdentifierExpression)memberAccess.Identifier).Identifier;
+
+        return null;
+    }
+
+    public static string? AsLongIdentifier(this ExpressionNode expression)
+    {
+        if (expression is IdentifierExpression expr)
+            return expr.Identifier;
+
+        if (expression is MemberAccessExpressionNode memberAccess)
+            return $"{memberAccess.LHS.AsLongIdentifier()}.{((IdentifierExpression)memberAccess.Identifier).Identifier}";
 
         return null;
     }

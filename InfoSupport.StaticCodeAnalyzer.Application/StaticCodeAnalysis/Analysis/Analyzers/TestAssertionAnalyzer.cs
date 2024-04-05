@@ -14,11 +14,16 @@ internal static class TestAssertionExtensions
 {
     public static bool DoesMethodContainAssertion(this MethodNode method)
     {
-        //var calls = method.GetAllDescendantsOfType<InvocationExpressionNode>().ToList();
+        var calls = method.GetAllDescendantsOfType<InvocationExpressionNode>().ToList();
         
-        //foreach (var call in calls)
+        foreach (var call in calls)
         {
-            //Console.WriteLine($"Call: {call.LHS}()");
+            var name = call.LHS.AsLongIdentifier();
+
+            if (name is not null && name.StartsWith("Assert")) // Extremely naive implementation
+            {
+                return true;
+            }
         }
 
         //method.GetAllCalledMethods();
