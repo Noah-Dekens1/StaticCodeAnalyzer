@@ -1,7 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Diagnostics;
+using System.Linq.Expressions;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing.Misc;
 using InfoSupport.StaticCodeAnalyzer.Domain;
@@ -19,7 +21,13 @@ var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
 //var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
 //var directory = @"C:\Users\NoahD\source\repos\UAssetAPI";
 
-Runner.RunAnalysis(new Project("Example", directory));
+//Runner.RunAnalysis(new Project("Example", directory));
+
+var testFilePath = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.Application\StaticCodeAnalysis\Analysis\Runner.cs";
+var testFile = File.ReadAllText(testFilePath);
+var tokens = Lexer.Lex(testFile);
+var ast = Parser.Parse(tokens);
+CodeDisplayCLI.DisplayCode(testFile, ast, ast.GetClasses().SelectMany(c => c.GetAllDescendantsOfType<InvocationExpressionNode>()).First().Location);
 
 /*
 

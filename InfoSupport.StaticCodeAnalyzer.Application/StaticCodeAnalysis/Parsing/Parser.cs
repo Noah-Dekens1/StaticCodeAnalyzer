@@ -1346,12 +1346,12 @@ public class Parser
 
         var isLiteral = PeekLiteralExpression(out var literal);
 
-        bool isUnary = IsUnaryOperator(isCurrentTokenIdentifier, out var isPrefix);
+        bool isUnary = IsUnaryOperator(possibleLHS is not null, out var isPrefix);
 
 
         if (isUnary)
         {
-            var unaryExpr = ParseUnaryExpression(isPrefix, resolvedIdentifier); // may be the final symbol in the expr
+            var unaryExpr = ParseUnaryExpression(isPrefix, possibleLHS); // may be the final symbol in the expr
             //var groupExpr = ParseExpression(unaryExpr);
 
             //return unaryExpr;

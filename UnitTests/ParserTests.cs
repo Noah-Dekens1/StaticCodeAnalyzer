@@ -5990,4 +5990,38 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_NullForgivingExpression_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            return (Analyzer)Activator.CreateInstance(s)!;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new ReturnStatementNode(
+                    returnExpression: new CastExpressionNode(
+                        type: AstUtils.SimpleNameAsType("Analyzer"),
+                        expr: new NullForgivingExpressionNode(
+                            expression: new InvocationExpressionNode(
+                                lhs: AstUtils.ResolveMemberAccess("Activator.CreateInstance"),
+                                arguments: new ArgumentListNode([
+                                    new ArgumentNode(
+                                        expression: new IdentifierExpression("s")
+                                    )
+                                ])
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
