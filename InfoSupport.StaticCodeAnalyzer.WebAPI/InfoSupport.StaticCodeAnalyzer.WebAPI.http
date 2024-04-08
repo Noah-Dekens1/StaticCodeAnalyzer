@@ -1,0 +1,6 @@
+@InfoSupport.StaticCodeAnalyzer.WebAPI_HostAddress = http://localhost:5173
+
+GET {{InfoSupport.StaticCodeAnalyzer.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
