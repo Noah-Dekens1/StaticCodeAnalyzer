@@ -1225,6 +1225,17 @@ public class StructDeclarationNode(
 
 }
 
+[DebuggerDisplay("record {Name,nq}")]
+public class RecordDeclarationNode(
+    AstNode name, List<MemberNode> members, AstNode? parentName = null,
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null,
+    ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
+    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
+{
+
+}
+
 [DebuggerDisplay("enum {EnumName,nq}")]
 public class EnumDeclarationNode(
     AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, 

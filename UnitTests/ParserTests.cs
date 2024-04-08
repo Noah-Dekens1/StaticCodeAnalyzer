@@ -6072,4 +6072,30 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_RecordType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public record Person(string FirstName, string LastName);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new RecordDeclarationNode(
+                name: AstUtils.SimpleName("Person"),
+                members: [],
+                accessModifier: AccessModifier.Public,
+                parameters: new ParameterListNode([
+                    new ParameterNode(AstUtils.SimpleNameAsType("string"), "FirstName"),
+                    new ParameterNode(AstUtils.SimpleNameAsType("string"), "LastName"),
+                ])
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
