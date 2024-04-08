@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
@@ -27,18 +28,28 @@ public class Runner
         var paths = GetFilesInProject(project);
 
         var projectFiles = new List<ProjectFile>();
+        var projectRef = new ProjectRef();
 
         foreach (var path in paths)
         {
             var file = File.ReadAllText(path);
-            var projectFile = new ProjectFile(Path.GetFileName(path), path);
             var tokens = Lexer.Lex(file);
             var ast = Parser.Parse(tokens);
+
+            projectRef.ProjectFiles.Add(path, ast);
+        }
+
+        projectRef.TypeLookup.GenerateTypeMappings(projectRef);
+
+        foreach (var fileInfo in projectRef.ProjectFiles)
+        {
+            var path = fileInfo.Key;
+            var projectFile = new ProjectFile(Path.GetFileName(path), path);
 
             foreach (var analyzer in Analyzers)
             {
                 var fileIssues = new List<Issue>();
-                analyzer.Analyze(project, ast, fileIssues);
+                analyzer.Analyze(project, fileInfo.Value, projectRef, fileIssues);
                 projectFile.Issues.AddRange(fileIssues);
             }
 

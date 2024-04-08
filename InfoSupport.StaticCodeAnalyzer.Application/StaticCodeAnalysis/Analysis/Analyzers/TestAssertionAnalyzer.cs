@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
@@ -34,7 +35,7 @@ internal static class TestAssertionExtensions
 
 public class TestAssertionAnalyzer : Analyzer
 {
-    public override bool Analyze(Project project, AST ast, List<Issue> issues)
+    public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
         var classes = ast.GetClasses();
         var testClasses = classes.Where(c => c.HasAttribute("TestClass")).ToList();
