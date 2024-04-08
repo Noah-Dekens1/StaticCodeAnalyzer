@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
@@ -2949,9 +2950,8 @@ public class ParserTests
         var expected = AST.Build();
 
         expected.Root.Namespaces.Add(
-            new NamespaceNode(
+            new GlobalNamespaceNode(
                 name: "Test",
-                isFileScoped: true,
                 typeDeclarations: [
                     new ClassDeclarationNode(
                         className: new IdentifierExpression("TestClass"),
@@ -6031,6 +6031,42 @@ public class ParserTests
                         )
                     )
                 )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_FileScopedNamespaceWithGlobalStatements_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            namespace A;
+
+            Console.WriteLine("hello world");
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.Namespaces.Add(
+            new GlobalNamespaceNode(
+                name: "A",
+                globalStatements: [
+                    new GlobalStatementNode(
+                        statement: new ExpressionStatementNode(
+                            expression: new InvocationExpressionNode(
+                            lhs: AstUtils.ResolveMemberAccess("Console.WriteLine"),
+                                arguments: new ArgumentListNode([
+                                    new ArgumentNode(
+                                        expression: new StringLiteralNode("hello world")
+                                    )
+                                ])
+                            )
+                        )
+                    )
+                ]
             )
         );
 
