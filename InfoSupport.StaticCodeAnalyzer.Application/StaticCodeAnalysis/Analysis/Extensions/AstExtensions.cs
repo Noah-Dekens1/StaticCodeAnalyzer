@@ -39,13 +39,24 @@ public static class AstExtensions
         return ast.GetNamespaces().SelectMany(ns => ns.TypeDeclarations).OfType<ClassDeclarationNode>().ToList();
     }
 
-    private static string? AsIdentifier(this ExpressionNode expression)
+    public static string? AsIdentifier(this ExpressionNode expression)
     {
         if (expression is IdentifierExpression expr)
             return expr.Identifier;
 
         if (expression is MemberAccessExpressionNode memberAccess)
             return ((IdentifierExpression)memberAccess.Identifier).Identifier;
+
+        return null;
+    }
+
+    public static string? AsLongIdentifier(this ExpressionNode expression)
+    {
+        if (expression is IdentifierExpression expr)
+            return expr.Identifier;
+
+        if (expression is MemberAccessExpressionNode memberAccess)
+            return $"{memberAccess.LHS.AsLongIdentifier()}.{((IdentifierExpression)memberAccess.Identifier).Identifier}";
 
         return null;
     }
@@ -83,19 +94,19 @@ public static class AstExtensions
         return false;
     }
 
-    public static List<T> GetAllDescendantsOfType<T>(this AstNode node)
+    public static List<T> GetAllDescendantsOfType<T>(this AstNode node, bool includeSelf = false)
         where T : AstNode
     {
         var matches = new List<T>();
 
-        if (node is T match)
+        if (includeSelf && node is T match)
         {
             matches.Add(match);
         }
 
         foreach (var child in node.Children)
         {
-            matches.AddRange(child.GetAllDescendantsOfType<T>());
+            matches.AddRange(child.GetAllDescendantsOfType<T>(true));
         }
 
         return matches;

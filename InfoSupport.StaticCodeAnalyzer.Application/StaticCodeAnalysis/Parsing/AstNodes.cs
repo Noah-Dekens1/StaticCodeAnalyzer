@@ -31,9 +31,16 @@ public abstract class AstNode
 #endif
 }
 
-public class GlobalNamespaceNode() : NamespaceNode("global", true)
+public class GlobalNamespaceNode(
+    string? name = null,
+    List<GlobalStatementNode>? globalStatements = null,
+    List<UsingDirectiveNode>? usingDirectives = null,
+    List<TypeDeclarationNode>? typeDeclarations = null,
+    List<NamespaceNode>? namespaces = null,
+    List<AttributeNode>? attributes = null
+    ) : NamespaceNode(name ?? "global", isFileScoped: true, usingDirectives, typeDeclarations, namespaces, attributes)
 {
-    public List<GlobalStatementNode> GlobalStatements { get; } = [];
+    public List<GlobalStatementNode> GlobalStatements { get; } = globalStatements ?? [];
 
     public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces, ..Attributes];
 }

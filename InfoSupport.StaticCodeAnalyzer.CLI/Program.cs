@@ -21,8 +21,23 @@ var directory = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer";
 //var directory = @"C:\Users\NoahD\source\repos\TestWebApp\TestWebApp";
 //var directory = @"C:\Users\NoahD\source\repos\UAssetAPI";
 
-//Runner.RunAnalysis(new Project("Example", directory));
+var report = Runner.RunAnalysis(new Project("Example", directory));
 
+var nestedTernary = true ? true : true ? false : false;
+var normalTernary = true ? true : false;
+
+foreach (var projectFile in report.ProjectFiles)
+{
+    var issues = projectFile.Issues;
+
+    if (issues.Count > 0)
+    {
+        //Console.WriteLine($"{projectFile.Name} ----");
+        CodeDisplayCLI.DisplayCode(File.ReadAllText(projectFile.Path), issues, projectFile.Name);
+    }
+}
+
+/*
 var testFilePath = @"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\UnitTests\LexerTests.cs";
 var testFile = File.ReadAllText(testFilePath);
 var tokens = Lexer.Lex(testFile);
@@ -42,7 +57,7 @@ CodeDisplayCLI.DisplayCode(
     .ToList()
     
     );
-
+*/
 /*
 
 string[] paths = Directory

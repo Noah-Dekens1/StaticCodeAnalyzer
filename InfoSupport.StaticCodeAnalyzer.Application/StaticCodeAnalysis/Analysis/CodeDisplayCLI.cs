@@ -11,50 +11,54 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis
 
 public class CodeDisplayCLI
 {
-    public static void DisplayCode(string fileContent, List<CodeLocation> highlights)
+    public static void DisplayCode(string fileContent, List<Issue> issues, string fileName, int contextLines=5)
     {
         var lines = fileContent.Split('\n');
 
-        for (int i = 0; i < lines.Length; i++)
+        foreach (var issue in issues)
         {
-            var line = lines[i];
+            var highlight = issue.Location;
+            var start = Math.Max(0, (int)highlight.Start.Line - contextLines - 1);
+            var end = Math.Min(lines.Length - 1, (int)highlight.End.Line + contextLines - 1);
 
-            for (int j = 0; j < line.Length; j++)
+            Console.WriteLine("----------------------------------------------");
+            Console.WriteLine($"File: {fileName} - Code: {issue.Code}");
+            Console.WriteLine("----------------------------------------------");
+
+            for (int i = start; i <= end; i++)
             {
-                var column = line[j];
+                var line = lines[i];
 
-                // line/column start at 1 (but indexed on 0)
-                var isAnyHighlight = false;
-
-                foreach (var highlight in highlights)
+                for (int j = 0; j < line.Length; j++)
                 {
+                    var column = line[j];
+
                     var cLine = (ulong)i + 1;
                     var cColumn = (ulong)j + 1;
 
-                    var start = highlight.Start;
-                    var end = highlight.End;
+                    var isHighlight = cLine >= highlight.Start.Line && cLine <= highlight.End.Line;
+                    isHighlight &= cLine != highlight.Start.Line || cColumn >= highlight.Start.Column;
+                    isHighlight &= cLine != highlight.End.Line || cColumn <= highlight.End.Column;
 
-                    var isHighlight = cLine >= start.Line && cLine <= end.Line;
-                    isHighlight &= cLine != start.Line || cColumn >= start.Column;
-                    isHighlight &= cLine != end.Line || cColumn <= end.Column;
 
-                    isAnyHighlight |= isHighlight;
+                    if (isHighlight)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                    }
+
+                    Console.Write(column);
+
+                    if (isHighlight)
+                    {
+                        Console.ResetColor();
+                    }
                 }
 
-                if (isAnyHighlight)
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                }
-
-                Console.Write(column);
-
-                if (isAnyHighlight)
-                {
-                    Console.ResetColor();
-                }
+                Console.WriteLine();
             }
 
-            Console.WriteLine();
+            Console.WriteLine("----------------------------------------------\n");
         }
     }
+
 }

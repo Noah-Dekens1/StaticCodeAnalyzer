@@ -2368,6 +2368,12 @@ public class Parser
             return false;
         }
 
+        if (type.IsNullable) // can't be nullable so we probably caught a ternary expression
+        {
+            Seek(start);
+            return false;
+        }
+
         if (!Matches(TokenKind.Identifier) || _contextualKeywordsForPatterns.Contains(PeekCurrent().Lexeme))
         {
             Seek(start);
@@ -2953,7 +2959,8 @@ public class Parser
         "internal",
         "private",
         "public",
-        "protected"
+        "protected",
+        "readonly"
     ];
 
     private static readonly List<string> ValidLocalFunctionModifiers = [
@@ -3409,7 +3416,7 @@ public class Parser
         return $"{QualifiedNameToString(qn.LHS)}.{qn.Identifier}";
     }
 
-    private NamespaceNode ParseNamespace(bool isGlobal = false, bool allowTopLevelStatements = false)
+    private NamespaceNode ParseNamespace(bool isGlobal = false)
     {
         var start = GetStartPosition();
         Expect(TokenKind.NamespaceKeyword);
@@ -3419,7 +3426,7 @@ public class Parser
         if (!isFileScoped)
             Expect(TokenKind.OpenBrace);
 
-        var ns = ParseNamespaceContent(QualifiedNameToString(name), isFileScoped, isGlobal, start, allowTopLevelStatements);
+        var ns = ParseNamespaceContent(QualifiedNameToString(name), isFileScoped, isGlobal, start);
 
         if (!isFileScoped)
             Expect(TokenKind.CloseBrace);
@@ -3454,9 +3461,10 @@ public class Parser
         return attributes;
     }
 
-    private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, Position start, bool allowTopLevelStatements = false)
+    private NamespaceNode ParseNamespaceContent(string name, bool isFileScoped, bool isGlobal, Position start)
     {
-        var ns = isGlobal ? new GlobalNamespaceNode() : new NamespaceNode(name, isFileScoped);
+        var ns = (isGlobal || isFileScoped) ? new GlobalNamespaceNode(name) : new NamespaceNode(name, isFileScoped);
+        bool allowTopLevelStatements = isGlobal || isFileScoped;
         var directives = ParseUsingDirectives();
 
         // try parse assembly/module
@@ -3495,7 +3503,7 @@ public class Parser
 
         _input = tokens;
 
-        ast.Root = (GlobalNamespaceNode)ParseNamespaceContent(string.Empty, true, true, GetStartPosition(), true);
+        ast.Root = (GlobalNamespaceNode)ParseNamespaceContent("global", true, true, GetStartPosition());
 
         return ast;
     }
