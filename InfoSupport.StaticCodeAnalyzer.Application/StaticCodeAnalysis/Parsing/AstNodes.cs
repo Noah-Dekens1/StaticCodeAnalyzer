@@ -21,14 +21,16 @@ public abstract class AstNode
 
 #if DEBUG
     public bool ConstructedInEmit { get; set; }
+#endif
 
     public static T Construct<T>(T node)
         where T : AstNode
     {
+#if DEBUG
         node.ConstructedInEmit = true;
+#endif
         return node;
     }
-#endif
 }
 
 public class GlobalNamespaceNode(
