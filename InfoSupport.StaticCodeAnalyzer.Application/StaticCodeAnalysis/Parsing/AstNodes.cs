@@ -1327,10 +1327,11 @@ public class LambdaParameterNode(string identifier, TypeNode? type = null) : Ast
         => $"{Type} {Identifier}";
 }
 
-public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode body) : ExpressionNode
+public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode body, bool isAsync = false) : ExpressionNode
 {
     public List<LambdaParameterNode> Parameters { get; } = parameters;
     public AstNode Body { get; } = body;
+    public bool IsAsync { get; } = isAsync;
 
     public override List<AstNode> Children => [..Parameters, Body];
 }

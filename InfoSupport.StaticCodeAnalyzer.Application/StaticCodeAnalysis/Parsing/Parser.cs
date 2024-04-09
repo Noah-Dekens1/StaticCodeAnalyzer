@@ -1117,19 +1117,46 @@ public class Parser
         return true;
     }
 
-    private ExpressionNode? ParseStartParenthesisExpression()
+    private bool TryParseLambdaExpression([NotNullWhen(true)] out LambdaExpressionNode? lambdaExpression)
     {
         var startPosition = GetStartPosition();
-        Expect(TokenKind.OpenParen);
-
         var start = Tell();
 
-        bool maybeLambda = true;
+        List<LambdaParameterNode> parameters = [];
 
         bool isFirst = true;
         bool isImplicit = true;
+        bool isAsync = false;
 
-        List<LambdaParameterNode> parameters = [];
+        lambdaExpression = null;
+
+        if (MatchesLexeme("async"))
+        {
+            Consume();
+            isAsync = true;
+        }
+
+        if (!ConsumeIfMatch(TokenKind.OpenParen))
+        {
+            if (!isAsync) // non-async single param lambda's are handled elsewhere
+            {
+                Seek(start);
+                return false;
+            }
+
+            var identifierExpr = Matches(TokenKind.Identifier) ? ResolveIdentifier() : null;
+
+            if (identifierExpr is null || !ConsumeIfMatch(TokenKind.EqualsGreaterThan))
+            {
+                Seek(start);
+                return false;
+            }
+
+            var identifier = ((IdentifierExpression)identifierExpr).Identifier;
+
+            lambdaExpression = Emit(new LambdaExpressionNode([EmitStatic(new LambdaParameterNode(identifier), identifierExpr.Location)], ParseLambdaBody(), isAsync: true), startPosition);
+            return true;
+        }
 
         do
         {
@@ -1138,22 +1165,13 @@ public class Parser
 
             var paramStart = GetStartPosition();
 
-            // @note: besides checking whether it may be a type it also checks if the next token is an identifier
-            // because we don't have knowledge about which identifiers may be types
-
-            /*
-            var type = IsMaybeType(PeekCurrent(), true) && Matches(TokenKind.Identifier, 1)
-                ? ParseType(
-                : null;
-            */
-
             // check for a,b => or
             var hasType = !Matches(TokenKind.Comma, 1) &&
                 !Matches(TokenKind.EqualsGreaterThan, 1) &&
                 !Matches(TokenKind.CloseParen, 1);
 
             TypeNode? type = null;
-            
+
             if (hasType)
                 hasType = TryParseType(out type);
 
@@ -1163,56 +1181,67 @@ public class Parser
 
             if (!hasType != isImplicit) // must all be implicit/explicit, exit as early as possible if not the case
             {
-                maybeLambda = false;
-                break;
+                Seek(start);
+                return false;
             }
 
             if (!Matches(TokenKind.Identifier))
             {
-                maybeLambda = false;
-                break;
+                Seek(start);
+                return false;
             }
 
             var identifier = Consume();
             parameters.Add(Emit(new LambdaParameterNode(identifier.Lexeme, type), paramStart));
             isFirst = false;
-        } while (ConsumeIfMatch(TokenKind.Comma) && maybeLambda);
+        } while (ConsumeIfMatch(TokenKind.Comma));
 
-        maybeLambda &= ConsumeIfMatch(TokenKind.CloseParen);
-
-        if (maybeLambda)
-            maybeLambda = ConsumeIfMatch(TokenKind.EqualsGreaterThan);
-
-        if (!maybeLambda)
+        if (!ConsumeIfMatch(TokenKind.CloseParen))
         {
-            // @note: assumes parenthesized expr or cast, may also be tuple?
             Seek(start);
-
-            var maybeCast = true;
-            {
-                bool isType = TryParseType(out var type);
-
-                maybeCast &= isType && ConsumeIfMatch(TokenKind.CloseParen);
-                var rhs = ParseExpression(null, true);
-                maybeCast &= rhs is not null;
-
-                if (maybeCast)
-                    return Emit(new CastExpressionNode(type!, rhs!), startPosition);
-                
-                Seek(start);
-            }
-
-            if (TryParseTupleExpression(out var tupleExpr, startPosition))
-            {
-                return tupleExpr;
-            }
-
-            var parenthesizedExpr = ParseExpression()!;
-            Expect(TokenKind.CloseParen);
-            return Emit(new ParenthesizedExpressionNode(parenthesizedExpr), startPosition);
+            return false;
         }
 
-        return Emit(new LambdaExpressionNode(parameters, ParseLambdaBody()), startPosition);
+        if (!ConsumeIfMatch(TokenKind.EqualsGreaterThan))
+        {
+            Seek(start);
+            return false;
+        }
+
+        lambdaExpression = Emit(new LambdaExpressionNode(parameters, ParseLambdaBody(), isAsync), startPosition);
+        return true;
+    }
+
+    private ExpressionNode? ParseStartParenthesisExpression()
+    {
+        var startPosition = GetStartPosition();
+
+        Expect(TokenKind.OpenParen);
+
+        var start = Tell();
+
+        var maybeCast = true;
+        {
+            bool isType = TryParseType(out var type);
+
+            maybeCast &= isType && ConsumeIfMatch(TokenKind.CloseParen);
+            var rhs = ParseExpression(null, true);
+            maybeCast &= rhs is not null;
+
+            if (maybeCast)
+                return Emit(new CastExpressionNode(type!, rhs!), startPosition);
+                
+            Seek(start);
+        }
+
+        if (TryParseTupleExpression(out var tupleExpr, startPosition))
+        {
+            return tupleExpr;
+        }
+
+        var parenthesizedExpr = ParseExpression()!;
+        Expect(TokenKind.CloseParen);
+        return Emit(new ParenthesizedExpressionNode(parenthesizedExpr), startPosition);
     }
 
     private SwitchExpressionNode ParseSwitchExpression(ExpressionNode expr)
@@ -1315,6 +1344,11 @@ public class Parser
     {
         var start = possibleLHS?.Location.Start ?? GetStartPosition();
         var token = PeekCurrent();
+
+        if (TryParseLambdaExpression(out var lambda))
+        {
+            return lambda;
+        }
 
         if (ConsumeIfMatch(TokenKind.ThisKeyword))
         {
