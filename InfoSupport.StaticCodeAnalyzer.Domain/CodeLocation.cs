@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace InfoSupport.StaticCodeAnalyzer.Domain;
 
 [DebuggerDisplay("Ln: {Line} Col: {Column}")]
-public struct Position(ulong line, ulong column)
+public class Position(ulong line, ulong column)
 {
     public ulong Line { get; set; } = line;
     public ulong Column { get; set; } = column;
@@ -24,8 +24,11 @@ public struct Position(ulong line, ulong column)
     }
 }
 
-public readonly struct CodeLocation(Position start, Position end)
+[DebuggerDisplay("({Start};{End})")]
+public class CodeLocation(Position start, Position end)
 {
+    public CodeLocation() : this(new Position(), new Position()) { }
+
     public Position Start { get; } = start;
     public Position End { get; } = end;
 }

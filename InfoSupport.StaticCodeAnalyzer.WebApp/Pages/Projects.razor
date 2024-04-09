@@ -1,7 +1,41 @@
 ﻿@page "/projects"
+@using InfoSupport.StaticCodeAnalyzer.Domain
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+@inject HttpClient httpClient;
 
-<h3>Projects</h3>
+<PageTitle>Projects</PageTitle>
+
+<div id="content">
+    @if (UserProjects is not null)
+    {
+        @foreach (var project in UserProjects)
+        {
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">@project.Name</h2>
+                    <p>@project.Path</p>
+                    <div class="card-actions justify-end">
+                        <button class="btn">Analyze</button>
+                        <button class="btn">View</button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <LoadingSpinner LoadingText="Loading projects..">
+
+        </LoadingSpinner>
+
+    }
+</div>
 
 @code {
+    public List<Project>? UserProjects = null;
 
+    protected override async Task OnInitializedAsync()
+    {
+        UserProjects = await httpClient.GetFromJsonAsync<List<Project>>("/projects");
+    }
 }
