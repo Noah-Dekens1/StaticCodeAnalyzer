@@ -23,7 +23,7 @@ else
                 <div class="card-body">
                     <h2 class="card-title">Report @@ @report.RunAt</h2>
                     <div class="card-actions justify-end">
-                        <button class="btn">View</button>
+                        <button class="btn" @onclick="() => ViewReport(report)">View</button>
                     </div>
                 </div>
             </div>
@@ -49,6 +49,11 @@ else
     {
         UserProject = await HttpClient.GetFromJsonAsync<Project>($"/project/{Id}");
         UserProject?.Reports.Reverse();
+    }
+
+    public void ViewReport(Report report)
+    {
+        NavigationManager.NavigateTo($"/project/{Id}/report/{report.Id}");
     }
 
     public async void Analyze()

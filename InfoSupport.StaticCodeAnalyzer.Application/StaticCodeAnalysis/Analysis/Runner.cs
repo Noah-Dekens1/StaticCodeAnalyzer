@@ -44,13 +44,19 @@ public class Runner
         foreach (var fileInfo in projectRef.ProjectFiles)
         {
             var path = fileInfo.Key;
-            var projectFile = new ProjectFile(Path.GetFileName(path), path);
+            var projectFile = new ProjectFile(Path.GetFileName(path), path, null);
 
             foreach (var analyzer in Analyzers)
             {
                 var fileIssues = new List<Issue>();
                 analyzer.Analyze(project, fileInfo.Value, projectRef, fileIssues);
                 projectFile.Issues.AddRange(fileIssues);
+            }
+
+            // If any issues present store in projectFile so it can get saved to the db
+            if (projectFile.Issues.Count > 0)
+            {
+                projectFile.Content = File.ReadAllText(path);
             }
 
             projectFiles.Add(projectFile);

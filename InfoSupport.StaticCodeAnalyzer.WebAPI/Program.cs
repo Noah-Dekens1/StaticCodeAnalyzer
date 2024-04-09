@@ -19,6 +19,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 
 // Add services to the container.
@@ -41,5 +42,8 @@ app.MapGet("/project/{id}", async (IProjectService projectService, Guid id) =>
 
 app.MapPost("/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
     await projectService.StartAnalysis(id));
+
+app.MapGet("/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
+    await reportService.GetReportById(reportId));
 
 app.Run();

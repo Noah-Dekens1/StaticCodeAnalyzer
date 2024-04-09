@@ -1542,6 +1542,10 @@ html {
   --tw-bg-opacity: 0.2;
 }
 
+.bg-opacity-10 {
+  --tw-bg-opacity: 0.1;
+}
+
 .p-8 {
   padding: 2rem;
 }
@@ -1549,6 +1553,10 @@ html {
 .px-1 {
   padding-left: 0.25rem;
   padding-right: 0.25rem;
+}
+
+.pl-8 {
+  padding-left: 2rem;
 }
 
 .text-center {

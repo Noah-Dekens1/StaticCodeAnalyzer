@@ -1,0 +1,104 @@
+﻿@page "/project/{ProjectId:guid}/report/{Id:guid}"
+@using InfoSupport.StaticCodeAnalyzer.Domain
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Report</PageTitle>
+
+@if (UserReport is null)
+{
+    <LoadingSpinner LoadingText="Loading report..">
+
+    </LoadingSpinner>
+}
+else
+{
+    <p class="ml-8">This report contains @(UserReport.ProjectFiles.Sum(f => f.Issues.Count)) issues</p>
+
+    <div>
+        <CodeMirror6Wrapper
+            IsWASM=true
+            ReadOnly=true
+            Editable=false
+            Language="CodeMirrorLanguage.Csharp"
+            Doc=@GetSomeCode()
+            LintDocument=@LintDocument
+            />
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    public Report? UserReport { get; set; } = null;
+    public ProjectFile? OpenFile { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserReport = await HttpClient.GetFromJsonAsync<Report>($"/project/{ProjectId}/report/{Id}");
+    }
+
+    public string GetSomeCode()
+    {
+        var file = UserReport!.ProjectFiles.Where(f => f.Issues.Count > 0).First();
+        OpenFile = file;
+        return file.Content!;
+    }
+
+    private int ConvertPosition(string content, Position position)
+    {
+        uint line = 1;
+        uint column = 1;
+        int index = 0;
+
+        foreach (char c in content)
+        {
+            if (line == position.Line && column == position.Column)
+            {
+                return index;
+            }
+
+            index++;
+
+            if (c == '\n')
+            {
+                line++;
+                column = 1;
+            }
+            else
+            {
+                column++;
+            }
+        }
+
+        return -1;
+    }
+
+    private Task<List<CodeMirrorDiagnostic>> LintDocument(string code, CancellationToken cancellationToken)
+    {
+        var result = new List<CodeMirrorDiagnostic>();
+
+
+        foreach (var issue in OpenFile!.Issues)
+        {
+            Console.WriteLine(issue.Id);
+            Console.WriteLine(issue.Location.Start.Line);
+            Console.WriteLine(issue.Location.End.Line);
+            result.Add(new CodeMirrorDiagnostic {
+                From = ConvertPosition(code, issue.Location.Start),
+                To = ConvertPosition(code, issue.Location.End) + 1,
+                Severity = "warning",
+                Message = issue.Description,
+                Source = "Static Code Analyzer"
+            });
+        }
+
+        return Task.FromResult(result);
+    }
+}
