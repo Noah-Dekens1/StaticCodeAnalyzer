@@ -1,11 +1,13 @@
 ﻿@page "/projects"
 @using InfoSupport.StaticCodeAnalyzer.Domain
 @using InfoSupport.StaticCodeAnalyzer.WebApp.Components
-@inject HttpClient httpClient;
+
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
 
 <PageTitle>Projects</PageTitle>
 
-<div id="content">
+<div class="grid grid-cols-4 gap-4 p-8">
     @if (UserProjects is not null)
     {
         @foreach (var project in UserProjects)
@@ -15,8 +17,8 @@
                     <h2 class="card-title">@project.Name</h2>
                     <p>@project.Path</p>
                     <div class="card-actions justify-end">
-                        <button class="btn">Analyze</button>
-                        <button class="btn">View</button>
+                        <button class="btn" @onclick="() => AnalyzeProject(project)">Analyze</button>
+                        <button class="btn" @onclick="() => ViewProject(project)">View</button>
                     </div>
                 </div>
             </div>
@@ -36,6 +38,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        UserProjects = await httpClient.GetFromJsonAsync<List<Project>>("/projects");
+        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+    }
+
+    public void ViewProject(Project project)
+    {
+        NavigationManager.NavigateTo($"/project/{project.Id}");
+    }
+
+    public void AnalyzeProject(Project project)
+    {
+        NavigationManager.NavigateTo($"/project/{project.Id}");
     }
 }

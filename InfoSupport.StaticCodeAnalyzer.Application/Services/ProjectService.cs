@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.Interfaces;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 using InfoSupport.StaticCodeAnalyzer.Infrastructure.Data;
 
@@ -25,6 +26,20 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         return project;
     }
 
+    public async Task<Report?> CreateReport(Guid projectId, Report report)
+    {
+        var project = await _context.Projects.FindAsync(projectId);
+
+        if (project is null)
+            return null;
+
+        project.Reports.Add(report);
+
+        await _context.SaveChangesAsync();
+
+        return report;
+    }
+
     public async Task<Project?> DeleteProject(Guid id)
     {
         var project = await _context.Projects.FindAsync(id);
@@ -43,6 +58,35 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         return await _context.Projects.ToListAsync();
     }
 
+    public async Task<Project?> GetProjectById(Guid id)
+    {
+        return await _context.Projects
+            .Where(p => p.Id == id)
+            .Include(p => p.Reports)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<Report?> StartAnalysis(Guid id)
+    {
+        var project = await _context.Projects.FindAsync(id);
+
+        if (project is null)
+            return null;
+
+        var report = Runner.RunAnalysis(project);
+
+        project.Reports.Add(report);
+
+        foreach (var entry in _context.ChangeTracker.Entries())
+        {
+            Console.WriteLine($"Entity: {entry.Entity.GetType().Name}, State: {entry.State}");
+        }
+
+        await _context.SaveChangesAsync();
+
+        return report;
+    }
+
     public async Task<Project?> UpdateProject(Guid id, Project project)
     {
         if (project.Id != id)
@@ -54,5 +98,5 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         await _context.SaveChangesAsync();
 
         return project;
-    }
+    } 
 }

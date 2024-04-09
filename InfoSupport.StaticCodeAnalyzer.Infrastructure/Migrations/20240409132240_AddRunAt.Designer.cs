@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240409084754_Initial")]
-    partial class Initial
+    [Migration("20240409132240_AddRunAt")]
+    partial class AddRunAt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,7 +23,6 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Issue", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Code")
@@ -47,7 +46,6 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Project", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -66,7 +64,6 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.ProjectFile", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -90,10 +87,17 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Report", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RunAt")
+                        .HasColumnType("datetime");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
 
                     b.ToTable("Reports");
                 });
@@ -102,7 +106,8 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 {
                     b.HasOne("InfoSupport.StaticCodeAnalyzer.Domain.ProjectFile", null)
                         .WithMany("Issues")
-                        .HasForeignKey("ProjectFileId");
+                        .HasForeignKey("ProjectFileId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.OwnsOne("InfoSupport.StaticCodeAnalyzer.Domain.CodeLocation", "Location", b1 =>
                         {
@@ -173,7 +178,21 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 {
                     b.HasOne("InfoSupport.StaticCodeAnalyzer.Domain.Report", null)
                         .WithMany("ProjectFiles")
-                        .HasForeignKey("ReportId");
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Report", b =>
+                {
+                    b.HasOne("InfoSupport.StaticCodeAnalyzer.Domain.Project", null)
+                        .WithMany("Reports")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Project", b =>
+                {
+                    b.Navigation("Reports");
                 });
 
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.ProjectFile", b =>

@@ -36,4 +36,10 @@ app.MapGet("/projects", async (IProjectService projectService) =>
 app.MapPost("/project", async (IProjectService projectService, Project project) =>
     await projectService.CreateProject(project));
 
+app.MapGet("/project/{id}", async (IProjectService projectService, Guid id) =>
+    await projectService.GetProjectById(id));
+
+app.MapPost("/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
+    await projectService.StartAnalysis(id));
+
 app.Run();

@@ -1,0 +1,68 @@
+﻿@page "/project/{Id:guid}"
+
+@using InfoSupport.StaticCodeAnalyzer.Domain
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+
+@if (UserProject is null)
+{
+    <LoadingSpinner LoadingText="Loading project..">
+
+    </LoadingSpinner>
+}
+else
+{
+    <button class="btn ml-8" @onclick="Analyze">Analyze</button>
+
+    <div class="grid grid-cols-4 gap-4 p-8">
+        @foreach (var report in UserProject.Reports)
+        {
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">Report @@ @report.RunAt</h2>
+                    <div class="card-actions justify-end">
+                        <button class="btn">View</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (IsRunningAnalysis)
+{
+    <LoadingSpinner LoadingText="Analyzing project..">
+
+    </LoadingSpinner>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    public Project? UserProject { get; set; } = null;
+    public bool IsRunningAnalysis { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserProject = await HttpClient.GetFromJsonAsync<Project>($"/project/{Id}");
+        UserProject?.Reports.Reverse();
+    }
+
+    public async void Analyze()
+    {
+        IsRunningAnalysis = true;
+        StateHasChanged();
+
+        await HttpClient.PostAsync($"/project/{Id}/analyze", null);
+
+        // Refresh reports
+        UserProject = await HttpClient.GetFromJsonAsync<Project>($"/project/{Id}");
+        UserProject?.Reports.Reverse();
+
+        IsRunningAnalysis = false;
+        StateHasChanged();
+    }
+}

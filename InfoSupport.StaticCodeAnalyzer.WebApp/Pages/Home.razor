@@ -1,5 +1,8 @@
 ﻿@page "/"
-@inject NavigationManager navigationManager;
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+
+@inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
 
 <PageTitle>Home</PageTitle>
 
@@ -13,6 +16,8 @@ Welcome to your new app.
     {
         base.OnInitialized();
 
-        navigationManager.NavigateTo("/projects");
+        NavigationManager.NavigateTo("/projects");
+
+        NavBarState.PageTitle = "Dashboard";
     }
 };

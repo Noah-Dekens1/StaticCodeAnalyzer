@@ -17,6 +17,9 @@ public class IssueConfiguration : IEntityTypeConfiguration<Issue>
     {
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .ValueGeneratedNever();
+
         builder.OwnsOne(i => i.Location, loc =>
         {
             loc.WithOwner();

@@ -28,11 +28,17 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 name: "Reports",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ProjectId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Reports", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reports_Projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "Projects",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -86,6 +92,11 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 name: "IX_ProjectFiles_ReportId",
                 table: "ProjectFiles",
                 column: "ReportId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reports_ProjectId",
+                table: "Reports",
+                column: "ProjectId");
         }
 
         /// <inheritdoc />
@@ -95,13 +106,13 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 name: "Issues");
 
             migrationBuilder.DropTable(
-                name: "Projects");
-
-            migrationBuilder.DropTable(
                 name: "ProjectFiles");
 
             migrationBuilder.DropTable(
                 name: "Reports");
+
+            migrationBuilder.DropTable(
+                name: "Projects");
         }
     }
 }

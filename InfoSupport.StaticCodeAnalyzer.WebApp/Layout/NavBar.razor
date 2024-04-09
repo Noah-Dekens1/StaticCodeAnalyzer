@@ -1,11 +1,16 @@
-﻿<div class="">
+﻿@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+
+@inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
+
+<div class="">
     <div class="navbar bg-base-100">
         <div class="navbar-start">
-            <a class="btn btn-ghost text-xl">Static Code Analyzer</a>
+            <a class="btn btn-ghost text-xl" @onclick="NavigateToHome">Static Code Analyzer</a>
         </div>
         <div class="navbar-center hidden lg:flex">
             <ul class="menu menu-horizontal px-1">
-                <li><a class="text-xl">Dashboard</a></li>
+                <li><a class="text-xl">@NavBarState.PageTitle</a></li>
             </ul>
         </div>
         <div class="navbar-end">
@@ -15,5 +20,13 @@
 
 
 @code {
+    protected override void OnInitialized()
+    {
+        
+    }
 
+    void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
 }

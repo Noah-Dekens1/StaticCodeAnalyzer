@@ -3,6 +3,7 @@ using System;
 using InfoSupport.StaticCodeAnalyzer.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240409122809_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
@@ -20,6 +23,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Issue", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Code")
@@ -43,6 +47,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Project", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -61,6 +66,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.ProjectFile", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -84,13 +90,11 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Report", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("RunAt")
-                        .HasColumnType("datetime");
 
                     b.HasKey("Id");
 
@@ -103,8 +107,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 {
                     b.HasOne("InfoSupport.StaticCodeAnalyzer.Domain.ProjectFile", null)
                         .WithMany("Issues")
-                        .HasForeignKey("ProjectFileId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ProjectFileId");
 
                     b.OwnsOne("InfoSupport.StaticCodeAnalyzer.Domain.CodeLocation", "Location", b1 =>
                         {
@@ -175,16 +178,14 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                 {
                     b.HasOne("InfoSupport.StaticCodeAnalyzer.Domain.Report", null)
                         .WithMany("ProjectFiles")
-                        .HasForeignKey("ReportId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ReportId");
                 });
 
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Report", b =>
                 {
                     b.HasOne("InfoSupport.StaticCodeAnalyzer.Domain.Project", null)
                         .WithMany("Reports")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ProjectId");
                 });
 
             modelBuilder.Entity("InfoSupport.StaticCodeAnalyzer.Domain.Project", b =>
