@@ -7,7 +7,7 @@
 
 <PageTitle>Report</PageTitle>
 
-@if (UserReport is null)
+@if (UserReport is null || Project is null)
 {
     <LoadingSpinner LoadingText="Loading report..">
 
@@ -15,17 +15,27 @@
 }
 else
 {
+    @*
     <p class="ml-8">This report contains @(UserReport.ProjectFiles.Sum(f => f.Issues.Count)) issues</p>
+    *@
 
-    <div>
-        <CodeMirror6Wrapper
-            IsWASM=true
-            ReadOnly=true
-            Editable=false
-            Language="CodeMirrorLanguage.Csharp"
-            Doc=@GetSomeCode()
-            LintDocument=@LintDocument
-            />
+    <div class="grid grid-cols-2 gap-4 p-8 h-full">
+        <div class="h-full relative overflow-hidden">
+            <ProjectBrowser Report=@UserReport Project=@Project />
+        </div>
+        <div class="h-full relative overflow-auto">
+            <CodeMirror6Wrapper
+                IsWASM=true
+                ReadOnly=true
+                Editable=false
+                Language="CodeMirrorLanguage.Csharp"
+                Doc=@GetSomeCode().TrimEnd()
+                LintDocument=@LintDocument
+                FullScreen=false
+                MaxHeight="100%"
+                LineNumbers=true
+                />
+        </div>
     </div>
 }
 
@@ -37,16 +47,18 @@ else
     public Guid Id { get; set; }
 
     public Report? UserReport { get; set; } = null;
+    public Project? Project { get; set; } = null;
     public ProjectFile? OpenFile { get; set; } = null;
 
     protected override async Task OnInitializedAsync()
     {
+        Project = await HttpClient.GetFromJsonAsync<Project>($"/project/{ProjectId}");
         UserReport = await HttpClient.GetFromJsonAsync<Report>($"/project/{ProjectId}/report/{Id}");
     }
 
     public string GetSomeCode()
     {
-        var file = UserReport!.ProjectFiles.Where(f => f.Issues.Count > 0).First();
+        var file = UserReport!.ProjectFiles.Where(f => f.Issues.Count > 0).Where(f => f.Content?.Length < 10000).First();
         OpenFile = file;
         return file.Content!;
     }
@@ -87,13 +99,10 @@ else
 
         foreach (var issue in OpenFile!.Issues)
         {
-            Console.WriteLine(issue.Id);
-            Console.WriteLine(issue.Location.Start.Line);
-            Console.WriteLine(issue.Location.End.Line);
             result.Add(new CodeMirrorDiagnostic {
                 From = ConvertPosition(code, issue.Location.Start),
                 To = ConvertPosition(code, issue.Location.End) + 1,
-                Severity = "warning",
+                Severity = "error",
                 Message = issue.Description,
                 Source = "Static Code Analyzer"
             });

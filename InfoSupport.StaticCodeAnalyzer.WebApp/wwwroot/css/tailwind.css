@@ -781,6 +781,11 @@ html {
 }
 
 @media (hover:hover) {
+  .label a:hover {
+    --tw-text-opacity: 1;
+    color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
+  }
+
   .menu li > *:not(ul, .menu-title, details, .btn):active,
 .menu li > *:not(ul, .menu-title, details, .btn).active,
 .menu li > details > summary:active {
@@ -920,6 +925,43 @@ html {
   color: var(--fallback-nc,oklch(var(--nc)/var(--tw-text-opacity)));
 }
 
+.checkbox {
+  flex-shrink: 0;
+  --chkbg: var(--fallback-bc,oklch(var(--bc)/1));
+  --chkfg: var(--fallback-b1,oklch(var(--b1)/1));
+  height: 1.5rem;
+  width: 1.5rem;
+  cursor: pointer;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border-radius: var(--rounded-btn, 0.5rem);
+  border-width: 1px;
+  border-color: var(--fallback-bc,oklch(var(--bc)/var(--tw-border-opacity)));
+  --tw-border-opacity: 0.2;
+}
+
+.divider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  align-self: stretch;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  height: 1rem;
+  white-space: nowrap;
+}
+
+.divider:before,
+  .divider:after {
+  height: 0.125rem;
+  width: 100%;
+  flex-grow: 1;
+  --tw-content: '';
+  content: var(--tw-content);
+  background-color: var(--fallback-bc,oklch(var(--bc)/0.1));
+}
+
 @media (hover: hover) {
   .btn:hover {
     --tw-border-opacity: 1;
@@ -965,6 +1007,18 @@ html {
     }
   }
 
+  .btn-outline.btn-accent:hover {
+    --tw-text-opacity: 1;
+    color: var(--fallback-ac,oklch(var(--ac)/var(--tw-text-opacity)));
+  }
+
+  @supports (color: color-mix(in oklab, black, black)) {
+    .btn-outline.btn-accent:hover {
+      background-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
+      border-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
+    }
+  }
+
   .btn-disabled:hover,
     .btn[disabled]:hover,
     .btn:disabled:hover {
@@ -993,6 +1047,49 @@ html {
       background-color: var(--fallback-bc,oklch(var(--bc)/0.1));
     }
   }
+}
+
+.form-control {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: flex;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.input {
+  flex-shrink: 1;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  height: 3rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 1rem;
+  line-height: 2;
+  line-height: 1.5rem;
+  border-radius: var(--rounded-btn, 0.5rem);
+  border-width: 1px;
+  border-color: transparent;
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-b1,oklch(var(--b1)/var(--tw-bg-opacity)));
+}
+
+.input[type="number"]::-webkit-inner-spin-button,
+.input-md[type="number"]::-webkit-inner-spin-button {
+  margin-top: -1rem;
+  margin-bottom: -1rem;
+  margin-inline-end: -1rem;
 }
 
 .link {
@@ -1080,6 +1177,35 @@ html {
   justify-content: flex-end;
 }
 
+.toggle {
+  flex-shrink: 0;
+  --tglbg: var(--fallback-b1,oklch(var(--b1)/1));
+  --handleoffset: 1.5rem;
+  --handleoffsetcalculator: calc(var(--handleoffset) * -1);
+  --togglehandleborder: 0 0;
+  height: 1.5rem;
+  width: 3rem;
+  cursor: pointer;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border-radius: var(--rounded-badge, 1.9rem);
+  border-width: 1px;
+  border-color: currentColor;
+  background-color: currentColor;
+  color: var(--fallback-bc,oklch(var(--bc)/0.5));
+  transition: background,
+    box-shadow var(--animation-input, 0.2s) ease-out;
+  box-shadow: var(--handleoffsetcalculator) 0 0 2px var(--tglbg) inset,
+    0 0 0 2px var(--tglbg) inset,
+    var(--togglehandleborder);
+}
+
+.btm-nav > * .label {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
 .btn:active:hover,
   .btn:active:focus {
   animation: button-pop 0s ease-out;
@@ -1091,12 +1217,49 @@ html {
     background-color: var(--btn-color, var(--fallback-b2));
     border-color: var(--btn-color, var(--fallback-b2));
   }
+
+  .btn-accent {
+    --btn-color: var(--fallback-a);
+  }
+
+  .btn-neutral {
+    --btn-color: var(--fallback-n);
+  }
+}
+
+@supports (color: color-mix(in oklab, black, black)) {
+  .btn-outline.btn-accent.btn-active {
+    background-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
+    border-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
+  }
 }
 
 .btn:focus-visible {
   outline-style: solid;
   outline-width: 2px;
   outline-offset: 2px;
+}
+
+@supports (color: oklch(0% 0 0)) {
+  .btn-accent {
+    --btn-color: var(--a);
+  }
+
+  .btn-neutral {
+    --btn-color: var(--n);
+  }
+}
+
+.btn-accent {
+  --tw-text-opacity: 1;
+  color: var(--fallback-ac,oklch(var(--ac)/var(--tw-text-opacity)));
+  outline-color: var(--fallback-a,oklch(var(--a)/1));
+}
+
+.btn-neutral {
+  --tw-text-opacity: 1;
+  color: var(--fallback-nc,oklch(var(--nc)/var(--tw-text-opacity)));
+  outline-color: var(--fallback-n,oklch(var(--n)/1));
 }
 
 .btn.glass {
@@ -1125,6 +1288,16 @@ html {
 .btn-ghost.btn-active {
   border-color: transparent;
   background-color: var(--fallback-bc,oklch(var(--bc)/0.2));
+}
+
+.btn-outline.btn-accent {
+  --tw-text-opacity: 1;
+  color: var(--fallback-a,oklch(var(--a)/var(--tw-text-opacity)));
+}
+
+.btn-outline.btn-accent.btn-active {
+  --tw-text-opacity: 1;
+  color: var(--fallback-ac,oklch(var(--ac)/var(--tw-text-opacity)));
 }
 
 .btn.btn-disabled,
@@ -1212,6 +1385,53 @@ html {
   border-radius: inherit;
 }
 
+.checkbox:focus {
+  box-shadow: none;
+}
+
+.checkbox:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-offset: 2px;
+  outline-color: var(--fallback-bc,oklch(var(--bc)/1));
+}
+
+.checkbox:checked,
+  .checkbox[aria-checked="true"] {
+  background-repeat: no-repeat;
+  animation: checkmark var(--animation-input, 0.2s) ease-out;
+  background-color: var(--chkbg);
+  background-image: linear-gradient(-45deg, transparent 65%, var(--chkbg) 65.99%),
+      linear-gradient(45deg, transparent 75%, var(--chkbg) 75.99%),
+      linear-gradient(-45deg, var(--chkbg) 40%, transparent 40.99%),
+      linear-gradient(
+        45deg,
+        var(--chkbg) 30%,
+        var(--chkfg) 30.99%,
+        var(--chkfg) 40%,
+        transparent 40.99%
+      ),
+      linear-gradient(-45deg, var(--chkfg) 50%, var(--chkbg) 50.99%);
+}
+
+.checkbox:indeterminate {
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-bc,oklch(var(--bc)/var(--tw-bg-opacity)));
+  background-repeat: no-repeat;
+  animation: checkmark var(--animation-input, 0.2s) ease-out;
+  background-image: linear-gradient(90deg, transparent 80%, var(--chkbg) 80%),
+      linear-gradient(-90deg, transparent 80%, var(--chkbg) 80%),
+      linear-gradient(0deg, var(--chkbg) 43%, var(--chkfg) 43%, var(--chkfg) 57%, var(--chkbg) 57%);
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
+  border-color: transparent;
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-bc,oklch(var(--bc)/var(--tw-bg-opacity)));
+  opacity: 0.2;
+}
+
 @keyframes checkmark {
   0% {
     background-position-y: 5px;
@@ -1224,6 +1444,69 @@ html {
   100% {
     background-position-y: 0;
   }
+}
+
+.divider:not(:empty) {
+  gap: 1rem;
+}
+
+.label-text {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  --tw-text-opacity: 1;
+  color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
+}
+
+.input input {
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-p,oklch(var(--p)/var(--tw-bg-opacity)));
+  background-color: transparent;
+}
+
+.input input:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.input[list]::-webkit-calendar-picker-indicator {
+  line-height: 1em;
+}
+
+.input:focus,
+  .input:focus-within {
+  box-shadow: none;
+  border-color: var(--fallback-bc,oklch(var(--bc)/0.2));
+  outline-style: solid;
+  outline-width: 2px;
+  outline-offset: 2px;
+  outline-color: var(--fallback-bc,oklch(var(--bc)/0.2));
+}
+
+.input-disabled,
+  .input:disabled,
+  .input[disabled] {
+  cursor: not-allowed;
+  --tw-border-opacity: 1;
+  border-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-border-opacity)));
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-bg-opacity)));
+  color: var(--fallback-bc,oklch(var(--bc)/0.4));
+}
+
+.input-disabled::-moz-placeholder, .input:disabled::-moz-placeholder, .input[disabled]::-moz-placeholder {
+  color: var(--fallback-bc,oklch(var(--bc)/var(--tw-placeholder-opacity)));
+  --tw-placeholder-opacity: 0.2;
+}
+
+.input-disabled::placeholder,
+  .input:disabled::placeholder,
+  .input[disabled]::placeholder {
+  color: var(--fallback-bc,oklch(var(--bc)/var(--tw-placeholder-opacity)));
+  --tw-placeholder-opacity: 0.2;
+}
+
+.input::-webkit-date-and-time-value {
+  text-align: inherit;
 }
 
 .link:focus {
@@ -1343,6 +1626,52 @@ html {
   margin-top: 0;
 }
 
+.mockup-browser .mockup-browser-toolbar .input {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+  height: 1.75rem;
+  width: 24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-bg-opacity)));
+  padding-left: 2rem;
+  direction: ltr;
+}
+
+.mockup-browser .mockup-browser-toolbar .input:before {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  aspect-ratio: 1 / 1;
+  height: 0.75rem;
+  --tw-translate-y: -50%;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+  border-radius: 9999px;
+  border-width: 2px;
+  border-color: currentColor;
+  opacity: 0.6;
+}
+
+.mockup-browser .mockup-browser-toolbar .input:after {
+  content: "";
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  height: 0.5rem;
+  --tw-translate-y: 25%;
+  --tw-rotate: -45deg;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+  border-radius: 9999px;
+  border-width: 1px;
+  border-color: currentColor;
+  opacity: 0.6;
+}
+
 @keyframes modal-pop {
   0% {
     opacity: 0;
@@ -1408,6 +1737,75 @@ html {
   }
 }
 
+[dir="rtl"] .toggle {
+  --handleoffsetcalculator: calc(var(--handleoffset) * 1);
+}
+
+.toggle:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-offset: 2px;
+  outline-color: var(--fallback-bc,oklch(var(--bc)/0.2));
+}
+
+.toggle:hover {
+  background-color: currentColor;
+}
+
+.toggle:checked,
+  .toggle[aria-checked="true"] {
+  background-image: none;
+  --handleoffsetcalculator: var(--handleoffset);
+  --tw-text-opacity: 1;
+  color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
+}
+
+[dir="rtl"] .toggle:checked, [dir="rtl"] .toggle[aria-checked="true"] {
+  --handleoffsetcalculator: calc(var(--handleoffset) * -1);
+}
+
+.toggle:indeterminate {
+  --tw-text-opacity: 1;
+  color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
+  box-shadow: calc(var(--handleoffset) / 2) 0 0 2px var(--tglbg) inset,
+      calc(var(--handleoffset) / -2) 0 0 2px var(--tglbg) inset,
+      0 0 0 2px var(--tglbg) inset;
+}
+
+[dir="rtl"] .toggle:indeterminate {
+  box-shadow: calc(var(--handleoffset) / 2) 0 0 2px var(--tglbg) inset,
+        calc(var(--handleoffset) / -2) 0 0 2px var(--tglbg) inset,
+        0 0 0 2px var(--tglbg) inset;
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+  --tw-border-opacity: 1;
+  border-color: var(--fallback-bc,oklch(var(--bc)/var(--tw-border-opacity)));
+  background-color: transparent;
+  opacity: 0.3;
+  --togglehandleborder: 0 0 0 3px var(--fallback-bc,oklch(var(--bc)/1)) inset,
+      var(--handleoffsetcalculator) 0 0 3px var(--fallback-bc,oklch(var(--bc)/1)) inset;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.divider-horizontal {
+  flex-direction: column;
+}
+
+.divider-horizontal:before {
+  height: 100%;
+  width: 0.125rem;
+}
+
+.divider-horizontal:after {
+  height: 100%;
+  width: 0.125rem;
+}
+
 .menu-horizontal {
   display: inline-flex;
   flex-direction: row;
@@ -1437,6 +1835,15 @@ html {
   margin-bottom: 0.75rem;
 }
 
+.divider-horizontal {
+  margin-left: 1rem;
+  margin-right: 1rem;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  height: auto;
+  width: 1rem;
+}
+
 .menu-horizontal > li:not(.menu-title) > details > ul {
   margin-inline-start: 0px;
   margin-top: 1rem;
@@ -1462,6 +1869,10 @@ html {
   position: fixed;
 }
 
+.relative {
+  position: relative;
+}
+
 .inset-0 {
   inset: 0px;
 }
@@ -1472,6 +1883,10 @@ html {
 
 .top-1\/2 {
   top: 50%;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem;
 }
 
 .ml-8 {
@@ -1490,6 +1905,26 @@ html {
   display: none;
 }
 
+.h-full {
+  height: 100%;
+}
+
+.h-screen {
+  height: 100vh;
+}
+
+.w-2\/5 {
+  width: 40%;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
 .-translate-x-1\/2 {
   --tw-translate-x: -50%;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
@@ -1504,8 +1939,20 @@ html {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .grid-cols-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.flex-col {
+  flex-direction: column;
 }
 
 .items-center {
@@ -1524,6 +1971,31 @@ html {
   gap: 1rem;
 }
 
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-scroll {
+  overflow: scroll;
+}
+
+.text-wrap {
+  text-wrap: wrap;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+.border-indigo-600 {
+  --tw-border-opacity: 1;
+  border-color: rgb(79 70 229 / var(--tw-border-opacity));
+}
+
 .bg-base-100 {
   --tw-bg-opacity: 1;
   background-color: var(--fallback-b1,oklch(var(--b1)/var(--tw-bg-opacity)));
@@ -1534,16 +2006,12 @@ html {
   background-color: rgb(107 114 128 / var(--tw-bg-opacity));
 }
 
-.bg-opacity-50 {
-  --tw-bg-opacity: 0.5;
-}
-
-.bg-opacity-20 {
-  --tw-bg-opacity: 0.2;
-}
-
 .bg-opacity-10 {
   --tw-bg-opacity: 0.1;
+}
+
+.p-1 {
+  padding: 0.25rem;
 }
 
 .p-8 {
@@ -1555,8 +2023,8 @@ html {
   padding-right: 0.25rem;
 }
 
-.pl-8 {
-  padding-left: 2rem;
+.text-left {
+  text-align: left;
 }
 
 .text-center {

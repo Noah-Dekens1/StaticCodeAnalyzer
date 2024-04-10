@@ -1,0 +1,9 @@
+﻿/* 
+    For some bizarre reason CodeMirror puts an insane padding-bottom
+    value here, causing the editor to scroll nearly infinitely
+    Temporary(?) fix for that
+*/
+
+::deep .cm-content {
+    padding-bottom: 30px !important;
+}
