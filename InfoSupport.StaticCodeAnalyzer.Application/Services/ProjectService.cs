@@ -20,6 +20,11 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
     public async Task<Project> CreateProject(Project project)
     {
+        project.Path = project.Path.Replace('\\', '/');
+
+        if (project.Path.EndsWith('/'))
+            project.Path = project.Path.TrimEnd('/');
+
         await _context.Projects.AddAsync(project);
         await _context.SaveChangesAsync();
 

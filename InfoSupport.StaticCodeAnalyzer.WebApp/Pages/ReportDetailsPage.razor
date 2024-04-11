@@ -1,10 +1,13 @@
 ﻿@page "/project/{ProjectId:guid}/report/{Id:guid}"
 @using InfoSupport.StaticCodeAnalyzer.Domain
 @using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
 
 @inject HttpClient HttpClient;
 @inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
 @inject IJSRuntime JS
+
 
 <PageTitle>Report</PageTitle>
 
@@ -25,7 +28,9 @@ else
             <ProjectBrowser Report=@UserReport Project=@Project OnIssueSelected="HandleIssueSelected" />
         </div>
         <div class="h-full relative overflow-auto">
-            <CodeMirror6Wrapper
+            @if (!string.IsNullOrEmpty(CurrentFileContent))
+            {
+                <CodeMirror6Wrapper
                 IsWASM=true
                 ReadOnly=true
                 Editable=false
@@ -37,8 +42,13 @@ else
                 MaxHeight="100%"
                 LineNumbers=true
                 @ref=_codeMirrorRef
-                
+
                 />
+            }
+            else
+            {
+                <p>Select an issue to get started!</p>
+            }
         </div>
     </div>
    
@@ -71,6 +81,10 @@ else
     {
         Project = await HttpClient.GetFromJsonAsync<Project>($"/project/{ProjectId}");
         UserReport = await HttpClient.GetFromJsonAsync<Report>($"/project/{ProjectId}/report/{Id}");
+
+        NavBarState.PageTitle = $"Project {Project?.Name ?? "Invalid"}";
+        NavBarState.TitleRedirect = $"/project/{ProjectId}";
+        await InvokeAsync(StateHasChanged);
     }
 
     public string GetSomeCode()

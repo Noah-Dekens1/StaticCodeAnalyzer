@@ -2,9 +2,11 @@
 
 @using InfoSupport.StaticCodeAnalyzer.Domain
 @using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
 
 @inject HttpClient HttpClient;
 @inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
 
 @if (UserProject is null)
 {
@@ -47,6 +49,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        NavBarState.PageTitle = $"Project {UserProject?.Name ?? "Invalid"}";
+        NavBarState.TitleRedirect = $"/project/{Id}";
+        await InvokeAsync(StateHasChanged);
+
         UserProject = await HttpClient.GetFromJsonAsync<Project>($"/project/{Id}");
         UserProject?.Reports.Reverse();
     }
