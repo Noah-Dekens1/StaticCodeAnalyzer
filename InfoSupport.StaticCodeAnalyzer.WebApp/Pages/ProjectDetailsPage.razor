@@ -16,7 +16,10 @@
 }
 else
 {
-    <button class="btn ml-8" @onclick="Analyze">Analyze</button>
+    <div class="ml-8 join join-vertical lg:join-horizontal">
+        <button class="btn join-item" @onclick="Analyze">Analyze</button>
+        <button class="btn join-item">Create config</button>
+    </div>
 
     <div class="grid grid-cols-4 gap-4 p-8">
         @foreach (var report in UserProject.Reports)
