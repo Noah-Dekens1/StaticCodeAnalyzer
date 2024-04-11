@@ -21,14 +21,16 @@ public abstract class AstNode
 
 #if DEBUG
     public bool ConstructedInEmit { get; set; }
+#endif
 
     public static T Construct<T>(T node)
         where T : AstNode
     {
+#if DEBUG
         node.ConstructedInEmit = true;
+#endif
         return node;
     }
-#endif
 }
 
 public class GlobalNamespaceNode(
@@ -1223,6 +1225,17 @@ public class StructDeclarationNode(
 
 }
 
+[DebuggerDisplay("record {Name,nq}")]
+public class RecordDeclarationNode(
+    AstNode name, List<MemberNode> members, AstNode? parentName = null,
+    AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
+    List<AttributeNode>? attributes = null, ParameterListNode? parameters = null,
+    ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
+    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
+{
+
+}
+
 [DebuggerDisplay("enum {EnumName,nq}")]
 public class EnumDeclarationNode(
     AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, 
@@ -1314,10 +1327,11 @@ public class LambdaParameterNode(string identifier, TypeNode? type = null) : Ast
         => $"{Type} {Identifier}";
 }
 
-public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode body) : ExpressionNode
+public class LambdaExpressionNode(List<LambdaParameterNode> parameters, AstNode body, bool isAsync = false) : ExpressionNode
 {
     public List<LambdaParameterNode> Parameters { get; } = parameters;
     public AstNode Body { get; } = body;
+    public bool IsAsync { get; } = isAsync;
 
     public override List<AstNode> Children => [..Parameters, Body];
 }

@@ -1,0 +1,145 @@
+﻿@page "/projects"
+@using InfoSupport.StaticCodeAnalyzer.Domain
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Model
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+@using System.Text.Json
+@using System.Text
+
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Projects</PageTitle>
+
+<div class="pl-8">
+    <button class="btn" onclick="new_project_modal.showModal()">New project</button>
+</div>
+
+<dialog id="new_project_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">New Project</h3>
+        <EditForm Model="@projectModel" OnValidSubmit="@HandleValidSubmit">
+            <div class="form-control">
+                <label for="project_name">Project Name</label>
+                <InputText id="project_name" class="input input-bordered" @bind-Value="projectModel.Name" />
+            </div>
+            <div class="form-control py-4">
+                <label for="project_path">Project Path</label>
+                <InputText id="project_path" class="input input-bordered" @bind-Value="projectModel.Path" />
+            </div>
+            <div class="modal-action">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn" onclick="document.getElementById('new_project_modal').close()">Close</button>
+            </div>
+        </EditForm>
+    </div>
+</dialog>
+
+<dialog id="delete_project_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete Project</h3>
+        <p>Are you sure you want to delete this project?</p>
+        <div class="modal-action">
+            <button type="submit" class="btn btn-error" @onclick="HandleDeleteProject">Delete</button>
+            <button type="button" class="btn" onclick="document.getElementById('delete_project_modal').close()">Cancel</button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+    function closeModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.close();
+        }
+    }
+
+    function showModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.show();
+        }
+    }
+</script>
+
+<div class="grid grid-cols-4 gap-4 p-8">
+    @if (UserProjects is not null)
+    {
+        @foreach (var project in UserProjects)
+        {
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">@project.Name</h2>
+                    <p>@project.Path</p>
+                    <div class="card-actions justify-end">
+                        <button class="btn glass" @onclick="() => RequestDeleteProject(project)">Delete</button>
+                        <button class="btn" @onclick="() => ViewProject(project)">View</button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <LoadingSpinner LoadingText="Loading projects..">
+
+        </LoadingSpinner>
+
+    }
+</div>
+
+@code {
+    public List<Project>? UserProjects = null;
+    private CreateProjectModel projectModel = new CreateProjectModel();
+    private Project? _projectDeleteRequestedFor = null;
+
+    private async Task HandleValidSubmit()
+    {
+        var jsonContent = JsonSerializer.Serialize(projectModel);
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/project", content);
+        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+        await JSRuntime.InvokeVoidAsync("closeModal", "new_project_modal");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void RequestDeleteProject(Project project)
+    {
+        _projectDeleteRequestedFor = project;
+        await JSRuntime.InvokeVoidAsync("showModal", "delete_project_modal");
+    }
+
+    private async Task HandleDeleteProject()
+    {
+        await JSRuntime.InvokeVoidAsync("closeModal", "delete_project_modal");
+
+        if (_projectDeleteRequestedFor is not null)
+        {
+            var response = await HttpClient.DeleteAsync($"/project/{_projectDeleteRequestedFor.Id}");
+            _projectDeleteRequestedFor = null;
+            UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        NavBarState.PageTitle = "Dashboard";
+        NavBarState.TitleRedirect = "/projects";
+        await InvokeAsync(StateHasChanged);
+
+        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+    }
+
+    public void ViewProject(Project project)
+    {
+        NavigationManager.NavigateTo($"/project/{project.Id}");
+    }
+
+    public void AnalyzeProject(Project project)
+    {
+        NavigationManager.NavigateTo($"/project/{project.Id}");
+    }
+}

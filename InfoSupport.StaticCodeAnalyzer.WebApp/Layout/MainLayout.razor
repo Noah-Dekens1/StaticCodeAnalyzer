@@ -1,0 +1,16 @@
+﻿@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+
+@inherits LayoutComponentBase
+@inject NavBarStateService NavBarState;
+
+<div class="flex flex-col h-screen">
+    <NavBar @ref="_navBar"/>
+    <main class="flex-1 overflow-scroll h-full">
+        @Body
+    </main>
+</div>
+
+
+@code {
+    private NavBar _navBar = default!;
+}

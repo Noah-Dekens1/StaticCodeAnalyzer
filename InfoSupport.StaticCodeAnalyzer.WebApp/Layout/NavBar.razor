@@ -1,0 +1,46 @@
+﻿@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+
+@inject NavigationManager NavigationManager;
+
+<nav class="flex">
+    <div class="navbar bg-base-100">
+        <div class="navbar-start">
+            <a class="btn btn-ghost text-xl" @onclick="NavigateToHome">Static Code Analyzer</a>
+        </div>
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a class="text-xl" @onclick="NavigateToTitle">@PageTitle</a></li>
+            </ul>
+        </div>
+        <div class="navbar-end border-b-1 border-indigo-600">
+        </div>
+    </div>
+</nav>
+
+
+@code {
+    public string PageTitle { get; set; } = "Dashboard";
+
+    public string TitleRedirect { get; set; } = "/";
+
+    protected override void OnInitialized()
+    {
+
+    }
+
+    public void SetPageInfo(string pageTitle, string titleRedirect)
+    {
+        PageTitle = pageTitle;
+        TitleRedirect = titleRedirect;
+    }
+
+    void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    void NavigateToTitle()
+    {
+        NavigationManager.NavigateTo(TitleRedirect);
+    }
+}

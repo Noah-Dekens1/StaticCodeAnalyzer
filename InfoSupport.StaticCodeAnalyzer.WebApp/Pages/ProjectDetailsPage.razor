@@ -1,0 +1,82 @@
+﻿@page "/project/{Id:guid}"
+
+@using InfoSupport.StaticCodeAnalyzer.Domain
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
+
+@if (UserProject is null)
+{
+    <LoadingSpinner LoadingText="Loading project..">
+
+    </LoadingSpinner>
+}
+else
+{
+    <div class="ml-8 join join-vertical lg:join-horizontal">
+        <button class="btn join-item" @onclick="Analyze">Analyze</button>
+        <button class="btn join-item">Create config</button>
+    </div>
+
+    <div class="grid grid-cols-4 gap-4 p-8">
+        @foreach (var report in UserProject.Reports)
+        {
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">Report @@ @report.RunAt</h2>
+                    <div class="card-actions justify-end">
+                        <button class="btn" @onclick="() => ViewReport(report)">View</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (IsRunningAnalysis)
+{
+    <LoadingSpinner LoadingText="Analyzing project..">
+
+    </LoadingSpinner>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    public Project? UserProject { get; set; } = null;
+    public bool IsRunningAnalysis { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NavBarState.PageTitle = $"Project {UserProject?.Name ?? "Invalid"}";
+        NavBarState.TitleRedirect = $"/project/{Id}";
+        await InvokeAsync(StateHasChanged);
+
+        UserProject = await HttpClient.GetFromJsonAsync<Project>($"/project/{Id}");
+        UserProject?.Reports.Reverse();
+    }
+
+    public void ViewReport(Report report)
+    {
+        NavigationManager.NavigateTo($"/project/{Id}/report/{report.Id}");
+    }
+
+    public async void Analyze()
+    {
+        IsRunningAnalysis = true;
+        StateHasChanged();
+
+        await HttpClient.PostAsync($"/project/{Id}/analyze", null);
+
+        // Refresh reports
+        UserProject = await HttpClient.GetFromJsonAsync<Project>($"/project/{Id}");
+        UserProject?.Reports.Reverse();
+
+        IsRunningAnalysis = false;
+        StateHasChanged();
+    }
+}

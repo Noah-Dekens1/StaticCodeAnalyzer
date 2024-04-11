@@ -1045,8 +1045,8 @@ public class Lexer(string fileContent)
 
         var lexer = new Lexer(content)
         {
-            _line = startPosition.Value.Line,
-            _column = startPosition.Value.Column
+            _line = startPosition.Line,
+            _column = startPosition.Column
         };
         return lexer.LexInternal();
     }

@@ -29,6 +29,8 @@ public class CodeDisplayCLI
             {
                 var line = lines[i];
 
+                Console.Write((i + 1).ToString().PadLeft(4, ' ') + " ");
+
                 for (int j = 0; j < line.Length; j++)
                 {
                     var column = line[j];

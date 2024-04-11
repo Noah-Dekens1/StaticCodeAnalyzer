@@ -1,0 +1,257 @@
+﻿@using InfoSupport.StaticCodeAnalyzer.Domain
+@using System.Diagnostics.CodeAnalysis
+
+<div class="flex w-full h-full overflow-hidden">
+    <div class="w-2/5 h-full relative overflow-auto">
+        <div class="form-control">
+            <label class="label cursor-pointer">
+                <span class="label-text">Filter on files</span>
+                <input type="checkbox" class="toggle" @bind="IsFilteringFiles" />
+            </label>
+        </div>
+        <ul>
+            <li>
+                <button class="btn btn-block mb-1 p-1" @onclick="OnDirectoryLeave">
+                    <p class="text-left w-full">..</p>
+                </button>
+            </li>
+            @foreach (var path in _currentDirectoryPaths)
+            {
+                <li>
+                    @if (path.EndsWith(".cs"))
+                    {
+                        @if (IsFileSelected(path))
+                        {
+                            <button class="btn btn-block mb-1 p-1 btn-neutral" @onclick="() => OnPathEnter(path)">
+                                <p class="text-left w-full text-wrap break-all">@path</p>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-block mb-1 p-1 btn-accent" @onclick="() => OnPathEnter(path)">
+                                <p class="text-left w-full text-wrap break-all">@path</p>
+                            </button>
+                        }
+
+                    }
+                    else
+                    {
+                        <button class="btn btn-block mb-1 p-1" @onclick="() => OnPathEnter(path)">
+                            <p class="text-left w-full text-wrap break-all">@path</p>
+                        </button>
+                    }
+                </li>
+                
+            }
+        </ul>
+        
+    </div>
+    <div class="divider divider-horizontal"></div>
+    <div class="w-2/5 h-full relative overflow-auto">
+        @if (GetFilteredFiles().Sum(f => f.Issues.Count) == 0)
+        {
+            if (Report is not null && Report.ProjectFiles.Sum(f => f.Issues.Count) == 0)
+            {
+                <p>Amazing! No issues were found, you must have some super clean code!</p>
+            }
+            else if (!IsFilteringFiles)
+            {
+                <p>No files with issues found in this directory.</p>
+                <p>Use ".." to navigate back up.</p>
+            }
+        }
+
+        @if (string.IsNullOrEmpty(_currentFile) && IsFilteringFiles)
+        {
+            <p>To view issues please select a file or disable file-filtering.</p>
+        }
+
+        <ul>
+            @foreach (var file in GetFilteredFiles())
+            {
+                @if (file.Issues.Count > 0)
+                {
+                    <li>
+                        <div class="divider">@(GetFileName(file.Path))</div>
+                    </li>
+                }
+                
+                @foreach (var issue in file.Issues)
+                {
+                    <li>
+                        <button class="h-fit btn btn-block mb-1 p-4 @(IsIssueSelected(issue) ? "btn-neutral" : "")" @onclick="() => SelectIssue(file, issue)">
+                            <p class="text-left w-full text-wrap break-all">@issue.Code</p>
+                            <p class="text-left w-full text-wrap break-all text-xs">@(GetFileName(file.Path)):@issue.Location.Start.Line</p>
+                        </button>
+                    </li>
+                }
+
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Report? Report { get; set; } = default;
+
+    [Parameter]
+    public Project? Project { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<(ProjectFile File, Issue Issue)> OnIssueSelected { get; set; }
+
+
+    private string _currentFile = string.Empty;
+
+    private bool IsFilteringFiles { get; set; } = false;
+
+    private string _currentDirectory = string.Empty;
+    private List<string> _projectFilePaths => Report?.ProjectFiles.Select(f => f.Path).ToList() ?? [];
+
+    private Issue? _currentIssue = null;
+
+    private List<string> _currentDirectoryPaths => _projectFilePaths
+        .Select(f => f.Replace('\\', '/'))
+        .Where(f => f.StartsWith(_currentDirectory))
+        .Select(f => f.Substring(_currentDirectory.Length + 1))
+        .Select(f => f.Split("/").FirstOrDefault())
+        .Where(f => f is not null)
+        .Cast<string>()
+        .Distinct()
+        .Where(f => !f.EndsWith(".cs") || IsFilteringFiles)
+        .ToList();
+
+    struct IssueData(string file, Issue issue)
+    {
+        public string File { get; set; } = file;
+        public Issue Issue { get; set; } = issue;
+    }
+
+    /*
+    private List<IssueData> GetFilteredIssues()
+        {
+        if (Report is null)
+        return [];
+
+        return Report.ProjectFiles
+            .Where(f => IsFileVisible(f.Path))
+            .SelectMany(f => f.Issues.Select(i => new IssueData(f.Path, i)))
+    .ToList();
+    }
+    */
+
+    private List<ProjectFile> GetFilteredFiles()
+    {
+        if (Report is null)
+            return [];
+
+        return Report.ProjectFiles
+            .Where(f => IsFileVisible(f.Path))
+            .ToList();
+    }
+
+    private bool IsFileVisible(string path)
+    {
+        var normalized = NormalizePath(path);
+
+        if (IsFilteringFiles)
+        {
+            return normalized == _currentFile;
+        }
+
+        return normalized.StartsWith(_currentDirectory);
+    }
+
+    private string NormalizePath(string path)
+    {
+        return path.Replace('\\', '/');
+    }
+
+    protected override void OnInitialized()
+    {
+        _currentDirectory = Project?.Path.Replace('\\', '/') ?? "";
+
+        var comparer = new CodeLocationComparator();
+        if (Report is not null)
+        {
+            foreach (var file in Report.ProjectFiles)
+            {
+                file.Issues.Sort((a, b) => comparer.Compare(a.Location, b.Location));
+            }
+        }
+    }
+
+    private static void CompareLocation(CodeLocation a, CodeLocation b)
+    {
+        
+    }
+
+    private void DebugLogList<T>(List<T> list)
+    {
+        Console.WriteLine($"[{string.Join(", ", list)}]");
+    }
+
+    private void OnPathEnter(string name)
+    {
+        var isFile = name.EndsWith(".cs");
+
+        if (isFile)
+        {
+            string newFile = $"{_currentDirectory}/{name}";
+
+            if (newFile == _currentFile)
+            {
+                _currentFile = string.Empty;
+            }
+            else
+            {
+                _currentFile = newFile;
+            }
+        }
+        else
+        {
+            _currentDirectory += $"/{name}";
+        }
+    }
+
+    private bool IsFileSelected(string name)
+    {
+        return IsFilteringFiles && _currentFile == $"{_currentDirectory}/{name}";
+    }
+
+    private void OnDirectoryLeave()
+    {
+        var lastIndex = _currentDirectory.LastIndexOf('/');
+
+        if (lastIndex != -1)
+        {
+            _currentDirectory = _currentDirectory[..lastIndex];
+        }
+    }
+
+    private string GetFileName(string input)
+    {
+        var lastIndex = input.Replace('\\', '/').LastIndexOf('/');
+
+        return lastIndex != -1 ? input[(lastIndex + 1)..] : input;
+    }
+
+    private async void SelectIssue(ProjectFile file, Issue issue)
+    {
+        // If selected, toggle
+        if (_currentIssue?.Id == issue.Id)
+        {
+            _currentIssue = null;
+            return;
+        }
+
+        _currentIssue = issue;
+        await OnIssueSelected.InvokeAsync((file, issue));
+    }
+
+    private bool IsIssueSelected(Issue issue)
+    {
+        return _currentIssue?.Id == issue.Id;
+    }
+}

@@ -1,0 +1,169 @@
+﻿@page "/project/{ProjectId:guid}/report/{Id:guid}"
+@using InfoSupport.StaticCodeAnalyzer.Domain
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Components
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
+
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarState;
+@inject IJSRuntime JS
+
+
+<PageTitle>Report</PageTitle>
+
+@if (UserReport is null || Project is null)
+{
+    <LoadingSpinner LoadingText="Loading report..">
+
+    </LoadingSpinner>
+}
+else
+{
+    @*
+    <p class="ml-8">This report contains @(UserReport.ProjectFiles.Sum(f => f.Issues.Count)) issues</p>
+    *@
+
+    <div class="grid grid-cols-2 gap-4 p-8 h-full">
+        <div class="h-full relative overflow-hidden">
+            <ProjectBrowser Report=@UserReport Project=@Project OnIssueSelected="HandleIssueSelected" />
+        </div>
+        <div class="h-full relative overflow-auto">
+
+            @if (!IsVisible)
+            {
+                <p>Select an issue to get started!</p>
+            }
+
+            <CodeMirror6Wrapper
+                IsWASM=true
+                ReadOnly=true
+                Editable=false
+                Language="CodeMirrorLanguage.Csharp"
+                Visible=@IsVisible
+                @bind-Doc=@CurrentFileContent
+                @bind-Selection=@SelectionRange
+                LintDocument=@LintDocument
+                FullScreen=false
+                MaxHeight="100%"
+                LineNumbers=true
+                @ref=_codeMirrorRef
+                />
+        </div>
+    </div>
+   
+}
+
+
+@code {
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    public bool IsVisible => !string.IsNullOrEmpty(CurrentFileContent);
+
+    public Report? UserReport { get; set; } = null;
+    public Project? Project { get; set; } = null;
+    public ProjectFile? OpenFile { get; set; } = null;
+
+    public string? CurrentFileContent = string.Empty;
+
+    public List<SelectionRange> SelectionRange { get; set; } = [new GaelJ.BlazorCodeMirror6.Models.SelectionRange { From = 4, To = 30 }];
+
+    private CodeMirror6Wrapper _codeMirrorRef = default!;
+
+    private async void ScrollToLine(int line)
+    {
+        await JS.InvokeVoidAsync("scrollToLine", _codeMirrorRef.Setup.Id, line);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Project = await HttpClient.GetFromJsonAsync<Project>($"/project/{ProjectId}");
+        UserReport = await HttpClient.GetFromJsonAsync<Report>($"/project/{ProjectId}/report/{Id}");
+
+        NavBarState.PageTitle = $"Project {Project?.Name ?? "Invalid"}";
+        NavBarState.TitleRedirect = $"/project/{ProjectId}";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public string GetSomeCode()
+    {
+        var file = UserReport!.ProjectFiles.Where(f => f.Issues.Count > 0).Where(f => f.Content?.Length < 10000).First();
+        OpenFile = file;
+        return file.Content!;
+    }
+
+    private int ConvertPosition(string content, Position position)
+    {
+        uint line = 1;
+        uint column = 1;
+        int index = 0;
+
+        foreach (char c in content)
+        {
+            if (line == position.Line && column == position.Column)
+            {
+                return index;
+            }
+
+            index++;
+
+            if (c == '\n')
+            {
+                line++;
+                column = 1;
+            }
+            else
+            {
+                column++;
+            }
+        }
+
+        return -1;
+    }
+
+    private Task<List<CodeMirrorDiagnostic>> LintDocument(string code, CancellationToken cancellationToken)
+    {
+        var result = new List<CodeMirrorDiagnostic>();
+
+        var issues = OpenFile?.Issues ?? [];
+
+        foreach (var issue in issues)
+        {
+            result.Add(new CodeMirrorDiagnostic {
+                From = ConvertPosition(code, issue.Location.Start),
+                To = ConvertPosition(code, issue.Location.End) + 1,
+                Severity = "error",
+                Message = issue.Description,
+                Source = "Static Code Analyzer"
+            });
+        }
+
+        return Task.FromResult(result);
+    }
+
+    private async void HandleIssueSelected((ProjectFile File, Issue Issue) data)
+    {
+        var file = data.File;
+        var issue = data.Issue;
+
+        Console.WriteLine("Updating file content");
+
+        OpenFile = file;
+        CurrentFileContent = file.Content;
+
+        await InvokeAsync(StateHasChanged);
+
+        if (file.Content is not null)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            if (_codeMirrorRef.CommandDispatcher is not null)
+                await _codeMirrorRef.CommandDispatcher!.Dispatch(CodeMirrorSimpleCommand.RequestLinterRefresh);
+
+            ScrollToLine((int)issue.Location.Start.Line);
+        }
+    }
+}

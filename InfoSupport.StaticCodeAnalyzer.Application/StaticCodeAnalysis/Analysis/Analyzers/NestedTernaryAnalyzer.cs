@@ -14,6 +14,8 @@ public class NestedTernaryAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
+        //var example = true ? true : true ? false : true;
+
         var ternaryExpressions = ast.Root
             .GetAllDescendantsOfType<TernaryExpressionNode>()
             .Where(t => t.GetAllDescendantsOfType<TernaryExpressionNode>().Count > 0)

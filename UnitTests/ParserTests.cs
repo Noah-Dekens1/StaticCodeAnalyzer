@@ -2472,6 +2472,8 @@ public class ParserTests
             var simpleLambdaExpr5 = (a, b) => a + b;
             var simpleLambdaExpr6 = (int a, int b) => { return a + b; };
             var square = x => x * x;
+            var asyncSquare = async x => x * x;
+            var asyncParenSquare = async (x) => x * x;
             """);
 
         var actual = Parser.Parse(tokens);
@@ -2603,6 +2605,42 @@ public class ParserTests
                                     lhs: new IdentifierExpression("x"),
                                     rhs: new IdentifierExpression("x")
                                 )
+                            )
+                        )
+                    ]
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "asyncSquare",
+                            value: new LambdaExpressionNode(
+                                parameters: [new LambdaParameterNode("x")],
+                                body: new MultiplyExpressionNode(
+                                    lhs: new IdentifierExpression("x"),
+                                    rhs: new IdentifierExpression("x")
+                                ),
+                                isAsync: true
+                            )
+                        )
+                    ]
+                )
+            ),
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "asyncParenSquare",
+                            value: new LambdaExpressionNode(
+                                parameters: [new LambdaParameterNode("x")],
+                                body: new MultiplyExpressionNode(
+                                    lhs: new IdentifierExpression("x"),
+                                    rhs: new IdentifierExpression("x")
+                                ),
+                                isAsync: true
                             )
                         )
                     ]
@@ -6067,6 +6105,32 @@ public class ParserTests
                         )
                     )
                 ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_RecordType_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            public record Person(string FirstName, string LastName);
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new RecordDeclarationNode(
+                name: AstUtils.SimpleName("Person"),
+                members: [],
+                accessModifier: AccessModifier.Public,
+                parameters: new ParameterListNode([
+                    new ParameterNode(AstUtils.SimpleNameAsType("string"), "FirstName"),
+                    new ParameterNode(AstUtils.SimpleNameAsType("string"), "LastName"),
+                ])
             )
         );
 
