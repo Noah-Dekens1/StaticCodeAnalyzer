@@ -28,13 +28,18 @@ else
             <ProjectBrowser Report=@UserReport Project=@Project OnIssueSelected="HandleIssueSelected" />
         </div>
         <div class="h-full relative overflow-auto">
-            @if (!string.IsNullOrEmpty(CurrentFileContent))
+
+            @if (!IsVisible)
             {
-                <CodeMirror6Wrapper
+                <p>Select an issue to get started!</p>
+            }
+
+            <CodeMirror6Wrapper
                 IsWASM=true
                 ReadOnly=true
                 Editable=false
                 Language="CodeMirrorLanguage.Csharp"
+                Visible=@IsVisible
                 @bind-Doc=@CurrentFileContent
                 @bind-Selection=@SelectionRange
                 LintDocument=@LintDocument
@@ -42,13 +47,7 @@ else
                 MaxHeight="100%"
                 LineNumbers=true
                 @ref=_codeMirrorRef
-
                 />
-            }
-            else
-            {
-                <p>Select an issue to get started!</p>
-            }
         </div>
     </div>
    
@@ -61,6 +60,8 @@ else
 
     [Parameter]
     public Guid Id { get; set; }
+
+    public bool IsVisible => !string.IsNullOrEmpty(CurrentFileContent);
 
     public Report? UserReport { get; set; } = null;
     public Project? Project { get; set; } = null;
@@ -159,7 +160,8 @@ else
         {
             await InvokeAsync(StateHasChanged);
 
-            await _codeMirrorRef.CommandDispatcher!.Dispatch(CodeMirrorSimpleCommand.RequestLinterRefresh);
+            if (_codeMirrorRef.CommandDispatcher is not null)
+                await _codeMirrorRef.CommandDispatcher!.Dispatch(CodeMirrorSimpleCommand.RequestLinterRefresh);
 
             ScrollToLine((int)issue.Location.Start.Line);
         }
