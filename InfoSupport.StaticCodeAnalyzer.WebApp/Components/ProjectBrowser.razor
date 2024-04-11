@@ -48,6 +48,24 @@
     </div>
     <div class="divider divider-horizontal"></div>
     <div class="w-2/5 h-full relative overflow-auto">
+        @if (GetFilteredFiles().Sum(f => f.Issues.Count) == 0)
+        {
+            if (Report is not null && Report.ProjectFiles.Sum(f => f.Issues.Count) == 0)
+            {
+                <p>Amazing! No issues were found, you must have some super clean code!</p>
+            }
+            else if (!IsFilteringFiles)
+            {
+                <p>No files with issues found in this directory.</p>
+                <p>Use ".." to navigate back up.</p>
+            }
+        }
+
+        @if (string.IsNullOrEmpty(_currentFile) && IsFilteringFiles)
+        {
+            <p>To view issues please select a file or disable file-filtering.</p>
+        }
+
         <ul>
             @foreach (var file in GetFilteredFiles())
             {
