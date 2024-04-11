@@ -40,6 +40,9 @@ app.MapPost("/project", async (IProjectService projectService, Project project) 
 app.MapGet("/project/{id}", async (IProjectService projectService, Guid id) =>
     await projectService.GetProjectById(id));
 
+app.MapDelete("/project/{id}", async (IProjectService projectService, Guid id) =>
+    await projectService.DeleteProject(id));
+
 app.MapPost("/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
     await projectService.StartAnalysis(id));
 
