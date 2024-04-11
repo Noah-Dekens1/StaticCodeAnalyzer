@@ -32,3 +32,30 @@ public class CodeLocation(Position start, Position end)
     public Position Start { get; set; } = start;
     public Position End { get; set; } = end;
 }
+
+public class CodeLocationComparator : IComparer<CodeLocation>
+{
+    private static int ComparePosition(Position x, Position y)
+    {
+        if (x.Line < y.Line) return -1;
+        if (x.Line > y.Line) return 1;
+        if (x.Column < y.Column) return -1;
+        if (x.Column > y.Column) return 1;
+        return 0;
+    }
+
+    public int Compare(CodeLocation? x, CodeLocation? y)
+    {
+        if (x is null || y is null)
+        {
+            if (x is null && y is null) return 0;
+            return x is null ? -1 : 1;
+        }
+
+        int startComparison = ComparePosition(x.Start, y.Start);
+
+        return startComparison != 0 
+            ? startComparison 
+            : ComparePosition(x.End, y.End);
+    }
+}

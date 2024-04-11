@@ -1,4 +1,5 @@
 ﻿@using InfoSupport.StaticCodeAnalyzer.Domain
+@using System.Diagnostics.CodeAnalysis
 
 <div class="flex w-full h-full overflow-hidden">
     <div class="w-2/5 h-full relative overflow-auto">
@@ -32,7 +33,7 @@
                             </button>
                         }
 
-                }
+                    }
                     else
                     {
                         <button class="btn btn-block mb-1 p-1" @onclick="() => OnPathEnter(path)">
@@ -48,11 +49,25 @@
     <div class="divider divider-horizontal"></div>
     <div class="w-2/5 h-full relative overflow-auto">
         <ul>
-            @for (int i = 0; i < 100; i++)
+            @foreach (var file in GetFilteredFiles())
             {
-                <li>
-                    <p>Item @(i + 1)</p>
-                </li>
+                @if (file.Issues.Count > 0)
+                {
+                    <li>
+                        <div class="divider">@(GetFileName(file.Path))</div>
+                    </li>
+                }
+                
+                @foreach (var issue in file.Issues)
+                {
+                    <li>
+                        <button class="h-fit btn btn-block mb-1 p-4 @(IsIssueSelected(issue) ? "btn-neutral" : "")" @onclick="() => SelectIssue(file, issue)">
+                            <p class="text-left w-full text-wrap break-all">@issue.Code</p>
+                            <p class="text-left w-full text-wrap break-all text-xs">@(GetFileName(file.Path)):@issue.Location.Start.Line</p>
+                        </button>
+                    </li>
+                }
+
             }
         </ul>
     </div>
@@ -65,12 +80,18 @@
     [Parameter]
     public Project? Project { get; set; } = default;
 
+    [Parameter]
+    public EventCallback<(ProjectFile File, Issue Issue)> OnIssueSelected { get; set; }
+
+
     private string _currentFile = string.Empty;
 
     private bool IsFilteringFiles { get; set; } = false;
 
     private string _currentDirectory = string.Empty;
     private List<string> _projectFilePaths => Report?.ProjectFiles.Select(f => f.Path).ToList() ?? [];
+
+    private Issue? _currentIssue = null;
 
     private List<string> _currentDirectoryPaths => _projectFilePaths
         .Select(f => f.Replace('\\', '/'))
@@ -83,9 +104,69 @@
         .Where(f => !f.EndsWith(".cs") || IsFilteringFiles)
         .ToList();
 
+    struct IssueData(string file, Issue issue)
+    {
+        public string File { get; set; } = file;
+        public Issue Issue { get; set; } = issue;
+    }
+
+    /*
+    private List<IssueData> GetFilteredIssues()
+        {
+        if (Report is null)
+        return [];
+
+        return Report.ProjectFiles
+            .Where(f => IsFileVisible(f.Path))
+            .SelectMany(f => f.Issues.Select(i => new IssueData(f.Path, i)))
+    .ToList();
+    }
+    */
+
+    private List<ProjectFile> GetFilteredFiles()
+    {
+        if (Report is null)
+            return [];
+
+        return Report.ProjectFiles
+            .Where(f => IsFileVisible(f.Path))
+            .ToList();
+    }
+
+    private bool IsFileVisible(string path)
+    {
+        var normalized = NormalizePath(path);
+
+        if (IsFilteringFiles)
+        {
+            return normalized == _currentFile;
+        }
+
+        return normalized.StartsWith(_currentDirectory);
+    }
+
+    private string NormalizePath(string path)
+    {
+        return path.Replace('\\', '/');
+    }
+
     protected override void OnInitialized()
     {
         _currentDirectory = Project?.Path.Replace('\\', '/') ?? "";
+
+        var comparer = new CodeLocationComparator();
+        if (Report is not null)
+        {
+            foreach (var file in Report.ProjectFiles)
+            {
+                file.Issues.Sort((a, b) => comparer.Compare(a.Location, b.Location));
+            }
+        }
+    }
+
+    private static void CompareLocation(CodeLocation a, CodeLocation b)
+    {
+        
     }
 
     private void DebugLogList<T>(List<T> list)
@@ -136,5 +217,23 @@
         var lastIndex = input.Replace('\\', '/').LastIndexOf('/');
 
         return lastIndex != -1 ? input[(lastIndex + 1)..] : input;
+    }
+
+    private async void SelectIssue(ProjectFile file, Issue issue)
+    {
+        // If selected, toggle
+        if (_currentIssue?.Id == issue.Id)
+        {
+            _currentIssue = null;
+            return;
+        }
+
+        _currentIssue = issue;
+        await OnIssueSelected.InvokeAsync((file, issue));
+    }
+
+    private bool IsIssueSelected(Issue issue)
+    {
+        return _currentIssue?.Id == issue.Id;
     }
 }
