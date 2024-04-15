@@ -1,12 +1,5 @@
 {
   "version": 1,
   "isRoot": true,
-  "tools": {
-    "infosupport.staticcodeanalyzer.cli": {
-      "version": "1.0.2",
-      "commands": [
-        "analyze"
-      ]
-    }
-  }
+  "tools": {}
 }

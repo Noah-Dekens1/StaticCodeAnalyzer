@@ -15,6 +15,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Application\InfoSupport.StaticCodeAnalyzer.Application.csproj" />
+    <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.WebAPI\InfoSupport.StaticCodeAnalyzer.WebAPI.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+      <Content Include="web\\**\*.*" Pack="true" PackagePath="web\">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+  </ItemGroup>
+
 
 </Project>
