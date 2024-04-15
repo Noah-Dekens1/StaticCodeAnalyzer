@@ -4,10 +4,6 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 using InfoSupport.StaticCodeAnalyzer.Infrastructure.Data;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Builder.Extensions;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.FileProviders;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace InfoSupport.StaticCodeAnalyzer.WebAPI;
 
@@ -15,7 +11,8 @@ public class WebApiBuilder
 {
     public static WebApplication Build(string[] args, bool overrideContentPath = false)
     {
-        var root = Directory.GetCurrentDirectory();
+        var root = AppContext.BaseDirectory;
+
         var builder = !overrideContentPath
             ? WebApplication.CreateBuilder(new WebApplicationOptions())
             : WebApplication.CreateBuilder(new WebApplicationOptions 

@@ -44,6 +44,7 @@ public class LaunchCommand : ICommandHandler
 
     private void OpenBrowser()
     {
+        Console.WriteLine("Opening default browser @ http://localhost:5000");
         OpenUrl("http://localhost:5000");
     }
 
@@ -55,6 +56,7 @@ public class LaunchCommand : ICommandHandler
             return;
         }
 
+        Console.WriteLine("Starting server..");
         FrontendUtil.StartWebApp();
 
         Thread.Sleep(1000 * 3);

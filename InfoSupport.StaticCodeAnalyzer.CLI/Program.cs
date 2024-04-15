@@ -6,7 +6,7 @@ using InfoSupport.StaticCodeAnalyzer.WebAPI;
 
 var parms = new ArgsUtil(args);
 
-if (parms.GetCommand() is null or "help" || !parms.Validate())
+if (!parms.Validate() || parms.GetCommand() is null or "help")
 {
     Console.WriteLine("---- Static Code Analyzer");
     Console.WriteLine("help                -> Shows this usage guide.");
