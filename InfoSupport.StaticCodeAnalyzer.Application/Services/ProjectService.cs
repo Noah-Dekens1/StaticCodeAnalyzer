@@ -82,11 +82,6 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
         project.Reports.Add(report);
 
-        foreach (var entry in _context.ChangeTracker.Entries())
-        {
-            Console.WriteLine($"Entity: {entry.Entity.GetType().Name}, State: {entry.State}");
-        }
-
         await _context.SaveChangesAsync();
 
         return report;
