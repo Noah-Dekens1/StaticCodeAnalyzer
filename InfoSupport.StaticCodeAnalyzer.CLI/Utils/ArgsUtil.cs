@@ -37,8 +37,8 @@ public class ArgsUtil(string[] args)
         return dir.Replace('\\', '/').TrimEnd('/');
     }
 
-    public bool IsCIOnly()
+    public bool HasOption(string option)
     {
-        return _args.Contains("-CI");
+        return _args.Contains(option);
     }
 }

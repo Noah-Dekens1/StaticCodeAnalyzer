@@ -26,9 +26,9 @@ internal class AnalyzeCommand : ICommandHandler
             return;
         }
 
-        if (args.IsCIOnly())
+        if (args.HasOption("--output-console"))
         {
-            RunAnalysisForCI(directory);
+            RunAnalysisConsole(directory);
             return;
         }
 
@@ -75,10 +75,10 @@ internal class AnalyzeCommand : ICommandHandler
         Console.WriteLine("Finished analysis");
         Console.WriteLine("Launching web application with results");
 
-        FrontendUtil.StartWebApp();
+        await FrontendUtil.StartIfNotRunning();
     }
 
-    private static void RunAnalysisForCI(string directory)
+    private static void RunAnalysisConsole(string directory)
     {
         Console.WriteLine($"- Starting analysis on \"{directory}\" -");
 
