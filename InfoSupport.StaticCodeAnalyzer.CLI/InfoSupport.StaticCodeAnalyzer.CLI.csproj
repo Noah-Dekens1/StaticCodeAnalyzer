@@ -10,7 +10,9 @@
     <ToolCommandName>analyzer</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
 
-    <Version>1.0.7</Version>
+    <PackageId>StaticCodeAnalysis.StaticCodeAnalyzer.CLI</PackageId>
+
+    <Version>1.0.8</Version>
   </PropertyGroup>
 
   <ItemGroup>
