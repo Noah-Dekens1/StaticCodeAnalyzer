@@ -1,20 +1,31 @@
 ﻿using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
+using InfoSupport.StaticCodeAnalyzer.CLI.Commands;
+using InfoSupport.StaticCodeAnalyzer.CLI.Utils;
 using InfoSupport.StaticCodeAnalyzer.Domain;
+using InfoSupport.StaticCodeAnalyzer.WebAPI;
 
-var directory = args.FirstOrDefault() ?? Directory.GetCurrentDirectory();
+var parms = new ArgsUtil(args);
 
-Console.WriteLine($"- Starting analysis on \"{directory}\" -");
-
-var report = Runner.RunAnalysis(new Project("Example", directory));
-
-foreach (var projectFile in report.ProjectFiles)
+if (!parms.Validate() || parms.GetCommand() is null or "help")
 {
-    var issues = projectFile.Issues;
-
-    if (issues.Count > 0)
-    {
-        CodeDisplayCLI.DisplayCode(File.ReadAllText(projectFile.Path), issues, projectFile.Name);
-    }
+    Console.WriteLine("---- Static Code Analyzer");
+    Console.WriteLine(" Basic usage: analyzer [command] [options]");
+    Console.WriteLine("");
+    Console.WriteLine("---- Commands");
+    Console.WriteLine(" help                                   -> Shows this usage guide.");
+    Console.WriteLine(" analyze [directory] [--output-console] -> Analyze a repository, creates a new project if one doesn't exist. " +
+        "If no directory is provided the current one will be used instead.");
+    Console.WriteLine(" launch                                 -> Launches web application");
+    Console.WriteLine("");
+    Console.WriteLine("-------------------------");
+    return;
 }
 
-Console.WriteLine($"Finished! Found {report.ProjectFiles.Sum(f => f.Issues.Count)} issues in {report.ProjectFiles.Count} files");
+ICommandHandler handler = parms.GetCommand() switch
+{
+    "analyze" => new AnalyzeCommand(),
+    "launch"  => new LaunchCommand(),
+    _ => throw new InvalidOperationException()
+};
+
+await handler.Run(parms);

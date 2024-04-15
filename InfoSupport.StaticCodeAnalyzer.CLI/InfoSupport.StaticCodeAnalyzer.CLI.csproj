@@ -7,14 +7,22 @@
     <Nullable>enable</Nullable>
       
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>analyze</ToolCommandName>
+    <ToolCommandName>analyzer</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
 
-    <Version>1.0.2</Version>
+    <Version>1.0.7</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Application\InfoSupport.StaticCodeAnalyzer.Application.csproj" />
+    <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.WebAPI\InfoSupport.StaticCodeAnalyzer.WebAPI.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+      <Content Include="web\\**\*.*" Pack="true" PackagePath="web\">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+  </ItemGroup>
+
 
 </Project>

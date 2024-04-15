@@ -99,8 +99,8 @@
     {
         var jsonContent = JsonSerializer.Serialize(projectModel);
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-        var response = await HttpClient.PostAsync("/project", content);
-        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+        var response = await HttpClient.PostAsync("project", content);
+        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("projects");
         await JSRuntime.InvokeVoidAsync("closeModal", "new_project_modal");
         await InvokeAsync(StateHasChanged);
     }
@@ -117,9 +117,9 @@
 
         if (_projectDeleteRequestedFor is not null)
         {
-            var response = await HttpClient.DeleteAsync($"/project/{_projectDeleteRequestedFor.Id}");
+            var response = await HttpClient.DeleteAsync($"project/{_projectDeleteRequestedFor.Id}");
             _projectDeleteRequestedFor = null;
-            UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+            UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("projects");
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -130,7 +130,7 @@
         NavBarState.TitleRedirect = "/projects";
         await InvokeAsync(StateHasChanged);
 
-        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("/projects");
+        UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("projects");
     }
 
     public void ViewProject(Project project)

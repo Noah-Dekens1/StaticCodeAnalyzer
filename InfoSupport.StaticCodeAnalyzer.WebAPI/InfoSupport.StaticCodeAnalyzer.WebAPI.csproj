@@ -7,8 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Application\InfoSupport.StaticCodeAnalyzer.Application.csproj" />
     <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Infrastructure\InfoSupport.StaticCodeAnalyzer.Infrastructure.csproj" />
+    <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.WebApp\InfoSupport.StaticCodeAnalyzer.WebApp.csproj" />
   </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="web\**" Pack="true" PackagePath="web\" />
+    </ItemGroup>
+
 
 </Project>

@@ -2,10 +2,10 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "infosupport.staticcodeanalyzer.cli": {
-      "version": "1.0.2",
+    "InfoSupport.StaticCodeAnalyzer.CLI": {
+      "version": "1.0.3",
       "commands": [
-        "analyze"
+        "analyzer"
       ]
     }
   }
