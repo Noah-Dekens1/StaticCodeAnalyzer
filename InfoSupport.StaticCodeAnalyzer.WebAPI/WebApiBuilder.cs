@@ -13,6 +13,8 @@ public class WebApiBuilder
     {
         var root = AppContext.BaseDirectory;
 
+        Console.WriteLine($"[DEBUG]: Content root: {root}");
+
         var builder = !overrideContentPath
             ? WebApplication.CreateBuilder(new WebApplicationOptions())
             : WebApplication.CreateBuilder(new WebApplicationOptions 
