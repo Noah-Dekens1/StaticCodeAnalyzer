@@ -21,6 +21,10 @@ jobs:
       with:
         dotnet-version: '8.0'
 
+    - name: Restore Web App
+      run: dotnet restore
+      working-directory: InfoSupport.StaticCodeAnalyzer.WebApp
+
     - name: Publish Web App
       run: dotnet publish --no-restore -c Release
       working-directory: InfoSupport.StaticCodeAnalyzer.WebApp
