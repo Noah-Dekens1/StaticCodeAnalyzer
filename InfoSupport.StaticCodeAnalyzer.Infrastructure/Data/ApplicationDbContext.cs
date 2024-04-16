@@ -28,6 +28,14 @@ public class ApplicationDbContext : DbContext
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlite("Data Source=StaticCodeAnalyzer.db");
+    {
+        var folder = Environment.SpecialFolder.LocalApplicationData;
+        var path = Environment.GetFolderPath(folder);
+        var subdirectory = Path.Combine(path, "StaticCodeAnalyzer");
+        Directory.CreateDirectory(subdirectory);
+        var dbPath = Path.Combine(subdirectory, "data.db");
+        optionsBuilder.UseSqlite($"Data Source={dbPath}");
+    }
 }
