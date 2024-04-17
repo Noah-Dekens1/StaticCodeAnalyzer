@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
@@ -161,5 +162,40 @@ public static class AstExtensions
     public static bool HasAttribute(this MemberNode node, string attributeName)
     {
         return HasAttribute(node.Attributes, attributeName, out _);
+    }
+
+    public static NamespaceNode? GetNamespace(this AstNode node)
+    {
+        if (node.Parent is NamespaceNode ns)
+        {
+            return ns;
+        }
+
+        if (node.Parent is null)
+        {
+            return null;
+        }
+
+        return GetNamespace(node.Parent);
+    }
+
+    // @fixme: what about type arguments?
+    public static string GetName(this TypeDeclarationNode node)
+    {
+        var name = (node is BasicDeclarationNode basicDeclaration) ? basicDeclaration.Name : ((EnumDeclarationNode)node).EnumName;
+        return ((ExpressionNode)name).AsIdentifier()!;
+    }
+
+    public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
+    {
+        // @todo: get full namespace and resolve it using TypeLookup or?
+        var ns = node.GetNamespace();
+
+        foreach (var ast in project.ProjectFiles.Values)
+        {
+            
+        }
+
+        return null;
     }
 }

@@ -17,7 +17,8 @@ public abstract class AstNode
     public List<Token> Tokens { get; } = [];
 
     public abstract List<AstNode> Children { get; }
-    public CodeLocation Location { get; set; }
+    public CodeLocation Location { get; set; } = new CodeLocation();
+    public AstNode? Parent { get; set; } = null;
 
 #if DEBUG
     public bool ConstructedInEmit { get; set; }

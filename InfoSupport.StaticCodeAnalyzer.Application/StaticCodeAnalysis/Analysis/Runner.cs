@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
@@ -37,6 +38,9 @@ public class Runner
             var ast = Parser.Parse(tokens);
 
             projectRef.ProjectFiles.Add(path, ast);
+
+            var symbolResolver = new SymbolResolver();
+            symbolResolver.Resolve(ast);
         }
 
         projectRef.TypeLookup.GenerateTypeMappings(projectRef);
