@@ -381,7 +381,7 @@ public class SymbolResolver
                     break;
                 }
 
-            case MemberNode memberNode when memberNode is not ConstructorNode:
+            case MemberNode memberNode when memberNode is not ConstructorNode && memberNode is not EnumMemberNode:
                 {
                     var kind = _memberSymbolKinds[memberNode.GetType()];
                     symbolTable.AddSymbol(new Symbol(memberNode.GetName(), ns, node, kind));
@@ -394,9 +394,9 @@ public class SymbolResolver
                     break;
                 }
 
-            case UsingDirectiveNode usingDirectiveNode:
+            case UsingDirectiveNode usingDirectiveNode when usingDirectiveNode.Alias is null:
                 {
-                    symbolTable.UsingNamespaces.Add(usingDirectiveNode.NamespaceOrType.AsIdentifier()!);
+                    symbolTable.UsingNamespaces.Add(usingDirectiveNode.NamespaceOrType.AsLongIdentifier()!);
                     break;
                 }
         }

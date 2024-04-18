@@ -55,25 +55,19 @@ public static class AstExtensions
         return null;
     }
 
-    public static string? AsLongIdentifier(this ExpressionNode expression)
+    public static string? AsLongIdentifier(this AstNode node)
     {
-        if (expression is IdentifierExpression expr)
+        if (node is IdentifierExpression expr)
             return expr.Identifier;
 
-        if (expression is GenericNameNode generiName)
+        if (node is GenericNameNode generiName)
             return generiName.Identifier.AsIdentifier();
 
-        if (expression is MemberAccessExpressionNode memberAccess)
-        {
-            if (memberAccess.Identifier is IdentifierExpression identifierExpr)
-            {
-                return $"{memberAccess.LHS.AsLongIdentifier()}.{identifierExpr.Identifier}";
-            }
-            else if (memberAccess.Identifier is GenericNameNode genericName)
-            {
-                return $"{memberAccess.LHS.AsLongIdentifier()}.{genericName.Identifier.AsIdentifier()}";
-            }
-        }
+        if (node is QualifiedNameNode qualifiedName)
+            return $"{qualifiedName.LHS.AsLongIdentifier()}.{qualifiedName.Identifier.AsLongIdentifier()}";
+
+        if (node is MemberAccessExpressionNode memberAccess)
+            return $"{memberAccess.LHS.AsLongIdentifier()}.{memberAccess.Identifier.AsLongIdentifier()}";
 
         return null;
     }
@@ -230,7 +224,6 @@ public static class AstExtensions
 
     public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
     {
-        // @todo: get full namespace and resolve it using TypeLookup or?
         var ns = node.GetNamespace();
 
         foreach (var ast in project.ProjectFiles.Values)
