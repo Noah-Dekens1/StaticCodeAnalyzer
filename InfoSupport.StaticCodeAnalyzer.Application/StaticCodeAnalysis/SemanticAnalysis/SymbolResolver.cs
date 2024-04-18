@@ -4,10 +4,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
 
@@ -62,7 +65,7 @@ public class SymbolTable
         var next = parts.First();
 
         // Local check
-        var symbol = Symbols.Find(s => s.Name == next);
+        var symbol = FindSymbolLocalOrIncluded(next);
 
         // Check if symbol is not complete
         if (symbol is not null && parts.Length > 1)
@@ -75,7 +78,7 @@ public class SymbolTable
                 // @fixme: use array as parm instead?
                 symbol = nextTable?.FindSymbol(string.Join('.', parts[1..]));
             }
-            // If type look for idk
+            // If type look for matching TypeName
             else if (symbol.Kind == SymbolKind.Type)
             {
                 var nextTable = InnerScopes.Find(s => s.TypeName == symbol.Name);
@@ -93,6 +96,13 @@ public class SymbolTable
 
 
         return symbol;
+    }
+
+    private Symbol? FindSymbolLocalOrIncluded(string name)
+    {
+        var local = Symbols.Find(s => s.Name == name);
+
+        return local;
     }
 
     public void AddSymbol(Symbol symbol)
@@ -131,6 +141,44 @@ public class SymbolResolver
         return unit;
     }
 
+    private void MergeUsingSymbols(SymbolTable table)
+    {
+        
+        foreach (var usingDirective in table.UsingNamespaces)
+        {
+            foreach (var unit in CompilationUnits)
+            {
+                var ns = GetNamespaceFromString(unit.GlobalNamespace, usingDirective);
+
+                if (ns is null)
+                    continue;
+
+                var tables = FindTablesForNamespace(ns, unit.RootTable);
+
+                foreach (var source in tables)
+                {
+                    table.Symbols.AddRange(source.Symbols);
+                    table.InnerScopes.AddRange(source.InnerScopes);
+                }
+            }
+        }
+
+        foreach (var inner in table.InnerScopes)
+        {
+            MergeUsingSymbols(inner);
+        }
+    }
+
+    public void ResolveUsings()
+    {
+        foreach (var unit in CompilationUnits)
+        {
+            var table = unit.RootTable;
+
+            MergeUsingSymbols(table);
+        }
+    }
+
 
     // Resolve like member access / identifier expressions / generic names
     // to their owning symbols, taking into account method overloading, using directives, ...
@@ -147,27 +195,34 @@ public class SymbolResolver
         var table = node.SymbolTableRef ?? throw new Exception();
         var usings = table.GetAllUsingDirectives();
 
+        string? name = null;
+
         if (node is IdentifierExpression identifierExpr)
         {
-            var symbol = table.FindSymbol(identifierExpr.Identifier);
-
-            if (symbol is not null)
-                return symbol;
+            name = identifierExpr.Identifier;
         }
 
         if (node is MemberAccessExpressionNode memberAccessExpr)
         {
-            var fullyQualifiedName = memberAccessExpr.AsLongIdentifier();
+             name = memberAccessExpr.AsLongIdentifier();
+        }
 
-            if (fullyQualifiedName is null)
-                return null;
-
-            var symbol = table.FindSymbol(fullyQualifiedName);
+        if (name is not null)
+        {
+            // Start by searching the local symbol table and its outers
+            var symbol = table.FindSymbol(name);
 
             if (symbol is not null)
                 return symbol;
 
-            FindTablesForQualifiedName(fullyQualifiedName);
+            // If we have no match yet look through all the top-level compilation units
+            foreach (var unit in CompilationUnits)
+            {
+                symbol = unit.RootTable.FindSymbol(name);
+
+                if (symbol is not null) 
+                    return symbol;
+            }
         }
 
 
@@ -219,7 +274,7 @@ public class SymbolResolver
             result.Add(symbolTable);
 
         foreach (var table in symbolTable.InnerScopes)
-            FindTablesForNamespace(ns, table);
+            result.AddRange(FindTablesForNamespace(ns, table));
 
         return result;
     }
@@ -270,6 +325,25 @@ public class SymbolResolver
         }
 
         return current ?? throw new InvalidOperationException(); // shouldn't be able to be empty here
+    }
+    
+    private static NamespaceSymbol? GetNamespaceFromString(NamespaceSymbol parent, string ns)
+    {
+        var namespaces = ns.Split('.');
+
+        NamespaceSymbol current = parent;
+
+        foreach (var n in namespaces)
+        {
+            var next = current.Namespaces.Find(x => x.Name == n);
+
+            if (next is null)
+                return null;
+
+            current = next;
+        }
+
+        return current;
     }
 
     private readonly Dictionary<Type, SymbolKind> _memberSymbolKinds = new()

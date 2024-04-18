@@ -16,6 +16,13 @@ namespace UnitTests.SemanticModelTests;
 [TestClass]
 public class SymbolTests
 {
+
+    private AST Parse(string text)
+    {
+        var tokens = Lexer.Lex(text);
+        return Parser.Parse(tokens);
+    }
+
     [TestMethod]
     public void Resolve_LocalVariable_ReturnsValidSymbol()
     {
@@ -166,6 +173,91 @@ public class SymbolTests
             .GetAllDescendantsOfType<MemberAccessExpressionNode>()
             .Where(e => e.Identifier.AsIdentifier() == "A")
             .First()
+        );
+
+        Debug.Assert(symbol is not null);
+        Debug.Assert(symbol.Name == "A");
+        Debug.Assert(symbol.Kind == SymbolKind.Method);
+    }
+
+    [TestMethod]
+    public void Resolve_MultipleFiles_ReturnsValidSymbol()
+    {
+        var file1 = Parse("""
+            class Program
+            {
+                public static void Main()
+                {
+                    Example.Utils.A();
+                }
+            }
+            """);
+
+        var file2 = Parse("""
+            namespace Example;
+
+            class Utils
+            {
+                public static void A()
+                {
+
+                }
+            }
+            """);
+
+        var resolver = new SymbolResolver();
+        resolver.Resolve(file1);
+        resolver.Resolve(file2);
+
+        var symbol = resolver.GetSymbolForExpression(
+            file1.Root
+                .GetAllDescendantsOfType<MemberAccessExpressionNode>()
+                .Where(e => e.Identifier.AsIdentifier() == "A")
+                .First()
+        );
+
+        Debug.Assert(symbol is not null);
+        Debug.Assert(symbol.Name == "A");
+        Debug.Assert(symbol.Kind == SymbolKind.Method);
+    }
+
+    [TestMethod]
+    public void Resolve_Usings_ReturnsValidSymbol()
+    {
+        var file1 = Parse("""
+            using Example;
+
+            class Program
+            {
+                public static void Main()
+                {
+                    Utils.A();
+                }
+            }
+            """);
+
+        var file2 = Parse("""
+            namespace Example;
+
+            class Utils
+            {
+                public static void A()
+                {
+
+                }
+            }
+            """);
+
+        var resolver = new SymbolResolver();
+        resolver.Resolve(file1);
+        resolver.Resolve(file2);
+        resolver.ResolveUsings();
+
+        var symbol = resolver.GetSymbolForExpression(
+            file1.Root
+                .GetAllDescendantsOfType<MemberAccessExpressionNode>()
+                .Where(e => e.Identifier.AsIdentifier() == "A")
+                .First()
         );
 
         Debug.Assert(symbol is not null);
