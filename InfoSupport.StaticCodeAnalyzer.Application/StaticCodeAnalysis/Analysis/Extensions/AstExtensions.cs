@@ -226,11 +226,13 @@ public static class AstExtensions
     {
         var ns = node.GetNamespace();
 
-        foreach (var ast in project.ProjectFiles.Values)
-        {
-            
-        }
+        var parent = node.ParentName;
 
-        return null;
+        if (parent is null)
+            return null;
+        
+        var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
+
+        return symbol?.Node as ClassDeclarationNode;
     }
 }

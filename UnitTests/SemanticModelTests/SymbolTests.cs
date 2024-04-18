@@ -36,7 +36,7 @@ public class SymbolTests
         var symbolResolver = new SymbolResolver();
         symbolResolver.Resolve(ast);
 
-        var symbol = symbolResolver.GetSymbolForExpression(ast.Root
+        var symbol = symbolResolver.GetSymbolForNode(ast.Root
             .GetAllDescendantsOfType<IdentifierExpression>()
             .Where(e => e.Identifier == "a")
             .First()
@@ -62,7 +62,7 @@ public class SymbolTests
         var symbolResolver = new SymbolResolver();
         symbolResolver.Resolve(ast);
 
-        var symbol = symbolResolver.GetSymbolForExpression(ast.Root
+        var symbol = symbolResolver.GetSymbolForNode(ast.Root
             .GetAllDescendantsOfType<IdentifierExpression>()
             .Where(e => e.Identifier == "a")
             .First()
@@ -88,7 +88,7 @@ public class SymbolTests
         var symbolResolver = new SymbolResolver();
         symbolResolver.Resolve(ast);
 
-        var symbol = symbolResolver.GetSymbolForExpression(ast.Root
+        var symbol = symbolResolver.GetSymbolForNode(ast.Root
             .GetAllDescendantsOfType<IdentifierExpression>()
             .Where(e => e.Identifier == "a")
             .First()
@@ -128,7 +128,7 @@ public class SymbolTests
         var symbolResolver = new SymbolResolver();
         symbolResolver.Resolve(ast);
 
-        var symbol = symbolResolver.GetSymbolForExpression(ast.Root
+        var symbol = symbolResolver.GetSymbolForNode(ast.Root
             .GetAllDescendantsOfType<IdentifierExpression>()
             .Where(e => e.Identifier == "A")
             .First()
@@ -169,7 +169,7 @@ public class SymbolTests
         var symbolResolver = new SymbolResolver();
         symbolResolver.Resolve(ast);
 
-        var symbol = symbolResolver.GetSymbolForExpression(ast.Root
+        var symbol = symbolResolver.GetSymbolForNode(ast.Root
             .GetAllDescendantsOfType<MemberAccessExpressionNode>()
             .Where(e => e.Identifier.AsIdentifier() == "A")
             .First()
@@ -209,7 +209,7 @@ public class SymbolTests
         resolver.Resolve(file1);
         resolver.Resolve(file2);
 
-        var symbol = resolver.GetSymbolForExpression(
+        var symbol = resolver.GetSymbolForNode(
             file1.Root
                 .GetAllDescendantsOfType<MemberAccessExpressionNode>()
                 .Where(e => e.Identifier.AsIdentifier() == "A")
@@ -253,7 +253,7 @@ public class SymbolTests
         resolver.Resolve(file2);
         resolver.ResolveUsings();
 
-        var symbol = resolver.GetSymbolForExpression(
+        var symbol = resolver.GetSymbolForNode(
             file1.Root
                 .GetAllDescendantsOfType<MemberAccessExpressionNode>()
                 .Where(e => e.Identifier.AsIdentifier() == "A")
@@ -301,14 +301,14 @@ public class SymbolTests
         resolver.Resolve(file2);
         resolver.ResolveUsings();
 
-        var symbol1 = resolver.GetSymbolForExpression(
+        var symbol1 = resolver.GetSymbolForNode(
             file1.Root
                 .GetAllDescendantsOfType<MemberAccessExpressionNode>()
                 .Where(e => e.Identifier.AsIdentifier() == "A")
                 .First()
         );
 
-        var symbol2 = resolver.GetSymbolForExpression(
+        var symbol2 = resolver.GetSymbolForNode(
             file2.Root
                 .GetAllDescendantsOfType<MemberAccessExpressionNode>()
                 .Where(e => e.Identifier.AsIdentifier() == "Main")
@@ -346,7 +346,7 @@ public class SymbolTests
         resolver.Resolve(ast);
         resolver.ResolveUsings();
 
-        var symbol = resolver.GetSymbolForExpression(
+        var symbol = resolver.GetSymbolForNode(
             ast.Root
                 .GetAllDescendantsOfType<MemberAccessExpressionNode>()
                 .Where(e => e.Identifier is GenericNameNode)

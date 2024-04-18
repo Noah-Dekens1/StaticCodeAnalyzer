@@ -178,22 +178,9 @@ public class SymbolResolver
         }
     }
 
-
-    // Resolve like member access / identifier expressions / generic names
-    // to their owning symbols, taking into account method overloading, using directives, ...
-    public Symbol? GetSymbolForExpression(ExpressionNode node)
+    public Symbol? GetSymbolForNode(AstNode node)
     {
-        // 1. Find in table recursively | but how do we match scope?
-        //    -> maybe add FindFirstParentOfType<T> extension method?
-        //    -> but how do we deal with non-blocknode scopes (like namespaces)
-        //    -> should each ast node (or block node) can have a symbol table assigned? that doesn't seem right though
-        //    -> maybe each SymbolTable should have a list of ast nodes assigned to it?
-        //       -> that's way slower though
-        // 2. ..?
-
         var table = node.SymbolTableRef ?? throw new Exception();
-        var usings = table.GetAllUsingDirectives();
-
         string? name = null;
 
         if (node is IdentifierExpression identifierExpr)
@@ -203,7 +190,7 @@ public class SymbolResolver
 
         if (node is MemberAccessExpressionNode memberAccessExpr)
         {
-             name = memberAccessExpr.AsLongIdentifier();
+            name = memberAccessExpr.AsLongIdentifier();
         }
 
         if (name is not null)
@@ -220,49 +207,13 @@ public class SymbolResolver
             {
                 symbol = unit.RootTable.FindSymbol(nameParts);
 
-                if (symbol is not null) 
+                if (symbol is not null)
                     return symbol;
             }
         }
 
 
         return null;
-    }
-
-    private List<SymbolTable> FindTablesForQualifiedName(string qualifiedName)
-    {
-        var tables = new List<SymbolTable>();
-        var parts = qualifiedName.Split('.');
-
-        foreach (var unit in CompilationUnits)
-        {
-            var root = unit.GlobalNamespace;
-            var current = root;
-
-            bool matches = false;
-
-            // Keep resolving namespaces until we can't
-            foreach (var part in parts)
-            {
-                var ns = current.Namespaces.Find(n => n.Name == part);
-
-                if (ns is null)
-                {
-                    break;
-                }
-
-                current = ns;
-                matches = true; // but only partially
-            }
-
-
-            if (matches)
-            {
-                tables.AddRange(FindTablesForNamespace(current, unit.RootTable));
-            }
-        }
-
-        return tables;
     }
 
     // @note: do we want to limit it to a single ns?

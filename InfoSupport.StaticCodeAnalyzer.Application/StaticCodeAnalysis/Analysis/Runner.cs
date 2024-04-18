@@ -31,8 +31,6 @@ public class Runner
         var projectFiles = new List<ProjectFile>();
         var projectRef = new ProjectRef();
 
-        var symbolResolver = new SymbolResolver(); // @todo: refactor to be a part of a Semantic Model
-
         foreach (var path in paths)
         {
             var file = File.ReadAllText(path);
@@ -40,11 +38,11 @@ public class Runner
             var ast = Parser.Parse(tokens);
 
             projectRef.ProjectFiles.Add(path, ast);
-            symbolResolver.Resolve(ast);
+            projectRef.SemanticModel.ProcessFile(ast);
         }
 
         projectRef.TypeLookup.GenerateTypeMappings(projectRef);
-        symbolResolver.ResolveUsings();
+        projectRef.SemanticModel.ProcessFinished();
 
         foreach (var fileInfo in projectRef.ProjectFiles)
         {
