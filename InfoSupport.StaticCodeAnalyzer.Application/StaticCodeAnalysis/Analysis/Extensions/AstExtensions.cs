@@ -224,8 +224,6 @@ public static class AstExtensions
 
     public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
     {
-        var ns = node.GetNamespace();
-
         var parent = node.ParentName;
 
         if (parent is null)
