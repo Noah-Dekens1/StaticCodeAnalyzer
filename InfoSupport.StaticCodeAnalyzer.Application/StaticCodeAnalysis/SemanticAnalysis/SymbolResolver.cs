@@ -59,16 +59,15 @@ public class SymbolTable
 
     // @todo: maybe move to extension methods so we can keep this as a POD object
     // @fixme: what about (partially/fully) qualified names? like A.B.C (or if A is in scope then B.C)
-    public Symbol? FindSymbol(string fullName)
+    public Symbol? FindSymbol(string[] fullName)
     {
-        var parts = fullName.Split('.');
-        var next = parts.First();
+        var next = fullName.First();
 
         // Local check
         var symbol = FindSymbolLocalOrIncluded(next);
 
         // Check if symbol is not complete
-        if (symbol is not null && parts.Length > 1)
+        if (symbol is not null && fullName.Length > 1)
         {
             // If namespace look for symbol table match
             if (symbol.Kind == SymbolKind.Namespace)
@@ -76,7 +75,7 @@ public class SymbolTable
                 var nextTable = InnerScopes.Find(s => s.ContainingNamespace?.Name == symbol.Name);
 
                 // @fixme: use array as parm instead?
-                symbol = nextTable?.FindSymbol(string.Join('.', parts[1..]));
+                symbol = nextTable?.FindSymbol(fullName[1..]);
             }
             // If type look for matching TypeName
             else if (symbol.Kind == SymbolKind.Type)
@@ -84,7 +83,7 @@ public class SymbolTable
                 var nextTable = InnerScopes.Find(s => s.TypeName == symbol.Name);
 
                 // @fixme: use array as parm instead?
-                symbol = nextTable?.FindSymbol(string.Join('.', parts[1..]));
+                symbol = nextTable?.FindSymbol(fullName[1..]);
             }
         }
 
@@ -209,8 +208,9 @@ public class SymbolResolver
 
         if (name is not null)
         {
+            var nameParts = name.Split('.');
             // Start by searching the local symbol table and its outers
-            var symbol = table.FindSymbol(name);
+            var symbol = table.FindSymbol(nameParts);
 
             if (symbol is not null)
                 return symbol;
@@ -218,7 +218,7 @@ public class SymbolResolver
             // If we have no match yet look through all the top-level compilation units
             foreach (var unit in CompilationUnits)
             {
-                symbol = unit.RootTable.FindSymbol(name);
+                symbol = unit.RootTable.FindSymbol(nameParts);
 
                 if (symbol is not null) 
                     return symbol;

@@ -264,4 +264,97 @@ public class SymbolTests
         Debug.Assert(symbol.Name == "A");
         Debug.Assert(symbol.Kind == SymbolKind.Method);
     }
+
+    [TestMethod]
+    public void Resolve_CyclicUsings_ReturnsValidSymbol()
+    {
+        var file1 = Parse("""
+            using Example;
+
+            namespace ProgramNs;
+
+            class Program
+            {
+                public static void Main()
+                {
+                    Utils.A();
+                }
+            }
+            """);
+
+        var file2 = Parse("""
+            using ProgramNs;
+
+            namespace Example;
+
+            class Utils
+            {
+                public static void A()
+                {
+                    Program.Main();
+                }
+            }
+            """);
+
+        var resolver = new SymbolResolver();
+        resolver.Resolve(file1);
+        resolver.Resolve(file2);
+        resolver.ResolveUsings();
+
+        var symbol1 = resolver.GetSymbolForExpression(
+            file1.Root
+                .GetAllDescendantsOfType<MemberAccessExpressionNode>()
+                .Where(e => e.Identifier.AsIdentifier() == "A")
+                .First()
+        );
+
+        var symbol2 = resolver.GetSymbolForExpression(
+            file2.Root
+                .GetAllDescendantsOfType<MemberAccessExpressionNode>()
+                .Where(e => e.Identifier.AsIdentifier() == "Main")
+                .First()
+        );
+
+        Debug.Assert(symbol1 is not null);
+        Debug.Assert(symbol1.Name == "A");
+        Debug.Assert(symbol1.Kind == SymbolKind.Method);
+
+        Debug.Assert(symbol2 is not null);
+        Debug.Assert(symbol2.Name == "Main");
+        Debug.Assert(symbol2.Kind == SymbolKind.Method);
+    }
+
+    [TestMethod]
+    public void Resolve_GenericTypes_ReturnsValidSymbol()
+    {
+        var ast = Parse("""
+            class A<T>
+            {
+                public static void SomeMethod<T1, T2>() { }
+            }
+
+            class Program
+            {
+                public static void Main()
+                {
+                    A<int>.SomeMethod<bool, string>();
+                }
+            }
+            """);
+
+        var resolver = new SymbolResolver();
+        resolver.Resolve(ast);
+        resolver.ResolveUsings();
+
+        var symbol = resolver.GetSymbolForExpression(
+            ast.Root
+                .GetAllDescendantsOfType<MemberAccessExpressionNode>()
+                .Where(e => e.Identifier is GenericNameNode)
+                .First()
+        );
+
+        Debug.Assert(symbol is not null);
+        Debug.Assert(symbol.Name == "SomeMethod");
+        Debug.Assert(symbol.Kind == SymbolKind.Method);
+    }
 }

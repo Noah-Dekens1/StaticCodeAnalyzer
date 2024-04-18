@@ -49,6 +49,9 @@ public static class AstExtensions
         if (node is MemberAccessExpressionNode memberAccess)
             return ((IdentifierExpression)memberAccess.Identifier).Identifier;
 
+        if (node is GenericNameNode genericName)
+            return genericName.Identifier.AsIdentifier();
+
         return null;
     }
 
@@ -56,6 +59,9 @@ public static class AstExtensions
     {
         if (expression is IdentifierExpression expr)
             return expr.Identifier;
+
+        if (expression is GenericNameNode generiName)
+            return generiName.Identifier.AsIdentifier();
 
         if (expression is MemberAccessExpressionNode memberAccess)
         {
@@ -65,7 +71,7 @@ public static class AstExtensions
             }
             else if (memberAccess.Identifier is GenericNameNode genericName)
             {
-                return $"{memberAccess.LHS.AsLongIdentifier()}.{genericName.Identifier}";
+                return $"{memberAccess.LHS.AsLongIdentifier()}.{genericName.Identifier.AsIdentifier()}";
             }
         }
 
