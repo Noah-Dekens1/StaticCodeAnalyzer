@@ -11,14 +11,6 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Analyzers;
 
-class A { }
-class B : A { }
-class C : B { }
-class D : C { }
-class E : D { }
-class F : E { }
-class G : F { }
-
 public class ClassParentAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)

@@ -20,8 +20,10 @@ public static class AstExtensions
 
     private static List<NamespaceNode> GetNamespaces(this NamespaceNode node)
     {
-        var namespaces = new List<NamespaceNode>();
-        namespaces.AddRange(node.Namespaces);
+        var namespaces = new List<NamespaceNode>
+        {
+            node
+        };
 
         foreach (var ns in node.Namespaces)
         {
