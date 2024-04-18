@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -40,12 +41,12 @@ public static class AstExtensions
         return ast.GetNamespaces().SelectMany(ns => ns.TypeDeclarations).OfType<ClassDeclarationNode>().ToList();
     }
 
-    public static string? AsIdentifier(this ExpressionNode expression)
+    public static string? AsIdentifier(this AstNode node)
     {
-        if (expression is IdentifierExpression expr)
+        if (node is IdentifierExpression expr)
             return expr.Identifier;
 
-        if (expression is MemberAccessExpressionNode memberAccess)
+        if (node is MemberAccessExpressionNode memberAccess)
             return ((IdentifierExpression)memberAccess.Identifier).Identifier;
 
         return null;
@@ -57,7 +58,16 @@ public static class AstExtensions
             return expr.Identifier;
 
         if (expression is MemberAccessExpressionNode memberAccess)
-            return $"{memberAccess.LHS.AsLongIdentifier()}.{((IdentifierExpression)memberAccess.Identifier).Identifier}";
+        {
+            if (memberAccess.Identifier is IdentifierExpression identifierExpr)
+            {
+                return $"{memberAccess.LHS.AsLongIdentifier()}.{identifierExpr.Identifier}";
+            }
+            else if (memberAccess.Identifier is GenericNameNode genericName)
+            {
+                return $"{memberAccess.LHS.AsLongIdentifier()}.{genericName.Identifier}";
+            }
+        }
 
         return null;
     }
@@ -183,7 +193,33 @@ public static class AstExtensions
     public static string GetName(this TypeDeclarationNode node)
     {
         var name = (node is BasicDeclarationNode basicDeclaration) ? basicDeclaration.Name : ((EnumDeclarationNode)node).EnumName;
-        return ((ExpressionNode)name).AsIdentifier()!;
+        return name.AsIdentifier()!;
+    }
+
+    public static string GetName(this MemberNode node)
+    {
+        if (node is MethodNode method)
+            return method.MethodName.AsIdentifier()!;
+
+        if (node is ConstructorNode constructor)
+            return ((BasicDeclarationNode)constructor.Parent!).Name.AsIdentifier()!;
+
+        if (node is FieldMemberNode field)
+            return field.FieldName;
+
+        if (node is PropertyMemberNode property)
+            return property.PropertyName;
+
+        throw new InvalidOperationException();
+    }
+
+    public static AstNode? GetFirstParent(this AstNode node, Func<AstNode, bool> predicate)
+    {
+        return predicate(node) 
+            ? node 
+            : node.Parent is not null
+                ? GetFirstParent(node.Parent, predicate)
+                : null;
     }
 
     public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
