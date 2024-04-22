@@ -67,4 +67,30 @@ public class UnusedParameterTests
         Assert.AreEqual(issues[0].Code, "unused-parameter");
         Assert.AreEqual(issues[1].Code, "unused-parameter");
     }
+
+    [TestMethod]
+    public void Analyze_UnusedParametersButUsedIdentifier_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Test(int a)
+            {
+                Utils.a.Method();
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_UsedParameterByMemberAccess_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Test(Person person)
+            {
+                Console.WriteLine(person.Name);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
 }
