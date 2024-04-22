@@ -74,6 +74,35 @@ public class SymbolTests
     }
 
     [TestMethod]
+    public void Resolve_Parameter_ReturnsValidSymbol()
+    {
+        var tokens = Lexer.Lex("""
+            void Test(int a)
+            {
+                Console.WriteLine(a);
+            }
+
+            Test(0);
+            """);
+
+        var ast = Parser.Parse(tokens);
+
+        var symbolResolver = new SymbolResolver();
+        symbolResolver.Resolve(ast);
+
+        var symbol = symbolResolver.GetSymbolForNode(ast.Root
+            .GetAllDescendantsOfType<IdentifierExpression>()
+            .Where(e => e.Parent is not ParameterNode)
+            .Where(e => e.Identifier == "a")
+            .First()
+        );
+
+        Debug.Assert(symbol is not null);
+        Debug.Assert(symbol.Name == "a");
+        Debug.Assert(symbol.Kind == SymbolKind.Parameter);
+    }
+
+    [TestMethod]
     public void Resolve_LocalVariableNotInScope_ReturnsNullSymbol()
     {
         var tokens = Lexer.Lex("""

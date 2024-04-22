@@ -326,6 +326,12 @@ public class SymbolResolver
                     break;
                 }
 
+            case ParameterNode parameterNode:
+                {
+                    symbolTable.AddSymbol(new Symbol(parameterNode.Identifier, ns, node, SymbolKind.Parameter));
+                    break;
+                }
+
             case TypeDeclarationNode typeDeclarationNode:
                 {
                     symbolTable.AddSymbol(new Symbol(typeDeclarationNode.GetName(), ns, node, SymbolKind.Type));
