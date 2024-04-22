@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
@@ -37,9 +38,11 @@ public class Runner
             var ast = Parser.Parse(tokens);
 
             projectRef.ProjectFiles.Add(path, ast);
+            projectRef.SemanticModel.ProcessFile(ast);
         }
 
         projectRef.TypeLookup.GenerateTypeMappings(projectRef);
+        projectRef.SemanticModel.ProcessFinished();
 
         foreach (var fileInfo in projectRef.ProjectFiles)
         {

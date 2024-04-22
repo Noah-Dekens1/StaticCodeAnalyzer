@@ -46,6 +46,7 @@ public class ParserTests
             .IgnorePropertyOfType<AstNode>(n => n.Tokens)
             .IgnorePropertyOfType<AstNode>(n => n.Children)
             .IgnorePropertyOfType<AstNode>(n => n.Location)
+            .IgnorePropertyOfType<AstNode>(n => n.Parent!)
 #if DEBUG
             .IgnorePropertyOfType<AstNode>(n => n.ConstructedInEmit)
 #endif
@@ -5929,6 +5930,8 @@ public class ParserTests
                 )
             )
         );
+
+        AssertStandardASTEquals(expected, actual);
     }
 
     [TestMethod]

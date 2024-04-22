@@ -9,7 +9,7 @@ public class ArgsUtil(string[] args)
 {
     private readonly string[] _args = args;
 
-    private string[] _availableCommands = [
+    private readonly string[] _availableCommands = [
         "analyze",
         "launch",
         "create",
@@ -29,8 +29,8 @@ public class ArgsUtil(string[] args)
 
     public string GetDirectory()
     {
-        var dir = args.Length >= 2
-            ? args[1]
+        var dir = _args.Length >= 2
+            ? _args[1]
             : Directory.GetCurrentDirectory();
 
         // normalize

@@ -3539,6 +3539,15 @@ public class Parser
         return Emit(ns, start);
     }
 
+    private void AssignParentRecursive(AstNode node)
+    {
+        foreach (var child in node.Children)
+        {
+            child.Parent = node;
+            AssignParentRecursive(child);
+        }
+    }
+
     private AST ParseInternal(Token[] tokens)
     {
         var ast = new AST { Root = EmitStatic<GlobalNamespaceNode>(new(), new CodeLocation()) };
@@ -3549,6 +3558,8 @@ public class Parser
         _input = tokens;
 
         ast.Root = (GlobalNamespaceNode)ParseNamespaceContent("global", true, true, GetStartPosition());
+
+        AssignParentRecursive(ast.Root);
 
         return ast;
     }
