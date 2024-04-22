@@ -113,11 +113,6 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                     break;
                 }
 
-            case MemberAccessExpressionNode memberAccessExpressionNode: // @fixme: may not be required anymore?
-                {
-                    possibleReference = memberAccessExpressionNode.GetLeftMost();
-                    break;
-                }
             case IdentifierExpression identifierExpression:
                 {
                     possibleReference = identifierExpression;
