@@ -120,6 +120,7 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                     skipChildren = true;
                     break;
                 }
+
             case IdentifierExpression identifierExpression:
                 {
                     possibleReference = identifierExpression;
