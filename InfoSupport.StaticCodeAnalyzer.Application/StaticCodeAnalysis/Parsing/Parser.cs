@@ -3377,7 +3377,7 @@ public class Parser
         var type = token.Kind;
 
         var identifier = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
-        AstNode? parentName = null;
+        List<AstNode> parentNames = [];
 
         ParameterListNode? parameters = null;
         ArgumentListNode? baseArguments = null;
@@ -3390,13 +3390,16 @@ public class Parser
 
         if (ConsumeIfMatch(TokenKind.Colon))
         {
-            parentName = ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true);
-
-            if (ConsumeIfMatch(TokenKind.OpenParen))
+            do
             {
-                baseArguments = ParseArgumentList();
-                Expect(TokenKind.CloseParen);
-            }
+                parentNames.Add(ResolveIdentifier(isMaybeGeneric: true, isInNamespaceOrType: true));
+
+                if (ConsumeIfMatch(TokenKind.OpenParen))
+                {
+                    baseArguments = ParseArgumentList();
+                    Expect(TokenKind.CloseParen);
+                }
+            } while (ConsumeIfMatch(TokenKind.Comma));
         }
 
         var genericConstraints = ParseGenericConstraints();
@@ -3426,11 +3429,11 @@ public class Parser
 
         return Emit<TypeDeclarationNode>(kind switch
         {
-            TypeKind.Class => new ClassDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
-            TypeKind.Enum => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentName, accessModifier, modifiers, attributes),
-            TypeKind.Interface => new InterfaceDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, genericConstraints),
-            TypeKind.Struct => new StructDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
-            TypeKind.Record => new RecordDeclarationNode(identifier, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
+            TypeKind.Class => new ClassDeclarationNode(identifier, members, parentNames, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
+            TypeKind.Enum => new EnumDeclarationNode(identifier, members.Cast<EnumMemberNode>().ToList(), parentNames, accessModifier, modifiers, attributes),
+            TypeKind.Interface => new InterfaceDeclarationNode(identifier, members, parentNames, accessModifier, modifiers, attributes, genericConstraints),
+            TypeKind.Struct => new StructDeclarationNode(identifier, members, parentNames, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
+            TypeKind.Record => new RecordDeclarationNode(identifier, members, parentNames, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints),
             _ => throw new NotImplementedException(),
         }, start);
     }

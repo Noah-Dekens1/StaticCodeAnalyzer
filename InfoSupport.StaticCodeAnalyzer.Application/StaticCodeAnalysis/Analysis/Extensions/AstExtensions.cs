@@ -234,13 +234,14 @@ public static class AstExtensions
 
     public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
     {
-        var parent = node.ParentName;
+        foreach (var parent in node.ParentNames)
+        {
+            var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
 
-        if (parent is null)
-            return null;
-        
-        var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
+            if (symbol?.Node is ClassDeclarationNode classDeclaration)
+                return classDeclaration;
+        }
 
-        return symbol?.Node as ClassDeclarationNode;
+        return null;
     }
 }

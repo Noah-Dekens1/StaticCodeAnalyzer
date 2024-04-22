@@ -36,6 +36,16 @@ public abstract class AstNode
     }
 }
 
+public interface IStatementList
+{
+    public List<StatementNode> Statements { get; }
+}
+
+public interface IIterationNode
+{
+
+}
+
 public class GlobalNamespaceNode(
     string? name = null,
     List<GlobalStatementNode>? globalStatements = null,
@@ -43,11 +53,15 @@ public class GlobalNamespaceNode(
     List<TypeDeclarationNode>? typeDeclarations = null,
     List<NamespaceNode>? namespaces = null,
     List<AttributeNode>? attributes = null
-    ) : NamespaceNode(name ?? "global", isFileScoped: true, usingDirectives, typeDeclarations, namespaces, attributes)
+    ) : NamespaceNode(name ?? "global", isFileScoped: true, usingDirectives, typeDeclarations, namespaces, attributes), IStatementList
 {
     public List<GlobalStatementNode> GlobalStatements { get; } = globalStatements ?? [];
+    
+    
 
     public override List<AstNode> Children => [.. UsingDirectives, .. GlobalStatements, .. TypeDeclarations, .. Namespaces, ..Attributes];
+
+    public List<StatementNode> Statements => GlobalStatements.Select(s => s.Statement).ToList();
 }
 
 [DebuggerDisplay("namespace {Name,nq}")]
@@ -648,7 +662,7 @@ public class EmptyStatementNode : StatementNode
 
 }
 
-public class BlockNode(List<StatementNode> statements) : StatementNode
+public class BlockNode(List<StatementNode> statements) : StatementNode, IStatementList
 {
     public List<StatementNode> Statements { get; } = statements;
     public override List<AstNode> Children => [.. Statements];
@@ -676,7 +690,7 @@ public class IfStatementNode(ExpressionNode expression, AstNode body, AstNode? e
 }
 
 [DebuggerDisplay("do ... while ({Condition,nq})")]
-public class DoStatementNode(ExpressionNode condition, AstNode body) : StatementNode
+public class DoStatementNode(ExpressionNode condition, AstNode body) : StatementNode, IIterationNode
 {
     public ExpressionNode Condition { get; } = condition;
     public AstNode Body { get; } = body;
@@ -687,7 +701,7 @@ public class DoStatementNode(ExpressionNode condition, AstNode body) : Statement
 [DebuggerDisplay("for ({Initializer,nq};{Condition,nq};{IterationExpression,nq}) ...")]
 public class ForStatementNode(
     AstNode initializer, ExpressionNode? condition, AstNode iteration, AstNode body
-    ) : StatementNode
+    ) : StatementNode, IIterationNode
 {
     public AstNode Initializer { get; } = initializer;
     public ExpressionNode? Condition { get; } = condition;
@@ -712,7 +726,7 @@ public class ExpressionStatementListNode(List<ExpressionStatementNode> statement
 }
 
 [DebuggerDisplay("foreach ({VariableType,nq} {VariableIdentifier,nq} in {Collection,nq}) ...")]
-public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentifier, ExpressionNode collection, AstNode body) : StatementNode
+public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentifier, ExpressionNode collection, AstNode body) : StatementNode, IIterationNode
 {
     public TypeNode VariableType { get; } = variableType;
     public AstNode VariableIdentifier { get; } = variableIdentifier;
@@ -723,7 +737,7 @@ public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentif
 }
 
 [DebuggerDisplay("while ({Condition,nq}) ...")]
-public class WhileStatementNode(ExpressionNode condition, AstNode body) : StatementNode
+public class WhileStatementNode(ExpressionNode condition, AstNode body) : StatementNode, IIterationNode
 {
     public ExpressionNode Condition { get; } = condition;
     public AstNode Body { get; } = body;
@@ -1177,14 +1191,14 @@ public class MethodNode(
 }
 
 public class BasicDeclarationNode(
-    AstNode name, List<MemberNode> members, AstNode? parentName = null, 
+    AstNode name, List<MemberNode> members, List<AstNode>? parentNames = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
     List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
     ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null) : TypeDeclarationNode(attributes)
 {
     public AccessModifier AccessModifier { get; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; } = modifiers ?? [];
-    public AstNode? ParentName { get; } = parentName;
+    public List<AstNode> ParentNames { get; } = parentNames ?? [];
     public AstNode Name { get; } = name;
     public List<MemberNode> Members { get; } = members;
 
@@ -1194,64 +1208,64 @@ public class BasicDeclarationNode(
 
     public List<WhereConstraintNode> GenericConstraints { get; } = genericConstraints ?? [];
 
-    public override List<AstNode> Children => [.. Members, Name, Parameters, BaseArguments, ..GenericConstraints, ..Utils.ParamsToList<AstNode>(ParentName)];
+    public override List<AstNode> Children => [.. Members, Name, Parameters, BaseArguments, ..GenericConstraints, ..ParentNames];
 }
 
 [DebuggerDisplay("class {Name,nq}")]
 public class ClassDeclarationNode(
-    AstNode className, List<MemberNode> members, AstNode? parentName = null, 
+    AstNode className, List<MemberNode> members, List<AstNode>? parentNames = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
     List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
     ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
-    ) : BasicDeclarationNode(className, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
+    ) : BasicDeclarationNode(className, members, parentNames, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
 {
 }
 
 [DebuggerDisplay("interface {Name,nq}")]
 public class InterfaceDeclarationNode(
-    AstNode name, List<MemberNode> members, AstNode? parentName = null, 
+    AstNode name, List<MemberNode> members, List<AstNode>? parentNames = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
     List<AttributeNode>? attributes = null, List<WhereConstraintNode>? genericConstraints = null
-    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, genericConstraints: genericConstraints)
+    ) : BasicDeclarationNode(name, members, parentNames, accessModifier, modifiers, attributes, genericConstraints: genericConstraints)
 {
 
 }
 
 [DebuggerDisplay("struct {Name,nq}")]
 public class StructDeclarationNode(
-    AstNode name, List<MemberNode> members, AstNode? parentName = null, 
+    AstNode name, List<MemberNode> members, List<AstNode>? parentNames = null, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
     List<AttributeNode>? attributes = null, ParameterListNode? parameters = null, 
     ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
-    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
+    ) : BasicDeclarationNode(name, members, parentNames, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
 {
 
 }
 
 [DebuggerDisplay("record {Name,nq}")]
 public class RecordDeclarationNode(
-    AstNode name, List<MemberNode> members, AstNode? parentName = null,
+    AstNode name, List<MemberNode> members, List<AstNode>? parentNames = null,
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null,
     List<AttributeNode>? attributes = null, ParameterListNode? parameters = null,
     ArgumentListNode? baseArguments = null, List<WhereConstraintNode>? genericConstraints = null
-    ) : BasicDeclarationNode(name, members, parentName, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
+    ) : BasicDeclarationNode(name, members, parentNames, accessModifier, modifiers, attributes, parameters, baseArguments, genericConstraints)
 {
 
 }
 
 [DebuggerDisplay("enum {EnumName,nq}")]
 public class EnumDeclarationNode(
-    AstNode enumName, List<EnumMemberNode> members, AstNode? parentType, 
+    AstNode enumName, List<EnumMemberNode> members, List<AstNode>? parentTypes, 
     AccessModifier? accessModifier = null, List<OptionalModifier>? modifiers = null, 
     List<AttributeNode>? attributes = null) : TypeDeclarationNode(attributes)
 {
     public AccessModifier AccessModifier { get; } = accessModifier ?? AccessModifier.Internal;
     public List<OptionalModifier> Modifiers { get; } = modifiers ?? [];
-    public AstNode? ParentType { get; } = parentType;
+    public List<AstNode> ParentTypes { get; } = parentTypes ?? [];
     public AstNode EnumName { get; } = enumName;
     public List<EnumMemberNode> Members { get; } = members;
 
-    public override List<AstNode> Children => [.. Members, ..Utils.ParamsToList<AstNode>(ParentType, EnumName), ..Attributes];
+    public override List<AstNode> Children => [.. Members, ..Utils.ParamsToList<AstNode>(EnumName), ..Attributes, ..ParentTypes];
 }
 
 public enum TypeKind
@@ -1457,7 +1471,7 @@ public abstract class SwitchSectionNode : AstNode
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> statements, ExpressionNode? whenClause = null) : SwitchSectionNode
+public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> statements, ExpressionNode? whenClause = null) : SwitchSectionNode, IStatementList
 {
     PatternNode CasePattern { get; } = casePattern;
     public List<StatementNode> Statements { get; } = statements;
@@ -1469,7 +1483,7 @@ public class SwitchCaseNode(PatternNode casePattern, List<StatementNode> stateme
 }
 
 [DebuggerDisplay("default:")]
-public class SwitchDefaultCaseNode(List<StatementNode> statements) : SwitchSectionNode
+public class SwitchDefaultCaseNode(List<StatementNode> statements) : SwitchSectionNode, IStatementList
 {
     public List<StatementNode> Statements { get; } = statements;
 
