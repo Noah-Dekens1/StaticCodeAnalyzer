@@ -43,6 +43,14 @@ public static class AstExtensions
         return ast.GetNamespaces().SelectMany(ns => ns.TypeDeclarations).OfType<ClassDeclarationNode>().ToList();
     }
 
+    public static ExpressionNode GetLeftMost(this MemberAccessExpressionNode memberAccess)
+    {
+        if (memberAccess.LHS is MemberAccessExpressionNode ma)
+            return ma.GetLeftMost();
+
+        return memberAccess.LHS;
+    }
+
     public static string? AsIdentifier(this AstNode node)
     {
         if (node is IdentifierExpression expr)
