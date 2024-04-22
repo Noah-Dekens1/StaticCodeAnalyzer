@@ -78,7 +78,7 @@ public class UnusedParameterTests
             }
             """, new UnusedParameterAnalyzer());
 
-        Assert.AreEqual(0, issues.Count);
+        Assert.AreEqual(1, issues.Count);
     }
 
     [TestMethod]

@@ -82,6 +82,7 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
     protected override void Visit(AstNode node)
     {
         AstNode? possibleReference = null;
+        bool skipChildren = false;
 
         switch (node)
         {
@@ -113,9 +114,21 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                     break;
                 }
 
+            case MemberAccessExpressionNode memberAccessExpressionNode:
+                {
+                    possibleReference = memberAccessExpressionNode.GetLeftMost();
+                    skipChildren = true;
+                    break;
+                }
             case IdentifierExpression identifierExpression:
                 {
                     possibleReference = identifierExpression;
+                    break;
+                }
+
+            case ParameterNode parameterNode:
+                {
+                    skipChildren = true;
                     break;
                 }
         }
@@ -131,7 +144,7 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
             }
         }
 
-        if (node is not ParameterNode)
+        if (!skipChildren)
             base.Visit(node);
     }
 
