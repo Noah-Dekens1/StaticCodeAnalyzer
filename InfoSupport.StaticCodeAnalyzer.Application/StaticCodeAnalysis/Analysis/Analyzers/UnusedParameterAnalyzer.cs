@@ -43,8 +43,10 @@ public class UnusedParameterAnalyzer : Analyzer
 
     private static void ProcessFunction(ProjectRef projectRef, List<Issue> issues, AstNode body, List<ParameterNode> parameters)
     {
-        if (!projectRef.SemanticModel.AnalyzeControlFlow((IStatementList)body, out var cfg))
-            return;
+        ControlFlowGraph? cfg = null;
+
+        if (body is IStatementList)
+            projectRef.SemanticModel.AnalyzeControlFlow((IStatementList)body, out cfg);
 
         var traverser = new UnusedParameterTraverser(projectRef.SemanticModel, parameters, cfg);
         traverser.Traverse(body);
@@ -76,13 +78,13 @@ public class UnusedParameterAnalyzer : Analyzer
  *    -> especially since that wouldn't work for interfaces
  */
 
-public class UnusedParameterTraverser(SemanticModel semanticModel, List<ParameterNode> parameters, ControlFlowGraph cfg) : AstTraverser
+public class UnusedParameterTraverser(SemanticModel semanticModel, List<ParameterNode> parameters, ControlFlowGraph? cfg) : AstTraverser
 {
     public SemanticModel SemanticModel { get; set; } = semanticModel;
     public List<ParameterNode> Parameters { get; set; } = parameters;
     public HashSet<ParameterNode> UsedParameters { get; set; } = [];
     public HashSet<ParameterNode> DiscardedBeforeUse { get; set; } = [];
-    private ControlFlowGraph ControlFlowGraph { get; set; } = cfg;
+    private ControlFlowGraph? ControlFlowGraph { get; set; } = cfg;
 
     protected override void Visit(AstNode node)
     {
@@ -103,7 +105,7 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                         if (!UsedParameters.Contains(parameter))
                         {
                             // if not, use the semantic model to determine whether we're unconditionally reachable
-                            if (SemanticModel.IsUnconditionallyReachable(assignmentExpressionNode, cfg))
+                            if (ControlFlowGraph is not null && SemanticModel.IsUnconditionallyReachable(assignmentExpressionNode, ControlFlowGraph))
                             {
                                 DiscardedBeforeUse.Add(parameter);
                             }
