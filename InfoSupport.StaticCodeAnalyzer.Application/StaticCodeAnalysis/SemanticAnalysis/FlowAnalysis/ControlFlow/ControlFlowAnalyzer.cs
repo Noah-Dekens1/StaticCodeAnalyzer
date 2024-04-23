@@ -18,7 +18,7 @@ public class ControlFlowTraverser : AstTraverser
     private ControlFlowNode? _currentBasicBlock = null;
 
     // Can be used for continue;
-    private readonly Stack<List<ControlFlowNode>> _iterationFlows = [];
+    private readonly Stack<List<ControlFlowNode>> _continueFlows = [];
     // Can be used for break;
     private readonly Stack<List<ControlFlowNode>> _breakFlows = [];
     // For return; just don't add any successor nodes (maybe we'll need to clear _currentBasicBlock or start a new one)
@@ -80,6 +80,7 @@ public class ControlFlowTraverser : AstTraverser
 
     protected override void Visit(AstNode node)
     {
+        node.ControlFlowNodeRef = _currentBasicBlock;
         bool handled = false;
 
         if (node is StatementNode statement && node is not BlockNode) // try to avoid statements in statements because it'll be duplicated
@@ -93,6 +94,7 @@ public class ControlFlowTraverser : AstTraverser
                         predecessorBlock.Condition = iterator.Condition;
 
                         _breakFlows.Push([]);
+                        _continueFlows.Push([]);
 
                         var bodyBlock = NewBasicBlock(predecessorBlock);
                         Visit(iterator.Body!);
@@ -106,10 +108,18 @@ public class ControlFlowTraverser : AstTraverser
                         bodyBlock.Predecessors.Add(bodyEnd);
 
                         var breakFlows = _breakFlows.Pop();
+                        var continueFlows = _continueFlows.Pop();
 
                         foreach (var flow in breakFlows)
                         {
+                            // gp to end of loop
                             flow.Successors.Add(next);
+                        }
+
+                        foreach (var flow in continueFlows)
+                        {
+                            // go to start of loop
+                            flow.Successors.Add(bodyBlock);
                         }
 
                         handled = true;
@@ -145,6 +155,11 @@ public class ControlFlowTraverser : AstTraverser
                         {
                             predecessorBlock.Successors.Add(falseBranch);
                         }
+                        else
+                        {
+                            endOfTrueBranch.Successors.Add(mergeBlock);
+                            mergeBlock.Predecessors.Add(endOfTrueBranch);
+                        }
 
                         // if we have a false branch then the last node won't be from the true branch
                         // (the last node should always be in the scope we want due to the merge blocks)
@@ -168,9 +183,20 @@ public class ControlFlowTraverser : AstTraverser
                         // Ignore switch statements for now
                         if (closestParent is IIterationNode)
                         {
+                            var predecessor = _currentBasicBlock!;
                             var breakBlock = NewBasicBlock(createDetached: true);
+                            breakBlock.Predecessors.Add(predecessor);
                             _breakFlows.Peek().Add(breakBlock);
                         }
+                        break;
+                    }
+
+                case ContinueStatementNode continueStatement:
+                    {
+                        var predecessor = _currentBasicBlock!;
+                        var continueBlock = NewBasicBlock(createDetached: true);
+                        continueBlock.Predecessors.Add(predecessor);
+                        _continueFlows.Peek().Add(continueBlock);
                         break;
                     }
 
@@ -182,6 +208,7 @@ public class ControlFlowTraverser : AstTraverser
             }
 
         }
+
 
         if (!handled)
         {
@@ -249,5 +276,14 @@ public class ControlFlowAnalyzer
     public static HashSet<ControlFlowNode> ComputeReachability(ControlFlowGraph cfg)
     {
         return cfg.Nodes.Count > 0 ? ComputeReachability(cfg.Nodes.First()) : [];
+    }
+
+    public static bool IsReachable(AstNode node, ControlFlowGraph cfg)
+    {
+        if (node.ControlFlowNodeRef is null)
+            return false;
+
+        var reachable = ComputeReachability(cfg);
+        return reachable.Contains(node.ControlFlowNodeRef);
     }
 }
