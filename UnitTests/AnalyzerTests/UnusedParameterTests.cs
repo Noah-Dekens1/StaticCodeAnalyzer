@@ -176,23 +176,23 @@ public class UnusedParameterTests
         Assert.AreEqual(0, issues.Count);
     }
 
-    /**
-     * False positive on (maybe due to Identifier being a string here?
-     * 
-        public static bool HasAttribute(this TypeDeclarationNode node, string attributeName, [NotNullWhen(true)] out AttributeNode? attribute)
-        {
-            return HasAttribute(node.Attributes, attributeName, out attribute);
-        }
+    [TestMethod]
+    public void Analyze_ForcedParametersFromInterface_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            public interface IExample
+            {
+                public void Method(bool unusedValue);
+            }
+            
+            public class Example : IExample
+            {
+                public void Method(bool unusedValue)
+                {
+                }
+            }
+            """, new UnusedParameterAnalyzer());
 
-     * Another false positive here
-
-        public async Task<Report?> GetReportById(Guid id)
-        {
-            return await _context.Reports
-                .Where(r => r.Id == id)
-                .Include(r => r.ProjectFiles)
-                .ThenInclude(f => f.Issues)
-                .SingleOrDefaultAsync();
-        }
-    */
+        Assert.AreEqual(0, issues.Count);
+    }
 }

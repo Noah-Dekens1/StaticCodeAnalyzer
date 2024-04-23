@@ -232,6 +232,11 @@ public static class AstExtensions
                 : null;
     }
 
+    public static T? GetFirstParent<T>(this AstNode node) where T : AstNode
+    {
+        return node as T ?? node.Parent?.GetFirstParent<T>();
+    }
+
     public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
     {
         foreach (var parent in node.ParentNames)
@@ -243,5 +248,28 @@ public static class AstExtensions
         }
 
         return null;
+    }
+
+    public static List<InterfaceDeclarationNode> GetInterfaces(this BasicDeclarationNode node, ProjectRef project)
+    {
+        var interfaces = new List<InterfaceDeclarationNode>();
+
+        foreach (var parent in node.ParentNames)
+        {
+            var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
+
+            if (symbol?.Node is InterfaceDeclarationNode interfaceDeclaration)
+                interfaces.Add(interfaceDeclaration);
+        }
+
+        return interfaces;
+    }
+
+    public static bool IsNameEqual(this AstNode node, AstNode other)
+    {
+        if (node.GetType() != other.GetType()) 
+            return false;
+
+        return node.AsLongIdentifier() == other.AsLongIdentifier();
     }
 }

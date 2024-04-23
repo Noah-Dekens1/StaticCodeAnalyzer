@@ -24,7 +24,11 @@ public class UnusedParameterAnalyzer : Analyzer
             if (method.Body is null)
                 continue;
 
-            ProcessFunction(projectRef, issues, method.Body, method.Parameters.Parameters);
+            bool isParameterForced = method.Modifiers.Contains(OptionalModifier.Override);
+            isParameterForced |= IsRequiredByInterface(projectRef, method);
+
+            if (!isParameterForced)
+                ProcessFunction(projectRef, issues, method.Body, method.Parameters.Parameters);
         }
 
         // @todo: maybe add IFunction interface for methods & local function declarations to avoid repeated code here?
@@ -39,6 +43,33 @@ public class UnusedParameterAnalyzer : Analyzer
         }
 
         return true;
+    }
+
+    private static bool IsRequiredByInterface(ProjectRef project, MethodNode method)
+    {
+        var basicTypeDecl = method.GetFirstParent<BasicDeclarationNode>();
+        
+        if (basicTypeDecl is null)
+            return false;
+
+        var interfaces = basicTypeDecl.GetInterfaces(project);
+
+        foreach (var decl in interfaces)
+        {
+            var methods = decl.Members.OfType<MethodNode>();
+
+            foreach (var methodDefinition in methods)
+            {
+                if (!methodDefinition.MethodName.IsNameEqual(method.MethodName))
+                    continue;
+
+                // @todo: check overloading and such?
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void ProcessFunction(ProjectRef projectRef, List<Issue> issues, AstNode body, List<ParameterNode> parameters)
@@ -69,9 +100,9 @@ public class UnusedParameterAnalyzer : Analyzer
 /**
  * TODO:
  * - Deal with cases where node is assigned to before usage (DiscardedBeforeUse)
- *   -> is control flow analysis required here? because if it's conditional that's fine
+ *   -> is control flow analysis required here? because if it's conditional that's fine (done)
  *   -> to keep it simple a Parent check for if statements/loops/blocks could be enough as well?
- * - Ignore discarded params (_)
+ * - Ignore discarded params (_) (done)
  * - Take (primary) base/this constructors into account
  * - What about parameters that are forced from interfaces/parent classes?
  *    -> could check for override but may be more clean to just take it from the parent class instead
