@@ -91,12 +91,13 @@ public class ControlFlowTraverser : AstTraverser
                     {
                         var predecessorBlock = _currentBasicBlock!;
                         
-                        predecessorBlock.Condition = iterator.Condition;
+                        predecessorBlock.EndOfBlockCondition = iterator.Condition;
 
                         _breakFlows.Push([]);
                         _continueFlows.Push([]);
 
                         var bodyBlock = NewBasicBlock(predecessorBlock);
+                        bodyBlock.IsConditional = true;
                         Visit(iterator.Body!);
 
                         var bodyEnd = _currentBasicBlock!;
@@ -131,9 +132,10 @@ public class ControlFlowTraverser : AstTraverser
                     {
                         var predecessorBlock = _currentBasicBlock!;
 
-                        predecessorBlock.Condition = ifStatement.Expression;
+                        predecessorBlock.EndOfBlockCondition = ifStatement.Expression;
 
                         var trueBranch = NewBasicBlock(predecessorBlock);
+                        trueBranch.IsConditional = true;
                         Visit(ifStatement.Body);
 
                         var endOfTrueBranch = _currentBasicBlock!;
@@ -143,6 +145,7 @@ public class ControlFlowTraverser : AstTraverser
                         if (ifStatement.ElseBody is not null)
                         {
                             falseBranch = NewBasicBlock(predecessorBlock);
+                            falseBranch.IsConditional = true;
                             Visit(ifStatement.ElseBody);
                         }
 
@@ -157,8 +160,8 @@ public class ControlFlowTraverser : AstTraverser
                         }
                         else
                         {
-                            endOfTrueBranch.Successors.Add(mergeBlock);
-                            mergeBlock.Predecessors.Add(endOfTrueBranch);
+                            predecessorBlock.Successors.Add(mergeBlock);
+                            mergeBlock.Predecessors.Add(predecessorBlock);
                         }
 
                         // if we have a false branch then the last node won't be from the true branch
@@ -286,4 +289,44 @@ public class ControlFlowAnalyzer
         var reachable = ComputeReachability(cfg);
         return reachable.Contains(node.ControlFlowNodeRef);
     }
+
+    public static bool IsUnconditionallyReachable(AstNode targetNode, ControlFlowGraph cfg)
+    {
+        if (targetNode.ControlFlowNodeRef is null)
+            return false;
+
+        ControlFlowNode? startNode = cfg.Nodes.FirstOrDefault();
+
+        if (startNode is null)
+            return false;
+
+        if (targetNode.ControlFlowNodeRef == startNode)
+            return true;
+
+        var queue = new Queue<ControlFlowNode>();
+        var visited = new HashSet<ControlFlowNode>();
+
+        queue.Enqueue(startNode);
+        visited.Add(startNode);
+
+        while (queue.Count > 0)
+        {
+            var currentNode = queue.Dequeue();
+
+            foreach (var successor in currentNode.Successors)
+            {
+                if (!visited.Contains(successor) && !successor.IsConditional)
+                {
+                    if (successor == targetNode.ControlFlowNodeRef)
+                        return true;
+
+                    visited.Add(successor);
+                    queue.Enqueue(successor);
+                }
+            }
+        }
+
+        return false;
+    }
+
 }

@@ -202,4 +202,101 @@ public class ControlFlowTests
         Assert.IsNotNull(reachableNode);
         Assert.IsTrue(ControlFlowAnalyzer.IsReachable(reachableNode, cfg));
     }
+
+    [TestMethod]
+    public void Analyze_UnconditionalContinue_IsNotReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        while (true)
+        {
+            continue;
+
+            Console.WriteLine("unreachable!");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "unreachable!")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsFalse(ControlFlowAnalyzer.IsReachable(reachableNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_ConditionalAssignment_IsNotUnconditionallyReachable()
+    {
+        var ast = Parse("""
+        if (someCondition)
+            person = new Person();
+        """);
+
+        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var conditionalNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is AssignmentExpressionNode)
+            .Cast<AssignmentExpressionNode>()
+            .FirstOrDefault();
+
+        Assert.IsNotNull(conditionalNode);
+        Assert.IsFalse(ControlFlowAnalyzer.IsUnconditionallyReachable(conditionalNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_UnconditionalAssignment_IsUnconditionallyReachable()
+    {
+        var ast = Parse("""
+        person = new Person();
+
+        if (person is not null)
+            Console.WriteLine(person);
+
+        person = new Person();
+        """);
+
+        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var unconditionalNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is AssignmentExpressionNode)
+            .Cast<AssignmentExpressionNode>()
+            .FirstOrDefault();
+
+        var conditionalNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .FirstOrDefault();
+
+        var unconditionalNode2 = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is AssignmentExpressionNode)
+            .Cast<AssignmentExpressionNode>()
+            .ToList()[1];
+
+        Assert.IsNotNull(unconditionalNode);
+        Assert.IsNotNull(conditionalNode);
+        Assert.IsTrue(ControlFlowAnalyzer.IsUnconditionallyReachable(unconditionalNode, cfg));
+        Assert.IsFalse(ControlFlowAnalyzer.IsUnconditionallyReachable(conditionalNode, cfg));
+        Assert.IsTrue(ControlFlowAnalyzer.IsUnconditionallyReachable(unconditionalNode2, cfg));
+    }
 }

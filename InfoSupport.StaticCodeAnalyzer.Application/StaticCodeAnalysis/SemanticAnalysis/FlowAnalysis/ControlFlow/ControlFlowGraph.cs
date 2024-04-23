@@ -19,11 +19,12 @@ public class ControlFlowNode
     public HashSet<ControlFlowNode> Predecessors { get; set; } = [];
     public HashSet<ControlFlowNode> Successors { get; set; } = [];
     public bool IsMergeNode { get; set; } = false;
-    public ExpressionNode? Condition { get; set; } = null;
+    public ExpressionNode? EndOfBlockCondition { get; set; } = null;
+    public bool IsConditional { get; set; } = false;
 
     [ExcludeFromCodeCoverage]
     public override string ToString() => !IsMergeNode
-        ? $"{(Condition is not null ? $"[{Condition}] " : "")}Node: {Instructions.FirstOrDefault()?.ToString() ?? "Empty"}"
+        ? $"{(EndOfBlockCondition is not null ? $"[{EndOfBlockCondition}] " : "")}Node: {Instructions.FirstOrDefault()?.ToString() ?? "Empty"}"
         : $"Merge node {Id}";
 }
 
