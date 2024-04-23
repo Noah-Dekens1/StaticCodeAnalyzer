@@ -93,4 +93,60 @@ public class UnusedParameterTests
 
         Assert.AreEqual(0, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_DiscardedParameterBeforeUse_ReturnsIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Test(Person person)
+            {
+                person = new Person();
+                Console.WriteLine(person.Name);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(1, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_DiscardedParameterBeforeUseConditionally_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Test(Person person)
+            {
+                if (3 == 4)
+                {
+                    person = new Person();
+                }
+
+                Console.WriteLine(person.Name);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_DiscardedParameterBeforeUseConditionallyNoScope_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Test(Person person)
+            {
+                if (3 == 4)
+                    person = new Person();
+
+                Console.WriteLine(person.Name);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    /**
+     * False positive on (maybe due to Identifier being a string here?
+     * public static bool HasAttribute(this TypeDeclarationNode node, string attributeName, [NotNullWhen(true)] out AttributeNode? attribute)
+    {
+        return HasAttribute(node.Attributes, attributeName, out attribute);
+    }
+    */
 }

@@ -99,14 +99,14 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                         {
                             // if not, check to see if we're in a nested scope
                             // we may want to do control flow analysis here in the future
-                            var firstMatchingParent = parameter.GetFirstParent(
+                            var firstMatchingParent = assignmentExpressionNode.GetFirstParent(
                                 p => p is MethodNode || 
-                                p is BlockNode && p.Parent is not MethodNode
+                                p is BlockNode && p.Parent is not MethodNode && p.Parent is not LocalFunctionDeclarationNode
                             );
 
-                            if (firstMatchingParent is BlockNode)
+                            if (firstMatchingParent is not BlockNode)
                             {
-
+                                DiscardedBeforeUse.Add(parameter);
                             }
                         }
                     }
