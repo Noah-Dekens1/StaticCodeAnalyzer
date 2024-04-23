@@ -43,7 +43,8 @@ public interface IStatementList
 
 public interface IIterationNode
 {
-
+    public ExpressionNode? Condition { get; }
+    public AstNode? Body { get; }
 }
 
 public class GlobalNamespaceNode(
@@ -89,7 +90,7 @@ public class StatementNode : AstNode
     public override List<AstNode> Children => [];
 }
 
-[DebuggerDisplay("return {ToString(),nq}")]
+[DebuggerDisplay("{ToString(),nq}")]
 public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNode
 {
     public ExpressionNode? ReturnExpression { get; } = returnExpression;
@@ -97,7 +98,7 @@ public class ReturnStatementNode(ExpressionNode? returnExpression) : StatementNo
     public override List<AstNode> Children => Utils.ParamsToList<AstNode>(ReturnExpression);
 
     [ExcludeFromCodeCoverage]
-    public override string ToString() => $"{ReturnExpression}";
+    public override string ToString() => $"return {ReturnExpression};";
 }
 
 [DebuggerDisplay("{Statement,nq}")]
@@ -733,7 +734,10 @@ public class ForEachStatementNode(TypeNode variableType, AstNode variableIdentif
     public ExpressionNode Collection { get; } = collection;
     public AstNode Body { get; } = body;
 
+
     public override List<AstNode> Children => [VariableType, VariableIdentifier, Collection, Body];
+
+    public ExpressionNode? Condition => null;
 }
 
 [DebuggerDisplay("while ({Condition,nq}) ...")]

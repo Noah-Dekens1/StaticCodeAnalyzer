@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,6 +19,16 @@ public class ControlFlowTests
     {
         var tokens = Lexer.Lex(text);
         return Parser.Parse(tokens);
+    }
+
+    public static void AssertAllReachable(ControlFlowGraph cfg)
+    {
+        var reachable = ControlFlowAnalyzer.ComputeReachability(cfg);
+
+        foreach (var node in cfg.Nodes)
+        {
+            Assert.IsTrue(reachable.Contains(node));
+        }
     }
 
     [TestMethod]
@@ -79,9 +90,46 @@ public class ControlFlowTests
             return;
             """);
 
-        var analyzer = new ControlFlowAnalyzer();
         ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
+        AssertAllReachable(cfg);
+    }
+
+    [TestMethod]
+    public void Analyze_WhileLoop_ReturnsValidCFG()
+    {
+        var ast = Parse("""
+            int i = 0;
+            while (true)
+            {
+                i++;
+                Console.WriteLine("hey");
+                if (i > 10)
+                {
+                    break;
+                    Console.WriteLine("unreachable");
+                }
+            }
+
+            Console.WriteLine("end");
+            """);
+
+        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        // Ensure that Console.WriteLine("unreachable"); is unreachable here
+
+        var reachable = ControlFlowAnalyzer.ComputeReachability(cfg);
+        var unreachable = cfg.Nodes.Except(reachable).ToList();
+        Assert.IsTrue(unreachable.Count == 1);
+
+        var instructions = unreachable.First().Instructions;
+        Assert.IsTrue(instructions.Count == 1);
+
+        var firstInstruction = instructions.First();
+        Assert.IsTrue(firstInstruction is ExpressionStatementNode);
+        Assert.IsTrue(((ExpressionStatementNode)firstInstruction).Expression is InvocationExpressionNode);
     }
 }

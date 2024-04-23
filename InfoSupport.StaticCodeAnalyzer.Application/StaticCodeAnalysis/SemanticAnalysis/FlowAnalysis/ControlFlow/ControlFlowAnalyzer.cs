@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
@@ -15,6 +16,12 @@ public class ControlFlowTraverser : AstTraverser
     private readonly List<StatementNode> _statements = [];
     private readonly List<ControlFlowNode> _blocks = [];
     private ControlFlowNode? _currentBasicBlock = null;
+
+    // Can be used for continue;
+    private readonly Stack<List<ControlFlowNode>> _iterationFlows = [];
+    // Can be used for break;
+    private readonly Stack<List<ControlFlowNode>> _breakFlows = [];
+    // For return; just don't add any successor nodes (maybe we'll need to clear _currentBasicBlock or start a new one)
 
     public ControlFlowTraverser()
     {
@@ -48,9 +55,9 @@ public class ControlFlowTraverser : AstTraverser
         return block;
     }
 
-    private ControlFlowNode NewBasicBlock(ControlFlowNode? predecessor = null)
+    private ControlFlowNode NewBasicBlock(ControlFlowNode? predecessor = null, bool createDetached = false)
     {
-        if (_currentBasicBlock is not null)
+        if (_currentBasicBlock is not null && !createDetached)
         {
             _currentBasicBlock.Instructions.AddRange(_statements);
             _statements.Clear();
@@ -59,7 +66,7 @@ public class ControlFlowTraverser : AstTraverser
         var block = new ControlFlowNode();
         predecessor ??= _currentBasicBlock;
 
-        if (predecessor is not null)
+        if (predecessor is not null && !createDetached)
         {
             block.Predecessors.Add(predecessor ?? _currentBasicBlock!);
             predecessor!.Successors.Add(block);
@@ -79,9 +86,27 @@ public class ControlFlowTraverser : AstTraverser
         {
             switch (node)
             {
-                case IIterationNode:
+                case IIterationNode iterator:
                     {
-                        //CreateBasicBlock();
+                        var predecessorBlock = _currentBasicBlock!;
+                        
+                        predecessorBlock.Condition = iterator.Condition;
+
+                        _breakFlows.Push([]);
+
+                        NewBasicBlock(predecessorBlock);
+                        Visit(iterator.Body!);
+                        var next = NewBasicBlock();
+
+                        var breakFlows = _breakFlows.Pop();
+
+                        foreach (var flow in breakFlows)
+                        {
+                            flow.Successors.Add(next);
+                        }
+
+                        handled = true;
+
                         break;
                     }
 
@@ -108,12 +133,10 @@ public class ControlFlowTraverser : AstTraverser
                         mergeBlock.IsMergeNode = true;
                         
                         predecessorBlock.Successors.Add(trueBranch);
-                        //trueBranch.Successors.Add(mergeBlock);
 
                         if (falseBranch is not null)
                         {
                             predecessorBlock.Successors.Add(falseBranch);
-                            //falseBranch.Successors.Add(mergeBlock);
                         }
 
                         // if we have a false branch then the last node won't be from the true branch
@@ -124,11 +147,23 @@ public class ControlFlowTraverser : AstTraverser
                             endOfTrueBranch.Successors.Add(mergeBlock);
                             // no need to add end of false branch since it's captured automatically
                         }
-                        
 
                         // we called visit so don't want to do that again
                         handled = true;
 
+                        break;
+                    }
+
+                case BreakStatementNode breakStatement:
+                    {
+                        var closestParent = breakStatement.GetFirstParent(n => n is SwitchStatementNode or IIterationNode);
+
+                        // Ignore switch statements for now
+                        if (closestParent is IIterationNode)
+                        {
+                            var breakBlock = NewBasicBlock(createDetached: true);
+                            _breakFlows.Peek().Add(breakBlock);
+                        }
                         break;
                     }
 
@@ -150,18 +185,22 @@ public class ControlFlowTraverser : AstTraverser
     public void Flush()
     {
         if (_statements.Count > 0)
-            CreateBasicBlock();
+        {
+            if (_currentBasicBlock is not null)
+            {
+                _currentBasicBlock.Instructions.AddRange(_statements);
+                _statements.Clear();
+            }
+            else
+            {
+                CreateBasicBlock();
+            }
+        }
     }
 }
 
 public class ControlFlowAnalyzer
 {
-    private void ProcessBasicBlock(IStatementList block)
-    {
-        // How do we best walk the syntax tree here?
-        
-    }
-
     public static bool AnalyzeControlFlow(IStatementList block, [NotNullWhen(true)] out ControlFlowGraph? cfg)
     {
         var traverser = new ControlFlowTraverser();
@@ -174,5 +213,34 @@ public class ControlFlowAnalyzer
         };
 
         return true;
+    }
+
+    public static HashSet<ControlFlowNode> ComputeReachability(ControlFlowNode entryNode)
+    {
+        var visited = new HashSet<ControlFlowNode>();
+        var queue = new Queue<ControlFlowNode>();
+
+        queue.Enqueue(entryNode);
+        visited.Add(entryNode);
+
+        while (queue.Count > 0)
+        {
+            var currentNode = queue.Dequeue();
+
+            foreach (var successor in currentNode.Successors)
+            {
+                if (!visited.Contains(successor))
+                    queue.Enqueue(successor);
+
+                visited.Add(successor);
+            }
+        }
+
+        return visited;
+    }
+
+    public static HashSet<ControlFlowNode> ComputeReachability(ControlFlowGraph cfg)
+    {
+        return cfg.Nodes.Count > 0 ? ComputeReachability(cfg.Nodes.First()) : [];
     }
 }
