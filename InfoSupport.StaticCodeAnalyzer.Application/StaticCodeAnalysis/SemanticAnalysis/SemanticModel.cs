@@ -11,7 +11,6 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Semantic
 public class SemanticModel
 {
     public SymbolResolver SymbolResolver { get; set; } = new SymbolResolver();
-    public ControlFlowAnalyzer ControlFlowAnalyzer { get; set; } = new ControlFlowAnalyzer();
 
     public void ProcessFile(AST ast)
     {

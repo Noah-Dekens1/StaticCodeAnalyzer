@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis.FlowAnalysis.ControlFlow;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -16,15 +17,17 @@ namespace SemanticModelTests;
 [TestClass]
 public class ControlFlowTests
 {
+    private readonly SemanticModel _semanticModel = new();
+
     private AST Parse(string text)
     {
         var tokens = Lexer.Lex(text);
         return Parser.Parse(tokens);
     }
 
-    public static void AssertAllReachable(ControlFlowGraph cfg)
+    public void AssertAllReachable(ControlFlowGraph cfg)
     {
-        var reachable = ControlFlowAnalyzer.ComputeReachability(cfg);
+        var reachable = _semanticModel.ComputeReachability(cfg);
 
         foreach (var node in cfg.Nodes)
         {
@@ -40,8 +43,7 @@ public class ControlFlowTests
             return;
             """);
 
-        var analyzer = new ControlFlowAnalyzer();
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
     }
@@ -64,8 +66,7 @@ public class ControlFlowTests
             return;
             """);
 
-        var analyzer = new ControlFlowAnalyzer();
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
     }
@@ -91,7 +92,7 @@ public class ControlFlowTests
             return;
             """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
         AssertAllReachable(cfg);
@@ -116,13 +117,13 @@ public class ControlFlowTests
             Console.WriteLine("end");
             """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
 
         // Ensure that Console.WriteLine("unreachable"); is unreachable here
 
-        var reachable = ControlFlowAnalyzer.ComputeReachability(cfg);
+        var reachable = _semanticModel.ComputeReachability(cfg);
         var unreachable = cfg.Nodes.Except(reachable).ToList();
         Assert.IsTrue(unreachable.Count == 1);
 
@@ -153,13 +154,13 @@ public class ControlFlowTests
             Console.WriteLine("end");
             """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
 
         // Ensure that Console.WriteLine("unreachable"); is unreachable here
 
-        var reachable = ControlFlowAnalyzer.ComputeReachability(cfg);
+        var reachable = _semanticModel.ComputeReachability(cfg);
         var unreachable = cfg.Nodes.Except(reachable).ToList();
         Assert.IsTrue(unreachable.Count == 1);
 
@@ -187,7 +188,7 @@ public class ControlFlowTests
             Console.WriteLine("end");
             """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
 
@@ -200,7 +201,7 @@ public class ControlFlowTests
             .FirstOrDefault();
 
         Assert.IsNotNull(reachableNode);
-        Assert.IsTrue(ControlFlowAnalyzer.IsReachable(reachableNode, cfg));
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
     }
 
     [TestMethod]
@@ -218,7 +219,7 @@ public class ControlFlowTests
         Console.WriteLine("end");
         """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
 
@@ -231,7 +232,7 @@ public class ControlFlowTests
             .FirstOrDefault();
 
         Assert.IsNotNull(reachableNode);
-        Assert.IsFalse(ControlFlowAnalyzer.IsReachable(reachableNode, cfg));
+        Assert.IsFalse(_semanticModel.IsReachable(reachableNode, cfg));
     }
 
     [TestMethod]
@@ -242,7 +243,7 @@ public class ControlFlowTests
             person = new Person();
         """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
 
@@ -254,7 +255,7 @@ public class ControlFlowTests
             .FirstOrDefault();
 
         Assert.IsNotNull(conditionalNode);
-        Assert.IsFalse(ControlFlowAnalyzer.IsUnconditionallyReachable(conditionalNode, cfg));
+        Assert.IsFalse(_semanticModel.IsUnconditionallyReachable(conditionalNode, cfg));
     }
 
     [TestMethod]
@@ -269,7 +270,7 @@ public class ControlFlowTests
         person = new Person();
         """);
 
-        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
 
         Assert.IsNotNull(cfg);
 
@@ -295,8 +296,8 @@ public class ControlFlowTests
 
         Assert.IsNotNull(unconditionalNode);
         Assert.IsNotNull(conditionalNode);
-        Assert.IsTrue(ControlFlowAnalyzer.IsUnconditionallyReachable(unconditionalNode, cfg));
-        Assert.IsFalse(ControlFlowAnalyzer.IsUnconditionallyReachable(conditionalNode, cfg));
-        Assert.IsTrue(ControlFlowAnalyzer.IsUnconditionallyReachable(unconditionalNode2, cfg));
+        Assert.IsTrue(_semanticModel.IsUnconditionallyReachable(unconditionalNode, cfg));
+        Assert.IsFalse(_semanticModel.IsUnconditionallyReachable(conditionalNode, cfg));
+        Assert.IsTrue(_semanticModel.IsUnconditionallyReachable(unconditionalNode2, cfg));
     }
 }

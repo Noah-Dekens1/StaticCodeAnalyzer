@@ -9,6 +9,7 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Ext
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis.FlowAnalysis.ControlFlow;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Analyzers;
@@ -42,7 +43,10 @@ public class UnusedParameterAnalyzer : Analyzer
 
     private static void ProcessFunction(ProjectRef projectRef, List<Issue> issues, AstNode body, List<ParameterNode> parameters)
     {
-        var traverser = new UnusedParameterTraverser(projectRef.SemanticModel, parameters);
+        if (!projectRef.SemanticModel.AnalyzeControlFlow((IStatementList)body, out var cfg))
+            return;
+
+        var traverser = new UnusedParameterTraverser(projectRef.SemanticModel, parameters, cfg);
         traverser.Traverse(body);
 
         var unused = traverser.GetUnusedParameters();
@@ -72,12 +76,13 @@ public class UnusedParameterAnalyzer : Analyzer
  *    -> especially since that wouldn't work for interfaces
  */
 
-public class UnusedParameterTraverser(SemanticModel semanticModel, List<ParameterNode> parameters) : AstTraverser
+public class UnusedParameterTraverser(SemanticModel semanticModel, List<ParameterNode> parameters, ControlFlowGraph cfg) : AstTraverser
 {
     public SemanticModel SemanticModel { get; set; } = semanticModel;
     public List<ParameterNode> Parameters { get; set; } = parameters;
     public HashSet<ParameterNode> UsedParameters { get; set; } = [];
     public HashSet<ParameterNode> DiscardedBeforeUse { get; set; } = [];
+    private ControlFlowGraph ControlFlowGraph { get; set; } = cfg;
 
     protected override void Visit(AstNode node)
     {
@@ -97,14 +102,8 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                         // if already used, that's fine
                         if (!UsedParameters.Contains(parameter))
                         {
-                            // if not, check to see if we're in a nested scope
-                            // we may want to do control flow analysis here in the future
-                            var firstMatchingParent = assignmentExpressionNode.GetFirstParent(
-                                p => p is MethodNode || 
-                                p is BlockNode && p.Parent is not MethodNode && p.Parent is not LocalFunctionDeclarationNode
-                            );
-
-                            if (firstMatchingParent is not BlockNode)
+                            // if not, use the semantic model to determine whether we're unconditionally reachable
+                            if (SemanticModel.IsUnconditionallyReachable(assignmentExpressionNode, cfg))
                             {
                                 DiscardedBeforeUse.Add(parameter);
                             }

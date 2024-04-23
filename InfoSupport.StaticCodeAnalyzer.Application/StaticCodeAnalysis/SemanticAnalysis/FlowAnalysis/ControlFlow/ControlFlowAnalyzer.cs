@@ -236,9 +236,9 @@ public class ControlFlowTraverser : AstTraverser
     }
 }
 
-public class ControlFlowAnalyzer
+public static class ControlFlowAnalyzer
 {
-    public static bool AnalyzeControlFlow(IStatementList block, [NotNullWhen(true)] out ControlFlowGraph? cfg)
+    public static bool AnalyzeControlFlow(this SemanticModel _, IStatementList block, [NotNullWhen(true)] out ControlFlowGraph? cfg)
     {
         var traverser = new ControlFlowTraverser();
         traverser.Traverse((AstNode)block);
@@ -252,7 +252,7 @@ public class ControlFlowAnalyzer
         return true;
     }
 
-    public static HashSet<ControlFlowNode> ComputeReachability(ControlFlowNode entryNode)
+    public static HashSet<ControlFlowNode> ComputeReachability(this SemanticModel _, ControlFlowNode entryNode)
     {
         var visited = new HashSet<ControlFlowNode>();
         var queue = new Queue<ControlFlowNode>();
@@ -276,21 +276,21 @@ public class ControlFlowAnalyzer
         return visited;
     }
 
-    public static HashSet<ControlFlowNode> ComputeReachability(ControlFlowGraph cfg)
+    public static HashSet<ControlFlowNode> ComputeReachability(this SemanticModel model, ControlFlowGraph cfg)
     {
-        return cfg.Nodes.Count > 0 ? ComputeReachability(cfg.Nodes.First()) : [];
+        return cfg.Nodes.Count > 0 ? model.ComputeReachability(cfg.Nodes.First()) : [];
     }
 
-    public static bool IsReachable(AstNode node, ControlFlowGraph cfg)
+    public static bool IsReachable(this SemanticModel model, AstNode node, ControlFlowGraph cfg)
     {
         if (node.ControlFlowNodeRef is null)
             return false;
 
-        var reachable = ComputeReachability(cfg);
+        var reachable = model.ComputeReachability(cfg);
         return reachable.Contains(node.ControlFlowNodeRef);
     }
 
-    public static bool IsUnconditionallyReachable(AstNode targetNode, ControlFlowGraph cfg)
+    public static bool IsUnconditionallyReachable(this SemanticModel _, AstNode targetNode, ControlFlowGraph cfg)
     {
         if (targetNode.ControlFlowNodeRef is null)
             return false;
