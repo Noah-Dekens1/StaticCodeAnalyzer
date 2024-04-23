@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Extensions;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis.FlowAnalysis.ControlFlow;
 
@@ -131,5 +132,74 @@ public class ControlFlowTests
         var firstInstruction = instructions.First();
         Assert.IsTrue(firstInstruction is ExpressionStatementNode);
         Assert.IsTrue(((ExpressionStatementNode)firstInstruction).Expression is InvocationExpressionNode);
+    }
+
+    [TestMethod]
+    public void Analyze_UnreachableAfterContinue_ReturnsValidCFG()
+    {
+        var ast = Parse("""
+            int i = 0;
+            while (true)
+            {
+                i++;
+                Console.WriteLine("hey");
+                if (i > 10)
+                {
+                    continue;
+                    Console.WriteLine("unreachable");
+                }
+            }
+
+            Console.WriteLine("end");
+            """);
+
+        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        // Ensure that Console.WriteLine("unreachable"); is unreachable here
+
+        var reachable = ControlFlowAnalyzer.ComputeReachability(cfg);
+        var unreachable = cfg.Nodes.Except(reachable).ToList();
+        Assert.IsTrue(unreachable.Count == 1);
+
+        var instructions = unreachable.First().Instructions;
+        Assert.IsTrue(instructions.Count == 1);
+
+        var firstInstruction = instructions.First();
+        Assert.IsTrue(firstInstruction is ExpressionStatementNode);
+        Assert.IsTrue(((ExpressionStatementNode)firstInstruction).Expression is InvocationExpressionNode);
+    }
+
+    [TestMethod]
+    public void Analyze_ConditionalContinue_IsReachable()
+    {
+        var ast = Parse("""
+            int i = 0;
+            while (true)
+            {
+                if (i == 10)
+                    continue;
+
+                Console.WriteLine("reachable!");
+            }
+
+            Console.WriteLine("end");
+            """);
+
+        ControlFlowAnalyzer.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable!")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(ControlFlowAnalyzer.IsReachable(reachableNode, cfg));
     }
 }

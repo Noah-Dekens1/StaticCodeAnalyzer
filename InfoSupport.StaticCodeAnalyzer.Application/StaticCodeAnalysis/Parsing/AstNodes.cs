@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis.FlowAnalysis.ControlFlow;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
@@ -21,6 +22,7 @@ public abstract class AstNode
     public CodeLocation Location { get; set; } = new CodeLocation();
     public AstNode? Parent { get; set; } = null;
     public SymbolTable? SymbolTableRef { get; set; } = null;
+    public ControlFlowNode? ControlFlowNodeRef { get; set; } = null;
 
 #if DEBUG
     public bool ConstructedInEmit { get; set; }
