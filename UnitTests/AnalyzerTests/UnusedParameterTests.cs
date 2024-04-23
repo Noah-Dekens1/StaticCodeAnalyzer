@@ -142,11 +142,57 @@ public class UnusedParameterTests
         Assert.AreEqual(0, issues.Count);
     }
 
+    [TestMethod]
+    public void Analyze_UsedParameterInMemberAccess_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            async Task<Report?> GetReportById(Guid id)
+            {
+                return await _context.Reports
+                    .Where(r => r.Id == id)
+                    .Include(r => r.ProjectFiles)
+                    .ThenInclude(f => f.Issues)
+                    .SingleOrDefaultAsync();
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_UsedParameterInLeftmostMemberAccess_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            T EmitStatic<T>(T node, CodeLocation location) where T : AstNode
+                {
+                    node.Location = location;
+            #if DEBUG
+                    node.ConstructedInEmit = true;
+            #endif
+                    return node;
+                }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
     /**
      * False positive on (maybe due to Identifier being a string here?
-     * public static bool HasAttribute(this TypeDeclarationNode node, string attributeName, [NotNullWhen(true)] out AttributeNode? attribute)
-    {
-        return HasAttribute(node.Attributes, attributeName, out attribute);
-    }
+     * 
+        public static bool HasAttribute(this TypeDeclarationNode node, string attributeName, [NotNullWhen(true)] out AttributeNode? attribute)
+        {
+            return HasAttribute(node.Attributes, attributeName, out attribute);
+        }
+
+     * Another false positive here
+
+        public async Task<Report?> GetReportById(Guid id)
+        {
+            return await _context.Reports
+                .Where(r => r.Id == id)
+                .Include(r => r.ProjectFiles)
+                .ThenInclude(f => f.Issues)
+                .SingleOrDefaultAsync();
+        }
     */
 }

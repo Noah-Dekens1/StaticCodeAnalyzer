@@ -91,23 +91,28 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
         AstNode? possibleReference = null;
         bool skipChildren = false;
 
+        var parentIsMemberAccess = node.Parent is MemberAccessExpressionNode;
+
         switch (node)
         {
             case AssignmentExpressionNode assignmentExpressionNode:
                 {
                     var lhs = assignmentExpressionNode.LHS;
 
-                    var symbol = SemanticModel.SymbolResolver.GetSymbolForNode(lhs);
-
-                    if (TryGetParameterFromSymbol(symbol, out var parameter))
+                    if (lhs is not MemberAccessExpressionNode)
                     {
-                        // if already used, that's fine
-                        if (!UsedParameters.Contains(parameter))
+                        var symbol = SemanticModel.SymbolResolver.GetSymbolForNode(lhs);
+
+                        if (TryGetParameterFromSymbol(symbol, out var parameter))
                         {
-                            // if not, use the semantic model to determine whether we're unconditionally reachable
-                            if (ControlFlowGraph is not null && SemanticModel.IsUnconditionallyReachable(assignmentExpressionNode, ControlFlowGraph))
+                            // if already used, that's fine
+                            if (!UsedParameters.Contains(parameter))
                             {
-                                DiscardedBeforeUse.Add(parameter);
+                                // if not, use the semantic model to determine whether we're unconditionally reachable
+                                if (ControlFlowGraph is not null && SemanticModel.IsUnconditionallyReachable(assignmentExpressionNode, ControlFlowGraph))
+                                {
+                                    DiscardedBeforeUse.Add(parameter);
+                                }
                             }
                         }
                     }
@@ -115,20 +120,19 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
                     break;
                 }
 
-            case MemberAccessExpressionNode memberAccessExpressionNode:
+            case MemberAccessExpressionNode memberAccessExpressionNode when !parentIsMemberAccess:
                 {
                     possibleReference = memberAccessExpressionNode.GetLeftMost();
-                    skipChildren = true;
                     break;
                 }
 
-            case IdentifierExpression identifierExpression:
+            case IdentifierExpression identifierExpression when !parentIsMemberAccess:
                 {
                     possibleReference = identifierExpression;
                     break;
                 }
 
-            case ParameterNode parameterNode:
+            case ParameterNode:
                 {
                     skipChildren = true;
                     break;
@@ -168,6 +172,10 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
 
     public List<ParameterNode> GetUnusedParameters()
     {
-        return Parameters.Except(UsedParameters).ToList();
+        return Parameters
+            .Except(UsedParameters)
+            .Where(p => p.ParameterType != ParameterType.Out) // the compiler will force the out param to be used anyways
+            .Where(p => p.Identifier != "_")                  // ignore discards
+            .ToList();
     }
 }
