@@ -94,9 +94,16 @@ public class ControlFlowTraverser : AstTraverser
 
                         _breakFlows.Push([]);
 
-                        NewBasicBlock(predecessorBlock);
+                        var bodyBlock = NewBasicBlock(predecessorBlock);
                         Visit(iterator.Body!);
+
+                        var bodyEnd = _currentBasicBlock!;
+
                         var next = NewBasicBlock();
+
+                        // create the loop
+                        bodyEnd.Successors.Add(bodyBlock);
+                        bodyBlock.Predecessors.Add(bodyEnd);
 
                         var breakFlows = _breakFlows.Pop();
 

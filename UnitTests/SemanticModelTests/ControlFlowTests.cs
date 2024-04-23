@@ -97,7 +97,7 @@ public class ControlFlowTests
     }
 
     [TestMethod]
-    public void Analyze_WhileLoop_ReturnsValidCFG()
+    public void Analyze_UnreachableAfterBreak_ReturnsValidCFG()
     {
         var ast = Parse("""
             int i = 0;
