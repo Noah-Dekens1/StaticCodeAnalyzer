@@ -195,4 +195,18 @@ public class UnusedParameterTests
 
         Assert.AreEqual(0, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_AssignWithSelfOnLhsAndRhs_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Example(int a, int b)
+            {
+                a = a;              // unused param
+                b = SomeMethod(b);  // used param
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(1, issues.Count);
+    }
 }

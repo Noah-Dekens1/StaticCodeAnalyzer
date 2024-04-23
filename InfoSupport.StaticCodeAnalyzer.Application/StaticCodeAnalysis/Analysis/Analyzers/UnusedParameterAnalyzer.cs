@@ -129,6 +129,7 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
             case AssignmentExpressionNode assignmentExpressionNode:
                 {
                     var lhs = assignmentExpressionNode.LHS;
+                    var rhs = assignmentExpressionNode.RHS;
 
                     if (lhs is not MemberAccessExpressionNode)
                     {
@@ -136,8 +137,14 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
 
                         if (TryGetParameterFromSymbol(symbol, out var parameter))
                         {
+                            // a = a may be redundant but avoid cases like a = ProcessData(a);
+                            bool isSelfAssignment = rhs is IdentifierExpression && lhs.AsLongIdentifier() == rhs.AsLongIdentifier();
+                            bool selfIsPartOfExpression = !isSelfAssignment && rhs
+                                .GetAllDescendantsOfType<IdentifierExpression>()
+                                .Any(i => i.Identifier ==  parameter.Identifier);
+
                             // if already used, that's fine
-                            if (!UsedParameters.Contains(parameter))
+                            if (!UsedParameters.Contains(parameter) && !selfIsPartOfExpression)
                             {
                                 // if not, use the semantic model to determine whether we're unconditionally reachable
                                 if (ControlFlowGraph is not null && SemanticModel.IsUnconditionallyReachable(assignmentExpressionNode, ControlFlowGraph))
