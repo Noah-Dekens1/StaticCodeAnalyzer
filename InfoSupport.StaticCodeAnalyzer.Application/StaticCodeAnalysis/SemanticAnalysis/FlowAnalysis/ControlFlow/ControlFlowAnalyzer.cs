@@ -203,6 +203,16 @@ public class ControlFlowTraverser : AstTraverser
                         break;
                     }
 
+                case ReturnStatementNode returnStatement:
+                    {
+                        var predecessor = _currentBasicBlock!;
+                        var returnBlock = NewBasicBlock(createDetached: true);
+                        returnBlock.Predecessors.Add(predecessor);
+                        returnBlock.IsExitPoint = true;
+                        // @note: do we want to link this up somewhere?
+                        break;
+                    }
+
                 default:
                     {
                         _statements.Add(statement);

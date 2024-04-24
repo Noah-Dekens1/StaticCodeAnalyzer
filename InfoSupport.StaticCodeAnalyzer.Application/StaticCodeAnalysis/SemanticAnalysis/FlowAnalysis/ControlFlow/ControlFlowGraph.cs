@@ -20,6 +20,7 @@ public class ControlFlowNode
     public HashSet<ControlFlowNode> Successors { get; set; } = [];
     public bool IsMergeNode { get; set; } = false;
     public ExpressionNode? EndOfBlockCondition { get; set; } = null;
+    public bool IsExitPoint { get; set; } = false;
     public bool IsConditional { get; set; } = false;
 
     [ExcludeFromCodeCoverage]

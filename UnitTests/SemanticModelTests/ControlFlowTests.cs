@@ -300,4 +300,24 @@ public class ControlFlowTests
         Assert.IsFalse(_semanticModel.IsUnconditionallyReachable(conditionalNode, cfg));
         Assert.IsTrue(_semanticModel.IsUnconditionallyReachable(unconditionalNode2, cfg));
     }
+
+    [TestMethod]
+    public void Analyze_UnreachableCodeAfterReturn_ReturnsNotReachable()
+    {
+        var ast = Parse("""
+            return;
+            var person = new Person();
+            """);
+        
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        var statementNode = ast.Root
+            .GetAllDescendantsOfType<VariableDeclarationStatement>()
+            .FirstOrDefault();
+
+        Assert.IsNotNull(cfg);
+        Assert.IsNotNull(statementNode);
+
+        Assert.IsFalse(_semanticModel.IsReachable(statementNode, cfg));
+    }
 }
