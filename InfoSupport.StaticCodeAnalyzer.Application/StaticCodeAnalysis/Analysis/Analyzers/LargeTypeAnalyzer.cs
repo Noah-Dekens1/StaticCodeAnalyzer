@@ -11,24 +11,24 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Analyzers;
 
-public class LargeMethodAnalyzer : Analyzer
+public class LargeTypeAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxStatementsInBody = 30;
+        const int maxMembersInType = 30;
 
-        var methods = ast.Root
-            .GetAllDescendantsImplementing<IMethod>()
-            .Where(m => (m.Body?.GetAllDescendantsOfType<StatementNode>().Count ?? 0) > maxStatementsInBody)
+        var types = ast.Root
+            .GetAllDescendantsOfType<BasicDeclarationNode>()
+            .Where(d => d.Members.Count > maxMembersInType)
             .ToList();
 
-        foreach (var method in methods)
+        foreach (var type in types)
         {
             issues.Add(
                 new Issue(
-                    "method-too-large",
-                    "Large methods can be difficult to read and may contain duplicated code, split up the method in smaller methods",
-                    ((AstNode)method).Location
+                    "class-too-large",
+                    "Large classes can be difficult to read and may contain duplicated code, considering splitting up the class by using inheritence or composition",
+                    type.Location
                 )
             );
         }
