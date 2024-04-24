@@ -19,6 +19,14 @@ public class AstTraverser
         foreach (var child in node.Children)
         {
             Visit(child);
+
+            if (child is StatementNode statement && child is not BlockNode)
+                VisitStatement(statement);
         }
+    }
+
+    protected virtual void VisitStatement(StatementNode statement)
+    {
+
     }
 }
