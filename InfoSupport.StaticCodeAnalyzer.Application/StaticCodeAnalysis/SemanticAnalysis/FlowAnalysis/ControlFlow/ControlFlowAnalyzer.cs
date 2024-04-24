@@ -96,6 +96,12 @@ public class ControlFlowTraverser : AstTraverser
                         _breakFlows.Push([]);
                         _continueFlows.Push([]);
 
+                        foreach (var child in node.Children)
+                        {
+                            if (child != iterator.Body)
+                                Visit(child);
+                        }
+
                         var bodyBlock = NewBasicBlock(predecessorBlock);
                         bodyBlock.IsConditional = true;
                         Visit(iterator.Body!);
@@ -133,6 +139,8 @@ public class ControlFlowTraverser : AstTraverser
                         var predecessorBlock = _currentBasicBlock!;
 
                         predecessorBlock.EndOfBlockCondition = ifStatement.Expression;
+
+                        Visit(ifStatement.Expression);
 
                         var trueBranch = NewBasicBlock(predecessorBlock);
                         trueBranch.IsConditional = true;
@@ -214,6 +222,13 @@ public class ControlFlowTraverser : AstTraverser
                         returnBlock.IsExitPoint = true;
                         handled = true;
                         // @note: do we want to link this up somewhere?
+                        break;
+                    }
+
+                case LocalFunctionDeclarationNode:
+                    {
+                        // don't analyze nested functions since they get analyzed anyways
+                        handled = true;
                         break;
                     }
 
