@@ -133,6 +133,24 @@ public static class AstExtensions
         return matches;
     }
 
+    public static List<T> GetAllDescendantsImplementing<T>(this AstNode node, bool includeSelf = false)
+        where T : class
+    {
+        var matches = new List<T>();
+
+        if (includeSelf && node is T match)
+        {
+            matches.Add(match);
+        }
+
+        foreach (var child in node.Children)
+        {
+            matches.AddRange(child.GetAllDescendantsImplementing<T>(true));
+        }
+
+        return matches;
+    }
+
     // It may be difficult to distinguish between
     // 1) Local function invocations
     // 2) Lambdas and potentially nested local functions in lambdas
@@ -209,7 +227,7 @@ public static class AstExtensions
     public static string GetName(this MemberNode node)
     {
         if (node is MethodNode method)
-            return method.MethodName.AsIdentifier()!;
+            return method.Name.AsIdentifier()!;
 
         if (node is ConstructorNode constructor)
             return ((BasicDeclarationNode)constructor.Parent!).Name.AsIdentifier()!;

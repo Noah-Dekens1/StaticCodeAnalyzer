@@ -49,6 +49,15 @@ public interface IIterationNode
     public AstNode? Body { get; }
 }
 
+public interface IMethod
+{
+    public List<OptionalModifier> Modifiers { get; }
+    public TypeNode ReturnType { get; }
+    public AstNode Name { get; }
+    public ParameterListNode Parameters { get; }
+    public AstNode? Body { get; }
+}
+
 public class GlobalNamespaceNode(
     string? name = null,
     List<GlobalStatementNode>? globalStatements = null,
@@ -1183,17 +1192,17 @@ public class MethodNode(
     AstNode? body, 
     List<AttributeNode>? attributes = null,
     List<WhereConstraintNode>? genericConstraints = null
-    ) : MemberNode(attributes)
+    ) : MemberNode(attributes), IMethod
 {
     public AccessModifier AccessModifier { get; } = accessModifier;
     public List<OptionalModifier> Modifiers { get; } = modifiers;
     public TypeNode ReturnType { get; } = returnType;
-    public AstNode MethodName { get; } = methodName;
+    public AstNode Name { get; } = methodName;
     public ParameterListNode Parameters { get; } = parameters;
     public AstNode? Body { get; } = body;
     public List<WhereConstraintNode> GenericConstraints = genericConstraints ?? [];
 
-    public override List<AstNode> Children => [..Attributes, ..GenericConstraints, ..Utils.ParamsToList(ReturnType, MethodName, Parameters, Body)];
+    public override List<AstNode> Children => [..Attributes, ..GenericConstraints, ..Utils.ParamsToList(ReturnType, Name, Parameters, Body)];
 }
 
 public class BasicDeclarationNode(
@@ -1288,7 +1297,7 @@ public enum TypeKind
 public class LocalFunctionDeclarationNode(
     List<OptionalModifier> modifiers, AstNode name, TypeNode returnType, ParameterListNode parameters, 
     AstNode body, List<WhereConstraintNode>? genericConstraints = null
-    ) : StatementNode
+    ) : StatementNode, IMethod
 {
     public List<WhereConstraintNode> GenericConstraints { get; } = genericConstraints ?? [];
     public List<OptionalModifier> Modifiers { get; } = modifiers;

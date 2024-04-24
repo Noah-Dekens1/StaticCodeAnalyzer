@@ -60,7 +60,7 @@ public class UnusedParameterAnalyzer : Analyzer
 
             foreach (var methodDefinition in methods)
             {
-                if (!methodDefinition.MethodName.IsNameEqual(method.MethodName))
+                if (!methodDefinition.Name.IsNameEqual(method.Name))
                     continue;
 
                 // @todo: check overloading and such?
