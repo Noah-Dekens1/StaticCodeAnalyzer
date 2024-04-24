@@ -88,8 +88,6 @@ public class ControlFlowTests
             {
                 Console.WriteLine("world"); // this should branch to "return;"
             }
-
-            return;
             """);
 
         _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
