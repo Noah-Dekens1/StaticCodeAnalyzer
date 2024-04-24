@@ -30,12 +30,14 @@ public class ParserTests
 
     private static void CheckNodesEmittedRecursive(AstNode node)
     {
+#if DEBUG
         Assert.IsTrue(node.ConstructedInEmit, $"Node of type {node.GetType().Name} was not cnstructed in an Emit() method, this will break code locations!");
 
         foreach (var child in node.Children)
         {
             CheckNodesEmittedRecursive(child);
         }
+#endif
     }
 
     [DebuggerHidden]

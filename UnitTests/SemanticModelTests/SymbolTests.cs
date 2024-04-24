@@ -42,9 +42,9 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "a");
-        Debug.Assert(symbol.Kind == SymbolKind.LocalVariable);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("a", symbol.Name);
+        Assert.AreEqual(SymbolKind.LocalVariable, symbol.Kind);
     }
 
     [TestMethod]
@@ -68,9 +68,9 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "a");
-        Debug.Assert(symbol.Kind == SymbolKind.LocalVariable);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("a", symbol.Name);
+        Assert.AreEqual(SymbolKind.LocalVariable, symbol.Kind);
     }
 
     [TestMethod]
@@ -97,9 +97,9 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "a");
-        Debug.Assert(symbol.Kind == SymbolKind.Parameter);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("a", symbol.Name);
+        Assert.AreEqual(SymbolKind.Parameter, symbol.Kind);
     }
 
     [TestMethod]
@@ -126,7 +126,7 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is null);
+        Assert.IsNull(symbol);
     }
 
     [TestMethod]
@@ -150,7 +150,7 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is null);
+        Assert.IsNull(symbol);
     }
 
     /**
@@ -190,9 +190,9 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "A");
-        Debug.Assert(symbol.Kind == SymbolKind.Method);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("A", symbol.Name);
+        Assert.AreEqual(SymbolKind.Method, symbol.Kind);
     }
 
     [TestMethod]
@@ -231,9 +231,9 @@ public class SymbolTests
             .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "A");
-        Debug.Assert(symbol.Kind == SymbolKind.Method);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("A", symbol.Name);
+        Assert.AreEqual(SymbolKind.Method, symbol.Kind);
     }
 
     [TestMethod]
@@ -272,9 +272,9 @@ public class SymbolTests
                 .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "A");
-        Debug.Assert(symbol.Kind == SymbolKind.Method);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("A", symbol.Name);
+        Assert.AreEqual(SymbolKind.Method, symbol.Kind);
     }
 
     [TestMethod]
@@ -316,9 +316,9 @@ public class SymbolTests
                 .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "A");
-        Debug.Assert(symbol.Kind == SymbolKind.Method);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("A", symbol.Name);
+        Assert.AreEqual(SymbolKind.Method, symbol.Kind);
     }
 
     [TestMethod]
@@ -409,8 +409,8 @@ public class SymbolTests
                 .First()
         );
 
-        Debug.Assert(symbol is not null);
-        Debug.Assert(symbol.Name == "SomeMethod");
-        Debug.Assert(symbol.Kind == SymbolKind.Method);
+        Assert.IsNotNull(symbol);
+        Assert.AreEqual("SomeMethod", symbol.Name);
+        Assert.AreEqual(SymbolKind.Method, symbol.Kind);
     }
 }
