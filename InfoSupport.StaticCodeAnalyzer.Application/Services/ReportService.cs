@@ -21,6 +21,8 @@ public class ReportService(ApplicationDbContext context) : IReportService
             .Where(r => r.Id == id)
             .Include(r => r.ProjectFiles)
             .ThenInclude(f => f.Issues)
-            .SingleOrDefaultAsync();
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync();
     }
 }
