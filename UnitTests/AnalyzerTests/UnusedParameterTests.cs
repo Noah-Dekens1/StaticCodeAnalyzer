@@ -209,4 +209,19 @@ public class UnusedParameterTests
 
         Assert.AreEqual(1, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_UseParameterInUnreachableCode_ReturnsIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            void Example(int a, int b)
+            {
+                return;
+                Console.WriteLine(a);
+                Console.WriteLine(b);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(2, issues.Count);
+    }
 }

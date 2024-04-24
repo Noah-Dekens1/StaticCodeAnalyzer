@@ -183,8 +183,13 @@ public class UnusedParameterTraverser(SemanticModel semanticModel, List<Paramete
 
             if (TryGetParameterFromSymbol(symbol, out var parameter))
             {
-                if (!DiscardedBeforeUse.Contains(parameter))
-                    UsedParameters.Add(parameter);
+                // If we have a CFG (we may not in case of an expression body for example)
+                // Make sure that the code is reachable
+                if (ControlFlowGraph is null || SemanticModel.IsReachable(node, ControlFlowGraph))
+                {
+                    if (!DiscardedBeforeUse.Contains(parameter))
+                        UsedParameters.Add(parameter);
+                }
             }
         }
 
