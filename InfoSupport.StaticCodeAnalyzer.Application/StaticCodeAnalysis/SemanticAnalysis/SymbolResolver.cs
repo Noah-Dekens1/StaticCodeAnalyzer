@@ -326,6 +326,12 @@ public class SymbolResolver
                     break;
                 }
 
+            case ParameterNode parameterNode:
+                {
+                    symbolTable.AddSymbol(new Symbol(parameterNode.Identifier, ns, node, SymbolKind.Parameter));
+                    break;
+                }
+
             case TypeDeclarationNode typeDeclarationNode:
                 {
                     symbolTable.AddSymbol(new Symbol(typeDeclarationNode.GetName(), ns, node, SymbolKind.Type));
@@ -355,12 +361,18 @@ public class SymbolResolver
         // Handle adding inner scopes
         switch (node)
         {
+            // Seperate blocks for methods/local functions so we can capture parameters in the correct symbol table
+            case MethodNode or LocalFunctionDeclarationNode:
+                {
+                    ResolveScope(node, parent: symbolTable, ns: ns);
+                    break;
+                }
             case NamespaceNode namespaceNode:
                 {
                     ResolveScope(node, parent: symbolTable, ns: EnterNamespace(ns, namespaceNode));
                     break;
                 }
-            case BlockNode:
+            case BlockNode when node.Parent is not (MethodNode or LocalFunctionDeclarationNode):
                 {
                     ResolveScope(node, parent: symbolTable, ns: ns);
                     break;

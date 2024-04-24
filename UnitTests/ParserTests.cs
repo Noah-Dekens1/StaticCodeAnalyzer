@@ -1158,7 +1158,7 @@ public class ParserTests
         expected.Root.TypeDeclarations.Add(
             new ClassDeclarationNode(
                 className: AstUtils.SimpleName("TestClass"),
-                parentName: AstUtils.SimpleName("OtherClass"),
+                parentNames: [AstUtils.SimpleName("OtherClass")],
                 accessModifier: AccessModifier.Internal,
                 modifiers: [OptionalModifier.Partial],
                 members: [
@@ -1350,7 +1350,7 @@ public class ParserTests
         expected.Root.TypeDeclarations.Add(
             new EnumDeclarationNode(
                 enumName: AstUtils.SimpleName("Color"),
-                parentType: AstUtils.SimpleName("byte"),
+                parentTypes: [AstUtils.SimpleName("byte")],
                 accessModifier: AccessModifier.Public,
                 modifiers: [],
                 members: [
@@ -1922,13 +1922,13 @@ public class ParserTests
                         AstUtils.SimpleNameAsType("T2")
                     ])
                 ),
-                parentName: new GenericNameNode(
+                parentNames: [new GenericNameNode(
                     identifier: new IdentifierExpression("OtherClass"),
                     typeArguments: new TypeArgumentsNode([
                         AstUtils.SimpleNameAsType("T1"),
                         AstUtils.SimpleNameAsType("T2")
                     ])
-                ),
+                )],
                 accessModifier: AccessModifier.Internal,
                 modifiers: [OptionalModifier.Partial],
                 members: [
@@ -4189,7 +4189,7 @@ public class ParserTests
                     ]
                 )],
                 members: [],
-                parentType: null
+                parentTypes: []
             )
         );
 
@@ -4398,7 +4398,7 @@ public class ParserTests
         expected.Root.TypeDeclarations.Add(
             new EnumDeclarationNode(
                 enumName: AstUtils.SimpleName("Example"),
-                parentType: null,
+                parentTypes: [],
                 members: [
                     new EnumMemberNode(
                         identifier: "Value",
@@ -4712,7 +4712,7 @@ public class ParserTests
             new ClassDeclarationNode(
                 className: AstUtils.SimpleName("Example"),
                 members: [],
-                parentName: AstUtils.SimpleName("ExampleBase"),
+                parentNames: [AstUtils.SimpleName("ExampleBase")],
                 accessModifier: AccessModifier.Public,
                 parameters: new ParameterListNode([
                     new ParameterNode(AstUtils.SimpleNameAsType("int"), "a"),
@@ -4747,7 +4747,7 @@ public class ParserTests
             new StructDeclarationNode(
                 name: AstUtils.SimpleName("Example"),
                 members: [],
-                parentName: AstUtils.SimpleName("ExampleBase"),
+                parentNames: [AstUtils.SimpleName("ExampleBase")],
                 accessModifier: AccessModifier.Public,
                 parameters: new ParameterListNode([
                     new ParameterNode(AstUtils.SimpleNameAsType("int"), "a"),
@@ -6134,6 +6134,42 @@ public class ParserTests
                     new ParameterNode(AstUtils.SimpleNameAsType("string"), "FirstName"),
                     new ParameterNode(AstUtils.SimpleNameAsType("string"), "LastName"),
                 ])
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
+
+    [TestMethod]
+    public void Parse_MultipleInterfaces_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example : ExampleBase(1, 2), ITest2, ITest3
+            {
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                parentNames: [
+                    AstUtils.SimpleName("ExampleBase"),
+                    AstUtils.SimpleName("ITest2"),
+                    AstUtils.SimpleName("ITest3"),
+                ],
+                baseArguments: new ArgumentListNode([
+                    new ArgumentNode(
+                       expression: new NumericLiteralNode(1)
+                    ),
+                    new ArgumentNode(
+                       expression: new NumericLiteralNode(2)
+                    )
+                ]),
+                members: []
             )
         );
 

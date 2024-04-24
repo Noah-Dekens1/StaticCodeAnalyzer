@@ -9,7 +9,12 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 public class AstTraverser
 {
-    public virtual void Visit(AstNode node)
+    public void Traverse(AstNode node)
+    {
+        Visit(node);
+    }
+
+    protected virtual void Visit(AstNode node)
     {
         foreach (var child in node.Children)
         {

@@ -43,6 +43,14 @@ public static class AstExtensions
         return ast.GetNamespaces().SelectMany(ns => ns.TypeDeclarations).OfType<ClassDeclarationNode>().ToList();
     }
 
+    public static ExpressionNode GetLeftMost(this MemberAccessExpressionNode memberAccess)
+    {
+        if (memberAccess.LHS is MemberAccessExpressionNode ma)
+            return ma.GetLeftMost();
+
+        return memberAccess.LHS;
+    }
+
     public static string? AsIdentifier(this AstNode node)
     {
         if (node is IdentifierExpression expr)
@@ -224,15 +232,44 @@ public static class AstExtensions
                 : null;
     }
 
+    public static T? GetFirstParent<T>(this AstNode node) where T : AstNode
+    {
+        return node as T ?? node.Parent?.GetFirstParent<T>();
+    }
+
     public static ClassDeclarationNode? GetParentClass(this ClassDeclarationNode node, ProjectRef project)
     {
-        var parent = node.ParentName;
+        foreach (var parent in node.ParentNames)
+        {
+            var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
 
-        if (parent is null)
-            return null;
-        
-        var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
+            if (symbol?.Node is ClassDeclarationNode classDeclaration)
+                return classDeclaration;
+        }
 
-        return symbol?.Node as ClassDeclarationNode;
+        return null;
+    }
+
+    public static List<InterfaceDeclarationNode> GetInterfaces(this BasicDeclarationNode node, ProjectRef project)
+    {
+        var interfaces = new List<InterfaceDeclarationNode>();
+
+        foreach (var parent in node.ParentNames)
+        {
+            var symbol = project.SemanticModel.SymbolResolver.GetSymbolForNode(parent);
+
+            if (symbol?.Node is InterfaceDeclarationNode interfaceDeclaration)
+                interfaces.Add(interfaceDeclaration);
+        }
+
+        return interfaces;
+    }
+
+    public static bool IsNameEqual(this AstNode node, AstNode other)
+    {
+        if (node.GetType() != other.GetType()) 
+            return false;
+
+        return node.AsLongIdentifier() == other.AsLongIdentifier();
     }
 }
