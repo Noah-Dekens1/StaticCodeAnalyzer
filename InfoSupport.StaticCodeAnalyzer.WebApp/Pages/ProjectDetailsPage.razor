@@ -7,6 +7,33 @@
 @inject HttpClient HttpClient;
 @inject NavigationManager NavigationManager;
 @inject NavBarStateService NavBarState;
+@inject IJSRuntime JSRuntime
+
+<dialog id="config_created_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">@ConfigModalTitle</h3>
+        <p>@ConfigModalDescription</p>
+        <div class="modal-action">
+            <button type="button" class="btn" onclick="document.getElementById('config_created_modal').close()">Ok</button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+    function closeModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.close();
+        }
+    }
+
+    function showModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.show();
+        }
+    }
+</script>
 
 @if (UserProject is null)
 {
@@ -50,6 +77,9 @@ else
     public Project? UserProject { get; set; } = null;
     public bool IsRunningAnalysis { get; set; } = false;
 
+    public string ConfigModalTitle { get; set; } = string.Empty;
+    public string ConfigModalDescription { get; set; } = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         NavBarState.PageTitle = $"Project {UserProject?.Name ?? "Invalid"}";
@@ -82,6 +112,20 @@ else
 
     public async void CreateConfig()
     {
-        await HttpClient.PostAsync($"project/{Id}/config", null);
+        var response = await HttpClient.PostAsync($"project/{Id}/config", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            ConfigModalTitle = "Config created!";
+            ConfigModalDescription = await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            ConfigModalTitle = "Failed!";
+            ConfigModalDescription = "Failed to create config! Please try again later or report a bug";
+        }
+
+        await JSRuntime.InvokeVoidAsync("showModal", "config_created_modal");
+        await InvokeAsync(StateHasChanged);
     }
 }
