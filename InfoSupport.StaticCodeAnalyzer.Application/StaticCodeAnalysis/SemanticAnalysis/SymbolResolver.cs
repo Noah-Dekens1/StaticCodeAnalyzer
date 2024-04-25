@@ -307,6 +307,9 @@ public class SymbolResolver
 
     private void ResolveNode(AstNode node, SymbolTable symbolTable, NamespaceSymbol ns)
     {
+        if (node is null)
+            return;
+
         // Recursively handle node.. when do we want to call back into ResolveScope?;
 
         node.SymbolTableRef = symbolTable;
