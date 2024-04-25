@@ -12,7 +12,7 @@
 
     <PackageId>StaticCodeAnalysis.StaticCodeAnalyzer.CLI</PackageId>
 
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define HANDLE_EXCEPTIONS_IN_DEBUG
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -33,7 +35,7 @@ public class Runner
 
         foreach (var path in paths)
         {
-#if !DEBUG
+#if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
             try
             {
 #endif
@@ -44,7 +46,7 @@ public class Runner
                 projectRef.ProjectFiles.Add(path, ast);
                 projectRef.SemanticModel.ProcessFile(ast);
 
-#if !DEBUG
+#if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
             }
             catch
             {
@@ -65,6 +67,8 @@ public class Runner
             {
                 var fileIssues = new List<Issue>();
                 analyzer.Analyze(project, fileInfo.Value, projectRef, fileIssues);
+                // Copy issue locations because of the OwnsOne relation
+                fileIssues.ForEach(issue => issue.Location = CodeLocation.From(issue.Location));
                 projectFile.Issues.AddRange(fileIssues);
             }
 

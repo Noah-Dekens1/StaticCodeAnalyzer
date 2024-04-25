@@ -31,6 +31,15 @@ public class CodeLocation(Position start, Position end)
 
     public Position Start { get; set; } = start;
     public Position End { get; set; } = end;
+
+    public static CodeLocation From(CodeLocation original)
+    {
+        return new CodeLocation
+        {
+            Start = new Position(original.Start.Line, original.Start.Column),
+            End = new Position(original.End.Line, original.End.Column)
+        };
+    }
 }
 
 public class CodeLocationComparator : IComparer<CodeLocation>

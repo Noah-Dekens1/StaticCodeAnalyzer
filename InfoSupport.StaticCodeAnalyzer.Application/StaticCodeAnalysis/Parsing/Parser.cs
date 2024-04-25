@@ -662,6 +662,11 @@ public class Parser
 
         var rhs = ParseExpression()!;
 
+        if (rhs is null)
+        {
+            throw new InvalidOperationException();
+        }
+
         var operators = new Dictionary<TokenKind, Func<BinaryExpressionNode>>
         {
             { TokenKind.Plus,                () => new AddExpressionNode(lhs, rhs) },
@@ -3546,6 +3551,9 @@ public class Parser
     {
         foreach (var child in node.Children)
         {
+            if (child is null) // This shouldn't happen, but it does so catch it
+                continue;
+
             child.Parent = node;
             AssignParentRecursive(child);
         }
