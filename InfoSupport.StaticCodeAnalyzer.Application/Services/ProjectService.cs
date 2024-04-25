@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,6 +18,32 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.Services;
 public class ProjectService(ApplicationDbContext context) : IProjectService
 {
     private readonly ApplicationDbContext _context = context;
+
+    public async Task<string?> CreateConfiguration(Guid id)
+    {
+        var project = await _context.Projects.FindAsync(id);
+
+        if (project is null)
+            return null;
+
+        var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
+
+        if (!File.Exists(configFilePath))
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            using var stream = assembly.GetManifestResourceStream("InfoSupport.StaticCodeAnalyzer.Application.Resources.DefaultConfig.json");
+
+            if (stream is null)
+                throw new InvalidOperationException("Default config not found");
+
+            using var fileStream = new FileStream(configFilePath, FileMode.Create, FileAccess.Write);
+
+            stream.CopyTo(fileStream);
+        }
+
+        return configFilePath;
+    }
 
     public async Task<Project> CreateProject(Project project)
     {

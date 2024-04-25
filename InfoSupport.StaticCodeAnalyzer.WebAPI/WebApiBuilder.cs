@@ -73,6 +73,9 @@ public class WebApiBuilder
         app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
             await reportService.GetReportById(reportId));
 
+        app.MapPost("/api/project/{projectId}/config", async (IProjectService projectService, Guid projectId) =>
+            await projectService.CreateConfiguration(projectId));
+
         app.MapGet("/api/online", () => true);
 
         app.UseWebAssemblyDebugging();

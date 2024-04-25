@@ -18,7 +18,7 @@ else
 {
     <div class="ml-8 join join-vertical lg:join-horizontal">
         <button class="btn join-item" @onclick="Analyze">Analyze</button>
-        <button class="btn join-item">Create config</button>
+        <button class="btn join-item" @onclick="CreateConfig">Create config</button>
     </div>
 
     <div class="grid grid-cols-4 gap-4 p-8">
@@ -78,5 +78,10 @@ else
 
         IsRunningAnalysis = false;
         StateHasChanged();
+    }
+
+    public async void CreateConfig()
+    {
+        await HttpClient.PostAsync($"project/{Id}/config", null);
     }
 }
