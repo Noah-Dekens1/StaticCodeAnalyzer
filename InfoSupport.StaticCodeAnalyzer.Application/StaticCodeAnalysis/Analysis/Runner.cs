@@ -33,12 +33,24 @@ public class Runner
 
         foreach (var path in paths)
         {
-            var file = File.ReadAllText(path);
-            var tokens = Lexer.Lex(file);
-            var ast = Parser.Parse(tokens);
+#if !DEBUG
+            try
+            {
+#endif
+                var file = File.ReadAllText(path);
+                var tokens = Lexer.Lex(file);
+                var ast = Parser.Parse(tokens);
 
-            projectRef.ProjectFiles.Add(path, ast);
-            projectRef.SemanticModel.ProcessFile(ast);
+                projectRef.ProjectFiles.Add(path, ast);
+                projectRef.SemanticModel.ProcessFile(ast);
+
+#if !DEBUG
+            }
+            catch
+            {
+                Console.WriteLine($"Analysis failed for file: {path}");
+            }
+#endif
         }
 
         projectRef.TypeLookup.GenerateTypeMappings(projectRef);
