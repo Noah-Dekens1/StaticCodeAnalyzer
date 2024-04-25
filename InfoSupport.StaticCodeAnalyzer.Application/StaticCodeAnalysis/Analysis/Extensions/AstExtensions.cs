@@ -118,6 +118,9 @@ public static class AstExtensions
     public static List<T> GetAllDescendantsOfType<T>(this AstNode node, bool includeSelf = false)
         where T : AstNode
     {
+        if (node is null)
+            return [];
+
         var matches = new List<T>();
 
         if (includeSelf && node is T match)
@@ -127,6 +130,9 @@ public static class AstExtensions
 
         foreach (var child in node.Children)
         {
+            if (child is null)
+                continue;
+
             matches.AddRange(child.GetAllDescendantsOfType<T>(true));
         }
 
@@ -136,6 +142,9 @@ public static class AstExtensions
     public static List<T> GetAllDescendantsImplementing<T>(this AstNode node, bool includeSelf = false)
         where T : class
     {
+        if (node is null)
+            return [];
+
         var matches = new List<T>();
 
         if (includeSelf && node is T match)
@@ -145,6 +154,9 @@ public static class AstExtensions
 
         foreach (var child in node.Children)
         {
+            if (child is null)
+                continue;
+
             matches.AddRange(child.GetAllDescendantsImplementing<T>(true));
         }
 
