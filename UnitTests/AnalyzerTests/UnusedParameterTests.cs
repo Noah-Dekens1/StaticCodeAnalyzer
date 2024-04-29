@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Analyzers;
 using InfoSupport.StaticCodeAnalyzer.UnitTests.Utils;
 
@@ -461,6 +463,25 @@ public class UnusedParameterTests
                 return literalBuilder.ToString();
             }
             """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_IgnoredBaseType_ReturnsNoIssue()
+    {
+        var config = new AnalyzersListConfig();
+        config.UnusedParameters.IgnoreWhenImplementingTypes.Add("SomeBase");
+
+        var issues = AnalyzerUtils.Analyze("""
+            class Example : SomeBase
+            {
+                public void Test(int a)
+                {
+
+                }
+            }
+            """, new UnusedParameterAnalyzer(), config);
 
         Assert.AreEqual(0, issues.Count);
     }
