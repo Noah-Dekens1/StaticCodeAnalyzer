@@ -13,6 +13,8 @@ public class Configuration
     public required List<AnalyzersListConfig> Analyzers { get; set; }
 }
 
+// Review: What is the reasoning behind all the different classes? 
+// Some of these classes are just a wrapper around a single property.
 public class AnalyzersListConfig
 {
     public MaxParentsConfig ClassParents { get; set; } = new();
