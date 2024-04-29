@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Data.Configurations;
 
+// Review: Good choice of you to use your Domain models as models for your database
+// It's nice you are using the IEntityTypeConfiguration interface to configure your entities instead of using data annotations on your models
 public class IssueConfiguration : IEntityTypeConfiguration<Issue>
 {
     public void Configure(EntityTypeBuilder<Issue> builder)
