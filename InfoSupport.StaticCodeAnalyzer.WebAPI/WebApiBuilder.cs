@@ -74,7 +74,13 @@ public class WebApiBuilder
 
         app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
             await reportService.GetReportById(reportId));
-
+        
+        // Suggestion for future projects: Use the Health Checks feature of dotnet core.
+        // This can even be used to monitor your infrastructure dependencies (e.g. database)
+        // And differentiate between readiness and liveness checks.
+        // - Readiness indicates if the app is running normally but isn't ready to receive requests.
+        // - Liveness indicates if an app has crashed and must be restarted.
+        // https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/health-checks?view=aspnetcore-8.0
         app.MapGet("/api/online", () => true);
 
         app.UseWebAssemblyDebugging();
