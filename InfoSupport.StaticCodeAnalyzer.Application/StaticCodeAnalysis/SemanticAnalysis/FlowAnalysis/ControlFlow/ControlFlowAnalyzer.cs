@@ -267,6 +267,9 @@ public class ControlFlowTraverser : AstTraverser
 
 public static class ControlFlowAnalyzer
 {
+    // Review: I prefer an actual return value instead of an out parameter
+    // An out parameter can be useful, for example in a 'TryGet' method
+    // In this case the bool return value is not used and always true
     public static bool AnalyzeControlFlow(this SemanticModel _, IStatementList block, [NotNullWhen(true)] out ControlFlowGraph? cfg)
     {
         var traverser = new ControlFlowTraverser();
