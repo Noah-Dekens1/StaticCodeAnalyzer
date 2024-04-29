@@ -111,7 +111,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
     public async Task OpenConfiguration(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id) 
+        var project = await context.Projects.FindAsync(id) 
             ?? throw new ArgumentException("Project with id not found");
 
         var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
