@@ -14,10 +14,10 @@ using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.Services;
 
+// Review: When using primary constructors there is no need to make a private field for the context.
+// https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/tutorials/primary-constructors
 public class ProjectService(ApplicationDbContext context) : IProjectService
 {
-    private readonly ApplicationDbContext _context = context;
-
     public async Task<Project> CreateProject(Project project)
     {
         project.Path = project.Path.Replace('\\', '/');
@@ -25,47 +25,47 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         if (project.Path.EndsWith('/'))
             project.Path = project.Path.TrimEnd('/');
 
-        await _context.Projects.AddAsync(project);
-        await _context.SaveChangesAsync();
+        await context.Projects.AddAsync(project);
+        await context.SaveChangesAsync();
 
         return project;
     }
 
     public async Task<Report?> CreateReport(Guid projectId, Report report)
     {
-        var project = await _context.Projects.FindAsync(projectId);
+        var project = await context.Projects.FindAsync(projectId);
 
         if (project is null)
             return null;
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return report;
     }
 
     public async Task<Project?> DeleteProject(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await context.Projects.FindAsync(id);
 
         if (project is null)
             return null;
 
-        _context.Projects.Remove(project);
-        await _context.SaveChangesAsync();
+        context.Projects.Remove(project);
+        await context.SaveChangesAsync();
 
         return project;
     }
 
     public async Task<List<Project>> GetAllProjects()
     {
-        return await _context.Projects.ToListAsync();
+        return await context.Projects.ToListAsync();
     }
 
     public async Task<Project?> GetProjectById(Guid id)
     {
-        return await _context.Projects
+        return await context.Projects
             .Where(p => p.Id == id)
             .Include(p => p.Reports)
             .FirstOrDefaultAsync();
@@ -73,7 +73,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
     public async Task<Report?> StartAnalysis(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await context.Projects.FindAsync(id);
 
         if (project is null)
             return null;
@@ -82,7 +82,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return report;
     }
@@ -94,8 +94,8 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
         project.Id = id;
 
-        _context.Update(project);
-        await _context.SaveChangesAsync();
+        context.Update(project);
+        await context.SaveChangesAsync();
 
         return project;
     } 
