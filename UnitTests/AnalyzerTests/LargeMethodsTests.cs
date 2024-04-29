@@ -87,6 +87,16 @@ public class LargeMethodsTests
             }
             """, new LargeMethodAnalyzer());
 
+        // Review: Always verify that the test is actually testing what it should test.
+        // In this case a single issue should arise of 'type' method-too-large.
+        // It might be nice to also test the edge cases, in case of the LargeMethodAnalyzer create:
+        // - empty method with 0 Console.WriteLine();
+        // - method with 1 Console.WriteLine();
+        // - method with max - 1 Console.WriteLine();
+        // - method with max Console.WriteLine();
+        // - method with max + 1 Console.WriteLine();
+        // - method with not only Console.WriteLine but also
+        // With mstest you can use the DataRow, DynamicData of DataSource attribute to create a single test but with different input.
         Assert.AreEqual(1, issues.Count);
     }
 }
