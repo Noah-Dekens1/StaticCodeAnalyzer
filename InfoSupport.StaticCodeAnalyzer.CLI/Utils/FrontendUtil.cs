@@ -84,6 +84,8 @@ internal class FrontendUtil
         Console.WriteLine("Starting server..");
         StartWebApp();
 
+        // Review: Suggestion to use your health checks to verify if the web server was started
+        
         // Arbitrary time to give the web server some time to start up
         // Maybe we could instead read the output stream of the server?
         Thread.Sleep(1000 * 3);
