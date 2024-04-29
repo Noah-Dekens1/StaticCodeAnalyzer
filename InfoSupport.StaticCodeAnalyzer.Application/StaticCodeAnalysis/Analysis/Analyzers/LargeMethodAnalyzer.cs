@@ -15,7 +15,7 @@ public class LargeMethodAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxStatementsInBody = 30;
+        var maxStatementsInBody = GetConfig<MaxStatementsConfig>().MaxStatements;
 
         var methods = ast.Root
             .GetAllDescendantsImplementing<IMethod>()

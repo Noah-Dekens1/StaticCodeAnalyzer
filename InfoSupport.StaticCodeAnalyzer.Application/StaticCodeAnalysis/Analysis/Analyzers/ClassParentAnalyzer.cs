@@ -15,7 +15,7 @@ public class ClassParentAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxParentsCount = 5;
+        var maxParentsCount = GetConfig<MaxParentsConfig>().MaxParents;
 
         foreach (var classDecl in ast.GetClasses())
         {

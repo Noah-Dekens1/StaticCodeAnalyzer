@@ -17,4 +17,7 @@ public abstract class Analyzer
     public AnalyzersListConfig AnalyzersListConfig { get; set; } = default!;
 
     public abstract AnalyzerConfig GetConfig();
+
+    public T GetConfig<T>() where T : AnalyzerConfig
+        => (T)GetConfig();
 }

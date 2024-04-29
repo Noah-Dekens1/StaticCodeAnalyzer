@@ -28,7 +28,7 @@ public class IfElseAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxElseCount = 3;
+        var maxElseCount = GetConfig<MaxElsesConfig>().MaxElses;
 
         var ifStatements = ast.Root
             .GetAllDescendantsOfType<IfStatementNode>()

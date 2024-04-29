@@ -15,7 +15,7 @@ public class MethodParameterCountAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxParametersInMethod = 5;
+        var maxParametersInMethod = GetConfig<MaxParametersConfig>().MaxParameters;
 
         var methods = ast.Root
             .GetAllDescendantsImplementing<IMethod>()

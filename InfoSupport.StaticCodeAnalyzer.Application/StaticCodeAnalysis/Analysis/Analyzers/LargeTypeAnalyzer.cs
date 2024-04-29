@@ -15,7 +15,7 @@ public class LargeTypeAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxMembersInType = 30;
+        var maxMembersInType = GetConfig<MaxMembersConfig>().MaxMembers;
 
         var types = ast.Root
             .GetAllDescendantsOfType<BasicDeclarationNode>()
