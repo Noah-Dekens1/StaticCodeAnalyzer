@@ -72,6 +72,7 @@ public class WebApiBuilder
         app.MapPost("/api/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
             await projectService.StartAnalysis(id));
 
+        // Review: If projectId is not used, why not create a /api/report/{reportId} endpoint?
         app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
             await reportService.GetReportById(reportId));
         
