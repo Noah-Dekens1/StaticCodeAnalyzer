@@ -41,8 +41,6 @@ internal static class TestAssertionExtensions
 
     public static bool DoesMethodContainAssertion(this MethodNode method, SymbolResolver symbolResolver, TestAssertionsConfig config)
     {
-
-        // The cache also prevents cyclic loops
         if (Cache.TryGetValue(method, out bool result))
             return result;
 
@@ -62,6 +60,9 @@ internal static class TestAssertionExtensions
                 return true;
             }
 
+            if (!config.CheckCalledMethods)
+                continue;
+
             var symbol = symbolResolver.GetSymbolForNode(call.LHS);
 
             if (symbol is not null && symbol.Kind == SymbolKind.Method)
@@ -75,8 +76,6 @@ internal static class TestAssertionExtensions
                 }
             }
         }
-
-        //method.GetAllCalledMethods();
 
         Locked.Remove(method);
         Cache.Add(method, false);
