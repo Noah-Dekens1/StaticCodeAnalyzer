@@ -14,6 +14,11 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 
+// Review: Holy mother of classes! 
+// In my opinion all of the files in the StaticCodeAnalysis folder are also a separate Application
+// Right now 2 different types of applications are mixed in the same project
+// - Project + reports
+// - Code analysis
 public abstract class AstNode
 {
     public List<Token> Tokens { get; } = [];
@@ -23,7 +28,7 @@ public abstract class AstNode
     public AstNode? Parent { get; set; } = null;
     public SymbolTable? SymbolTableRef { get; set; } = null;
     public ControlFlowNode? ControlFlowNodeRef { get; set; } = null;
-
+    
 #if DEBUG
     public bool ConstructedInEmit { get; set; }
 #endif

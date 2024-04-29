@@ -74,8 +74,11 @@ public class UnusedParameterAnalyzer : Analyzer
     {
         ControlFlowGraph? cfg = null;
 
-        if (body is IStatementList)
-            projectRef.SemanticModel.AnalyzeControlFlow((IStatementList)body, out cfg);
+        // Review: C# allows you to put the typed checked variable directly in the pattern
+        // You won't need the extra cast afterwards
+        // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/patterns#declaration-and-type-patterns
+        if (body is IStatementList statementList)
+            projectRef.SemanticModel.AnalyzeControlFlow(statementList, out cfg);
 
         var traverser = new UnusedParameterTraverser(projectRef.SemanticModel, parameters, cfg);
         traverser.Traverse(body);
