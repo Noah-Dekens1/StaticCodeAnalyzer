@@ -84,6 +84,9 @@ internal class AnalyzeCommand : ICommandHandler
 
         var report = Runner.RunAnalysis(new Project(GetDirectoryName(directory) ?? "Example", directory));
 
+        if (report is null)
+            return;
+
         foreach (var projectFile in report.ProjectFiles)
         {
             var issues = projectFile.Issues;

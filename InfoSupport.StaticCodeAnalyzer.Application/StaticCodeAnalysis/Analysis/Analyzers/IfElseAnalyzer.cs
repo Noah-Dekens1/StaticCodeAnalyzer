@@ -47,4 +47,7 @@ public class IfElseAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.IfElse;
 }

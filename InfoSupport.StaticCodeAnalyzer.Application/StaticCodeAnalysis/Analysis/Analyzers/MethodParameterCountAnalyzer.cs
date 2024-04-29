@@ -33,4 +33,7 @@ public class MethodParameterCountAnalyzer : Analyzer
 
         return true;
     }
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.MethodParameterCount;
+
 }

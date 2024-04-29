@@ -33,4 +33,7 @@ public class SwitchCasesAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.SwitchCases;
 }

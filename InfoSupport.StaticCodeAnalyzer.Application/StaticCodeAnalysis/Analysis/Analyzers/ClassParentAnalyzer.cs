@@ -41,4 +41,7 @@ public class ClassParentAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.ClassParents;
 }

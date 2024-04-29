@@ -35,4 +35,7 @@ public class LargeMethodAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.LargeMethods;
 }

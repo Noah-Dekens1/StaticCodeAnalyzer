@@ -42,4 +42,7 @@ public class PartialVariableAssignmentAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.PartialVariableAssignment;
 }

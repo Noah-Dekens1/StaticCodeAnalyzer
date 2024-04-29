@@ -13,4 +13,8 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis
 public abstract class Analyzer
 {
     public abstract bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues);
+
+    public AnalyzersListConfig AnalyzersListConfig { get; set; } = default!;
+
+    public abstract AnalyzerConfig GetConfig();
 }

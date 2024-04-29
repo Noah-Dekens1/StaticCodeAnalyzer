@@ -95,6 +95,9 @@ public class UnusedParameterAnalyzer : Analyzer
             );
         }
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.UnusedParameterAnalyzer;
 }
 
 /**

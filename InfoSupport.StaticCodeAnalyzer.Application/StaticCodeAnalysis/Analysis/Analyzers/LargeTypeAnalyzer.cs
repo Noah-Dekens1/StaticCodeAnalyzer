@@ -35,4 +35,7 @@ public class LargeTypeAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.LargeTypes;
 }

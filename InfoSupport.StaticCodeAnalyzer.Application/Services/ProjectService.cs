@@ -106,6 +106,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
             return null;
 
         var report = Runner.RunAnalysis(project);
+        if (report is null) return null;
 
         project.Reports.Add(report);
 

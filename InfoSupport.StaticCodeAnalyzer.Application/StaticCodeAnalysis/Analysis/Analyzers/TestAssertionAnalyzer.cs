@@ -94,4 +94,7 @@ public class TestAssertionAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.TestAssertions;
 }
