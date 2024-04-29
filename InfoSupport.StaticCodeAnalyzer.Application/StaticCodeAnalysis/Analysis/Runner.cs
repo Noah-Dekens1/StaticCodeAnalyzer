@@ -71,6 +71,9 @@ public class Runner
             }
         }
 
+        int successCount = 0;
+        int errorCount = 0;
+
         foreach (var path in paths)
         {
 #if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
@@ -84,14 +87,18 @@ public class Runner
                 projectRef.ProjectFiles.Add(path, ast);
                 projectRef.SemanticModel.ProcessFile(ast);
 
+                successCount++;
 #if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
             }
             catch
             {
                 Console.WriteLine($"Analysis failed for file: {path}");
+                errorCount++;
             }
 #endif
         }
+
+        Console.WriteLine($"Successfully parsed {successCount} files ({(successCount / (double)(errorCount + successCount)):P}) ({errorCount} errors)");
 
         projectRef.TypeLookup.GenerateTypeMappings(projectRef);
         projectRef.SemanticModel.ProcessFinished();
