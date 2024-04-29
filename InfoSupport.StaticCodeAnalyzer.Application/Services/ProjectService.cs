@@ -19,15 +19,8 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 {
     private readonly ApplicationDbContext _context = context;
 
-    public async Task<string?> CreateConfiguration(Guid id)
+    public static void CreateConfigFileInternal(string configFilePath)
     {
-        var project = await _context.Projects.FindAsync(id);
-
-        if (project is null)
-            return null;
-
-        var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
-
         if (!File.Exists(configFilePath))
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -41,6 +34,18 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
             stream.CopyTo(fileStream);
         }
+    }
+
+    public async Task<string?> CreateConfiguration(Guid id)
+    {
+        var project = await _context.Projects.FindAsync(id);
+
+        if (project is null)
+            return null;
+
+        var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
+
+        CreateConfigFileInternal(configFilePath);
 
         return configFilePath;
     }
