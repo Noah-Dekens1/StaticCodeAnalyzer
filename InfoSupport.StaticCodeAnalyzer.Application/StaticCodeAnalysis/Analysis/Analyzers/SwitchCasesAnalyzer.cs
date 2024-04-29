@@ -15,7 +15,7 @@ public class SwitchCasesAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        const int maxSwitchSections = 10;
+        var maxSwitchSections = GetConfig<MaxCasesConfig>().MaxCases;
 
         var switchStatements = ast.Root
             .GetAllDescendantsOfType<SwitchStatementNode>()
@@ -33,4 +33,7 @@ public class SwitchCasesAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.SwitchCases;
 }

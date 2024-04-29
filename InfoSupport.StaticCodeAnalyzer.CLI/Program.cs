@@ -16,6 +16,7 @@ if (!parms.Validate() || parms.GetCommand() is null or "help")
     Console.WriteLine(" analyze [directory] [--output-console] -> Analyze a repository, creates a new project if one doesn't exist. " +
         "If no directory is provided the current one will be used instead.");
     Console.WriteLine(" launch                                 -> Launches web application");
+    Console.WriteLine(" create config                          -> Creates a new config file in the project belonging to the currently open directory");
     Console.WriteLine("");
     Console.WriteLine("-------------------------");
     return;
@@ -25,6 +26,7 @@ ICommandHandler handler = parms.GetCommand() switch
 {
     "analyze" => new AnalyzeCommand(),
     "launch"  => new LaunchCommand(),
+    "create"  => new CreateCommand(),
     _ => throw new InvalidOperationException()
 };
 

@@ -75,6 +75,12 @@ public class WebApiBuilder
         // Review: If projectId is not used, why not create a /api/report/{reportId} endpoint?
         app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
             await reportService.GetReportById(reportId));
+
+        app.MapPost("/api/project/{projectId}/config", async (IProjectService projectService, Guid projectId) =>
+            await projectService.CreateConfiguration(projectId));
+
+        app.MapPost("/api/project/{projectId}/config/open", async (IProjectService projectService, Guid projectId) =>
+            await projectService.OpenConfiguration(projectId));
         
         // Suggestion for future projects: Use the Health Checks feature of dotnet core.
         // This can even be used to monitor your infrastructure dependencies (e.g. database)

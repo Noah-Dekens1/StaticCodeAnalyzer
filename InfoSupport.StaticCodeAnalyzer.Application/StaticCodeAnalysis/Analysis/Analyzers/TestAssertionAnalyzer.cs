@@ -17,10 +17,30 @@ internal static class TestAssertionExtensions
     private readonly static Dictionary<MethodNode, bool> Cache = [];
     private readonly static HashSet<MethodNode> Locked = [];
 
-    public static bool DoesMethodContainAssertion(this MethodNode method, SymbolResolver symbolResolver)
+    public static bool IsAssertion(this InvocationExpressionNode call, TestAssertionsConfig config)
     {
+        var name = call.LHS.AsLongIdentifier();
 
-        // The cache also prevents cyclic loops
+        if (name is null)
+            return false;
+
+        if (config.AnyNameIncludingAssert && name.Contains("assert", StringComparison.CurrentCultureIgnoreCase))
+            return true;
+
+        if (config.UseCustomAssertionMethods)
+        {
+            foreach (var assertionMethod in config.AssertionMethods)
+            {
+                if (name.Contains(assertionMethod))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static bool DoesMethodContainAssertion(this MethodNode method, SymbolResolver symbolResolver, TestAssertionsConfig config)
+    {
         if (Cache.TryGetValue(method, out bool result))
             return result;
 
@@ -33,14 +53,15 @@ internal static class TestAssertionExtensions
         
         foreach (var call in calls)
         {
-            var name = call.LHS.AsLongIdentifier();
-
-            if (name is not null && name.Contains("Assert")) // Extremely naive implementation
+            if (call.IsAssertion(config))
             {
                 Cache.Add(method, true);
                 Locked.Remove(method);
                 return true;
             }
+
+            if (!config.CheckCalledMethods)
+                continue;
 
             var symbol = symbolResolver.GetSymbolForNode(call.LHS);
 
@@ -48,15 +69,13 @@ internal static class TestAssertionExtensions
             {
                 var callee = symbol.Node as MethodNode;
 
-                if (callee?.DoesMethodContainAssertion(symbolResolver) ?? false)
+                if (callee?.DoesMethodContainAssertion(symbolResolver, config) ?? false)
                 {
                     Locked.Remove(method);
                     return true;
                 }
             }
         }
-
-        //method.GetAllCalledMethods();
 
         Locked.Remove(method);
         Cache.Add(method, false);
@@ -78,7 +97,7 @@ public class TestAssertionAnalyzer : Analyzer
         foreach (var test in testMethods)
         {
             bool isExpectedExceptionAttribute = test.HasAttribute("ExpectedException");
-            var containsAssertions = test.DoesMethodContainAssertion(projectRef.SemanticModel.SymbolResolver);
+            var containsAssertions = test.DoesMethodContainAssertion(projectRef.SemanticModel.SymbolResolver, GetConfig<TestAssertionsConfig>());
 
             if (!containsAssertions && !isExpectedExceptionAttribute)
             {
@@ -94,4 +113,7 @@ public class TestAssertionAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.TestAssertions;
 }

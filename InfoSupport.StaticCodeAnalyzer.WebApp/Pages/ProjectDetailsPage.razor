@@ -7,6 +7,33 @@
 @inject HttpClient HttpClient;
 @inject NavigationManager NavigationManager;
 @inject NavBarStateService NavBarState;
+@inject IJSRuntime JSRuntime
+
+<dialog id="config_created_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">@ConfigModalTitle</h3>
+        <p>@ConfigModalDescription</p>
+        <div class="modal-action">
+            <button type="button" class="btn" onclick="document.getElementById('config_created_modal').close()">Ok</button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+    function closeModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.close();
+        }
+    }
+
+    function showModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.show();
+        }
+    }
+</script>
 
 @if (UserProject is null)
 {
@@ -18,7 +45,8 @@ else
 {
     <div class="ml-8 join join-vertical lg:join-horizontal">
         <button class="btn join-item" @onclick="Analyze">Analyze</button>
-        <button class="btn join-item">Create config</button>
+        <button class="btn join-item" @onclick="CreateConfig">Create config</button>
+        <button class="btn join-item" @onclick="EditConfig">Edit config</button>
     </div>
 
     <div class="grid grid-cols-4 gap-4 p-8">
@@ -50,6 +78,9 @@ else
     public Project? UserProject { get; set; } = null;
     public bool IsRunningAnalysis { get; set; } = false;
 
+    public string ConfigModalTitle { get; set; } = string.Empty;
+    public string ConfigModalDescription { get; set; } = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         NavBarState.PageTitle = $"Project {UserProject?.Name ?? "Invalid"}";
@@ -78,5 +109,38 @@ else
 
         IsRunningAnalysis = false;
         StateHasChanged();
+    }
+
+    public async void CreateConfig()
+    {
+        var response = await HttpClient.PostAsync($"project/{Id}/config", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            ConfigModalTitle = "Config created!";
+            ConfigModalDescription = await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            ConfigModalTitle = "Failed!";
+            ConfigModalDescription = "Failed to create config! Please try again later or report a bug";
+        }
+
+        await JSRuntime.InvokeVoidAsync("showModal", "config_created_modal");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async void EditConfig()
+    {
+        var response = await HttpClient.PostAsync($"project/{Id}/config/open", null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            ConfigModalTitle = "Failed!";
+            ConfigModalDescription = "Failed to open config for editing! Does it exist?";
+
+            await JSRuntime.InvokeVoidAsync("showModal", "config_created_modal");
+            await InvokeAsync(StateHasChanged);
+        }
     }
 }

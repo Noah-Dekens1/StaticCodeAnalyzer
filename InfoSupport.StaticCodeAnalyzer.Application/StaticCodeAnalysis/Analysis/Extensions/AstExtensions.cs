@@ -233,7 +233,7 @@ public static class AstExtensions
     public static string GetName(this TypeDeclarationNode node)
     {
         var name = (node is BasicDeclarationNode basicDeclaration) ? basicDeclaration.Name : ((EnumDeclarationNode)node).EnumName;
-        return name.AsIdentifier()!;
+        return name.AsLongIdentifier()!;
     }
 
     public static string GetName(this MemberNode node)

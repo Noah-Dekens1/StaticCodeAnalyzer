@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
@@ -26,12 +27,52 @@ public class Runner
         .Cast<Analyzer>()
         .ToList();
 
-    public static Report RunAnalysis(Project project)
+    public static JsonSerializerOptions GetOptions()
+    {
+        return new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower
+        };
+    }
+
+    public static Report? RunAnalysis(Project project)
     {
         var paths = GetFilesInProject(project);
 
         var projectFiles = new List<ProjectFile>();
         var projectRef = new ProjectRef();
+
+        var configPath = Path.Join(project.Path, "analyzer-config.json");
+
+        if (File.Exists(configPath))
+        {
+            var content = File.ReadAllText(configPath);
+            var config = JsonSerializer.Deserialize<Configuration>(content, GetOptions());
+            
+            if (config is null || config.Analyzers.Count == 0)
+            {
+                Console.WriteLine("Found config file but it's invalid.. exiting");
+                return null;
+            }
+
+            foreach (var analyzer in Analyzers)
+            {
+                analyzer.AnalyzersListConfig = config.Analyzers[0];
+            }
+        }
+        else
+        {
+            var emptyConfig = new AnalyzersListConfig();
+
+            foreach (var analyzer in Analyzers)
+            {
+                analyzer.AnalyzersListConfig = emptyConfig;
+            }
+        }
+
+        int successCount = 0;
+        int errorCount = 0;
 
         foreach (var path in paths)
         {
@@ -46,14 +87,18 @@ public class Runner
                 projectRef.ProjectFiles.Add(path, ast);
                 projectRef.SemanticModel.ProcessFile(ast);
 
+                successCount++;
 #if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
             }
             catch
             {
                 Console.WriteLine($"Analysis failed for file: {path}");
+                errorCount++;
             }
 #endif
         }
+
+        Console.WriteLine($"Successfully parsed {successCount} files ({(successCount / (double)(errorCount + successCount)):P}) ({errorCount} errors)");
 
         projectRef.TypeLookup.GenerateTypeMappings(projectRef);
         projectRef.SemanticModel.ProcessFinished();
@@ -65,6 +110,9 @@ public class Runner
 
             foreach (var analyzer in Analyzers)
             {
+                if (!analyzer.GetConfig().Enabled)
+                    continue;
+
                 var fileIssues = new List<Issue>();
                 analyzer.Analyze(project, fileInfo.Value, projectRef, fileIssues);
                 // Copy issue locations because of the OwnsOne relation

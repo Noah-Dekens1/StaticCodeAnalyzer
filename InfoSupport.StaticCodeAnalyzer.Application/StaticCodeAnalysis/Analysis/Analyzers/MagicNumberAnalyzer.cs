@@ -35,4 +35,6 @@ public class MagicNumberAnalyzer : Analyzer
 
         return true;
     }
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.MagicNumbers;
 }
