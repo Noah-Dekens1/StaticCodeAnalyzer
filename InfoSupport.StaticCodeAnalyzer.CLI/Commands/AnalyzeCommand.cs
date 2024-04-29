@@ -61,7 +61,7 @@ internal class AnalyzeCommand : ICommandHandler
             }
 
             project = new Project(name, directory);
-            project = await projectService.CreateProject(project);
+            project = await projectService.CreateProject(project, CancellationToken.None);
 
             Console.WriteLine($"Successfully created new project: {project.Name}");
         }

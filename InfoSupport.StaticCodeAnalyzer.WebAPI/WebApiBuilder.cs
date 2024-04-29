@@ -60,8 +60,8 @@ public class WebApiBuilder
         app.MapGet("/api/projects", async (IProjectService projectService) =>
             await projectService.GetAllProjects());
 
-        app.MapPost("/api/project", async (IProjectService projectService, Project project) =>
-            await projectService.CreateProject(project));
+        app.MapPost("/api/project", async (IProjectService projectService, Project project, CancellationToken cancellationToken) =>
+            await projectService.CreateProject(project, cancellationToken));
 
         app.MapGet("/api/project/{id}", async (IProjectService projectService, Guid id) =>
             await projectService.GetProjectById(id));

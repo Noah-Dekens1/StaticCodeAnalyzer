@@ -18,15 +18,21 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.Services;
 // https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/tutorials/primary-constructors
 public class ProjectService(ApplicationDbContext context) : IProjectService
 {
-    public async Task<Project> CreateProject(Project project)
+    // Review: Try to always use CancellationToken when writing async methods.
+    // Dotnet will give you access to the CancellationToken from the Minimal API and you can pass it to the method.
+    public async Task<Project> CreateProject(Project project, CancellationToken cancellationToken)
     {
         project.Path = project.Path.Replace('\\', '/');
 
         if (project.Path.EndsWith('/'))
             project.Path = project.Path.TrimEnd('/');
 
-        await context.Projects.AddAsync(project);
-        await context.SaveChangesAsync();
+        // Review: Instead of using AddRange you should use the non async Add variant
+        // AddAsync is only relevant if for a very specific (e.g. Hi/Lo id generator) reason you need to know the id of the entity before it is saved.
+        // When executing the .Add method, only the change tracker of EF will be updated, no database call will be made until the SaveChangesAsync method is called.
+        // There it is important the method has a CancellationToken passed, as it will be used to cancel the (potentially long running) operation if needed.
+        context.Projects.Add(project);
+        await context.SaveChangesAsync(cancellationToken);
 
         return project;
     }
