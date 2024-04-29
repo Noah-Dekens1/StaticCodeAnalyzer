@@ -98,6 +98,22 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
             .FirstOrDefaultAsync();
     }
 
+    public async Task OpenConfiguration(Guid id)
+    {
+        var project = await _context.Projects.FindAsync(id) 
+            ?? throw new ArgumentException("Project with id not found");
+
+        var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
+
+        if (!File.Exists(configFilePath))
+            throw new FileNotFoundException("No config file present");
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(configFilePath)
+        {
+            UseShellExecute = true
+        });
+    }
+
     public async Task<Report?> StartAnalysis(Guid id)
     {
         var project = await _context.Projects.FindAsync(id);

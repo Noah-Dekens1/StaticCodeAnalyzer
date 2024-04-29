@@ -46,6 +46,7 @@ else
     <div class="ml-8 join join-vertical lg:join-horizontal">
         <button class="btn join-item" @onclick="Analyze">Analyze</button>
         <button class="btn join-item" @onclick="CreateConfig">Create config</button>
+        <button class="btn join-item" @onclick="EditConfig">Edit config</button>
     </div>
 
     <div class="grid grid-cols-4 gap-4 p-8">
@@ -127,5 +128,19 @@ else
 
         await JSRuntime.InvokeVoidAsync("showModal", "config_created_modal");
         await InvokeAsync(StateHasChanged);
+    }
+
+    public async void EditConfig()
+    {
+        var response = await HttpClient.PostAsync($"project/{Id}/config/open", null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            ConfigModalTitle = "Failed!";
+            ConfigModalDescription = "Failed to open config for editing! Does it exist?";
+
+            await JSRuntime.InvokeVoidAsync("showModal", "config_created_modal");
+            await InvokeAsync(StateHasChanged);
+        }
     }
 }

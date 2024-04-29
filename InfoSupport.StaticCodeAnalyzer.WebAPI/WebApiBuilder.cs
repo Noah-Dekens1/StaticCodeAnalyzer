@@ -76,6 +76,9 @@ public class WebApiBuilder
         app.MapPost("/api/project/{projectId}/config", async (IProjectService projectService, Guid projectId) =>
             await projectService.CreateConfiguration(projectId));
 
+        app.MapPost("/api/project/{projectId}/config/open", async (IProjectService projectService, Guid projectId) =>
+            await projectService.OpenConfiguration(projectId));
+
         app.MapGet("/api/online", () => true);
 
         app.UseWebAssemblyDebugging();
