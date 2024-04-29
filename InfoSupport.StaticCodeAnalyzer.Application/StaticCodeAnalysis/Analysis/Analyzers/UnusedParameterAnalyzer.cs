@@ -12,12 +12,15 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnal
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis.FlowAnalysis.ControlFlow;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Analyzers;
 public class UnusedParameterAnalyzer : Analyzer
 {
     public override bool Analyze(Project project, AST ast, ProjectRef projectRef, List<Issue> issues)
     {
-        var methods = ast.Root.GetAllDescendantsOfType<MethodNode>();
+        var methods = ast.Root.GetAllDescendantsImplementing<IMethod>();
+        var config = GetConfig<UnusedParametersConfig>();
 
         foreach (var method in methods)
         {
@@ -25,29 +28,18 @@ public class UnusedParameterAnalyzer : Analyzer
                 continue;
 
             bool isParameterForced = method.Modifiers.Contains(OptionalModifier.Override);
-            isParameterForced |= IsRequiredByInterface(projectRef, method);
+            isParameterForced |= IsRequiredByInterface(projectRef, method, config);
 
             if (!isParameterForced)
                 ProcessFunction(projectRef, issues, method.Body, method.Parameters.Parameters);
         }
 
-        // @todo: maybe add IFunction interface for methods & local function declarations to avoid repeated code here?
-        var localFunctions = ast.Root.GetAllDescendantsOfType<LocalFunctionDeclarationNode>();
-
-        foreach (var localFunction in localFunctions)
-        {
-            if (localFunction.Body is null)
-                continue;
-
-            ProcessFunction(projectRef, issues, localFunction.Body, localFunction.Parameters.Parameters);
-        }
-
         return true;
     }
 
-    private static bool IsRequiredByInterface(ProjectRef project, MethodNode method)
+    private static bool IsRequiredByInterface(ProjectRef project, IMethod method, UnusedParametersConfig config)
     {
-        var basicTypeDecl = method.GetFirstParent<BasicDeclarationNode>();
+        var basicTypeDecl = ((AstNode)method).GetFirstParent<BasicDeclarationNode>();
         
         if (basicTypeDecl is null)
             return false;
@@ -56,16 +48,22 @@ public class UnusedParameterAnalyzer : Analyzer
 
         foreach (var decl in interfaces)
         {
-            var methods = decl.Members.OfType<MethodNode>();
+            var methods = decl.Members.OfType<IMethod>();
+            var typeName = decl.GetName();
 
             foreach (var methodDefinition in methods)
             {
-                if (!methodDefinition.Name.IsNameEqual(method.Name))
-                    continue;
+                if (methodDefinition.Name.IsNameEqual(method.Name))
+                    return true;
+            }
+        }
 
-                // @todo: check overloading and such?
-
-                return true;
+        foreach (var parentName in basicTypeDecl.ParentNames)
+        {
+            foreach (var type in config.IgnoreWhenImplementingTypes)
+            {
+                if (type.Equals(parentName.AsLongIdentifier(), StringComparison.CurrentCultureIgnoreCase))
+                    return true;
             }
         }
 
@@ -95,6 +93,9 @@ public class UnusedParameterAnalyzer : Analyzer
             );
         }
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.UnusedParameters;
 }
 
 /**

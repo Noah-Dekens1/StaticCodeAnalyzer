@@ -28,4 +28,7 @@ public class NestedTernaryAnalyzer : Analyzer
 
         return true;
     }
+
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.NestedTernary;
 }

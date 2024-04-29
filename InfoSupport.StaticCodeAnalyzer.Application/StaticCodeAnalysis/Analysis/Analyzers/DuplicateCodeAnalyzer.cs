@@ -70,5 +70,6 @@ public class DuplicateCodeAnalyzer : Analyzer
         return false;
     }
 
-    
+    public override AnalyzerConfig GetConfig()
+        => AnalyzersListConfig.DuplicateCode;
 }

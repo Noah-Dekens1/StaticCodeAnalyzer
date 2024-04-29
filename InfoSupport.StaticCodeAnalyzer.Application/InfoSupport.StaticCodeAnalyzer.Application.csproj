@@ -11,4 +11,8 @@
     <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Infrastructure\InfoSupport.StaticCodeAnalyzer.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\DefaultConfig.json" />
+  </ItemGroup>
+
 </Project>

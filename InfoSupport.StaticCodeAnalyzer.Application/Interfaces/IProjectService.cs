@@ -19,4 +19,6 @@ public interface IProjectService
     public Task<Report?> CreateReport(Guid projectId, Report report);
 
     public Task<Report?> StartAnalysis(Guid id);
+    public Task<string?> CreateConfiguration(Guid id);
+    public Task OpenConfiguration(Guid id);
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,6 +18,37 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.Services;
 public class ProjectService(ApplicationDbContext context) : IProjectService
 {
     private readonly ApplicationDbContext _context = context;
+
+    public static void CreateConfigFileInternal(string configFilePath)
+    {
+        if (!File.Exists(configFilePath))
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            using var stream = assembly.GetManifestResourceStream("InfoSupport.StaticCodeAnalyzer.Application.Resources.DefaultConfig.json");
+
+            if (stream is null)
+                throw new InvalidOperationException("Default config not found");
+
+            using var fileStream = new FileStream(configFilePath, FileMode.Create, FileAccess.Write);
+
+            stream.CopyTo(fileStream);
+        }
+    }
+
+    public async Task<string?> CreateConfiguration(Guid id)
+    {
+        var project = await _context.Projects.FindAsync(id);
+
+        if (project is null)
+            return null;
+
+        var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
+
+        CreateConfigFileInternal(configFilePath);
+
+        return configFilePath;
+    }
 
     public async Task<Project> CreateProject(Project project)
     {
@@ -71,6 +103,22 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
             .FirstOrDefaultAsync();
     }
 
+    public async Task OpenConfiguration(Guid id)
+    {
+        var project = await _context.Projects.FindAsync(id) 
+            ?? throw new ArgumentException("Project with id not found");
+
+        var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
+
+        if (!File.Exists(configFilePath))
+            throw new FileNotFoundException("No config file present");
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(configFilePath)
+        {
+            UseShellExecute = true
+        });
+    }
+
     public async Task<Report?> StartAnalysis(Guid id)
     {
         var project = await _context.Projects.FindAsync(id);
@@ -79,6 +127,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
             return null;
 
         var report = Runner.RunAnalysis(project);
+        if (report is null) return null;
 
         project.Reports.Add(report);
 
