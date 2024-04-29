@@ -43,9 +43,11 @@ public class WebApiBuilder
 
         var app = builder.Build();
 
-        using (var serviceScope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
+        // Review: Try to avoid using the ! operator, it can lead to NullReferenceExceptions.
+        // Instead, use GetRequiredService to throw an exception if the service is not found.
+        // In this case you already have access to the IServiceProvider. There is no need to first call: GetService<IServiceScopeFactory>()
+        using (var serviceScope = app.Services.CreateScope())
         {
-
             var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             context.Database.Migrate();
         }
