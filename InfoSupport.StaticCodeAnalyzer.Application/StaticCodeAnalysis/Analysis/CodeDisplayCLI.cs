@@ -11,6 +11,18 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis
 
 public class CodeDisplayCLI
 {
+    private static bool HighlightEnabled = false;
+
+    private static void SetColor()
+    {
+        Console.Write("\u001b[33m");
+    }
+
+    private static void ResetColor()
+    {
+        Console.Write("\u001b[0m");
+    }
+
     public static void DisplayCode(string fileContent, List<Issue> issues, string fileName, int contextLines=5)
     {
         var lines = fileContent.Split('\n');
@@ -43,17 +55,20 @@ public class CodeDisplayCLI
                     isHighlight &= cLine != highlight.End.Line || cColumn <= highlight.End.Column;
 
 
-                    if (isHighlight)
+                    if (isHighlight && !HighlightEnabled)
                     {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        //Console.ForegroundColor = ConsoleColor.Yellow;
+                        SetColor();
+                        HighlightEnabled = true;
+                    }
+
+                    if (!isHighlight && HighlightEnabled)
+                    {
+                        ResetColor();
+                        HighlightEnabled = false;
                     }
 
                     Console.Write(column);
-
-                    if (isHighlight)
-                    {
-                        Console.ResetColor();
-                    }
                 }
 
                 Console.WriteLine();
