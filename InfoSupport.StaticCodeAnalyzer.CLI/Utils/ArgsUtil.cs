@@ -29,7 +29,12 @@ public class ArgsUtil(string[] args)
 
     public string GetDirectory()
     {
-        var dir = _args.Length >= 2
+        var hasArgs = _args.Length >= 2;
+
+        if (hasArgs && _args[1] == "--output-console")
+            return Directory.GetCurrentDirectory();
+
+        var dir = hasArgs
             ? _args[1]
             : Directory.GetCurrentDirectory();
 
