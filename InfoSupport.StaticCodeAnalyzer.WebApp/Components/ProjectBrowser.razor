@@ -1,5 +1,6 @@
 ﻿@using InfoSupport.StaticCodeAnalyzer.Domain
 @using System.Diagnostics.CodeAnalysis
+@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
 
 <div class="flex w-full h-full overflow-hidden">
     <div class="w-2/5 h-full relative overflow-auto">
@@ -80,7 +81,7 @@
                 {
                     <li>
                         <button class="h-fit btn btn-block mb-1 p-4 @(IsIssueSelected(issue) ? "btn-neutral" : "")" @onclick="() => SelectIssue(file, issue)">
-                            <p class="text-left w-full text-wrap break-all">@issue.Code</p>
+                            <p class="text-left w-full text-wrap break-all">@(IssueDescriptionService.GetIssueData(issue).Name)</p>
                             <p class="text-left w-full text-wrap break-all text-xs">@(GetFileName(file.Path)):@issue.Location.Start.Line</p>
                         </button>
                     </li>

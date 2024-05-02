@@ -87,8 +87,15 @@ else
         NavBarState.TitleRedirect = $"/project/{Id}";
         await InvokeAsync(StateHasChanged);
 
-        UserProject = await HttpClient.GetFromJsonAsync<Project>($"project/{Id}");
-        UserProject?.Reports.Reverse();
+        try
+        {
+            UserProject = await HttpClient.GetFromJsonAsync<Project>($"project/{Id}");
+            UserProject?.Reports.Reverse();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
     }
 
     public void ViewReport(Report report)

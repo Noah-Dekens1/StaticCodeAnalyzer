@@ -8,7 +8,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Domain;
 
 public class Project(string name, string path)
 {
-    private Project() : this(null!, null!) { } // only for EF Core
+    public Project() : this(null!, null!) { } // only for EF Core
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public List<Report> Reports { get; set; } = [];
