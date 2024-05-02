@@ -32,8 +32,8 @@ public class ClassParentAnalyzer : Analyzer
             {
                 issues.Add(new Issue(
                     code: "too-many-class-parents",
-                    description: "This class has too many parents",
-                    location: classDecl.Location
+                    location: classDecl.Location,
+                    severity: GetSeverity()
                 ));
             }
         }

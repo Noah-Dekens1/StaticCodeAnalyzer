@@ -12,7 +12,7 @@
 
     <PackageId>StaticCodeAnalysis.StaticCodeAnalyzer.CLI</PackageId>
 
-    <Version>1.0.16</Version>
+    <Version>1.0.17</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +24,21 @@
       <Content Include="web\\**\*.*" Pack="true" PackagePath="web\">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 

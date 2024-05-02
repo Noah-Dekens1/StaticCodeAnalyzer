@@ -6,12 +6,20 @@ using System.Threading.Tasks;
 
 namespace InfoSupport.StaticCodeAnalyzer.Domain;
 
-public class Issue(string code, string description, CodeLocation location)
+public enum AnalyzerSeverity
 {
-    private Issue() : this(null!, null!, null!) { } // only for EF Core
+    Invalid,
+    Suggestion,
+    Warning,
+    Important,
+}
+
+public class Issue(string code, CodeLocation location, AnalyzerSeverity severity)
+{
+    private Issue() : this(null!, null!, AnalyzerSeverity.Suggestion) { } // only for EF Core
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Code { get; set; } = code;
-    public string Description { get; set; } = description;
     public CodeLocation Location { get; set; } = location;
+    public AnalyzerSeverity AnalyzerSeverity { get; set; } = severity;
 }

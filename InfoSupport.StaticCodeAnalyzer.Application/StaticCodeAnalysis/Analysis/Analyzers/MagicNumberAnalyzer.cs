@@ -27,8 +27,8 @@ public class MagicNumberAnalyzer : Analyzer
 
         issues.AddRange(args.Select(a => new Issue(
             "magic-number",
-            "A magic number makes it harder to understand what the code is doing, name the argument or put it in a variable",
-            a.Location
+            a.Location,
+            severity: GetSeverity()
         )).ToList());
 
         Test(39);

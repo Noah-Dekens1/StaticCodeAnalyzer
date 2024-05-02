@@ -136,7 +136,7 @@ else
                 From = ConvertPosition(code, issue.Location.Start),
                 To = ConvertPosition(code, issue.Location.End) + 1,
                 Severity = "error",
-                Message = issue.Description,
+                Message = "TODO",//issue.Description,
                 Source = "Static Code Analyzer"
             });
         }

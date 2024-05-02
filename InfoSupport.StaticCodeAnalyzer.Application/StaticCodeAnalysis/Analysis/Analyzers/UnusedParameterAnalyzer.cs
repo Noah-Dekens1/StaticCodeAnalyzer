@@ -70,12 +70,12 @@ public class UnusedParameterAnalyzer : Analyzer
         return false;
     }
 
-    private static void ProcessFunction(ProjectRef projectRef, List<Issue> issues, AstNode body, List<ParameterNode> parameters)
+    private void ProcessFunction(ProjectRef projectRef, List<Issue> issues, AstNode body, List<ParameterNode> parameters)
     {
         ControlFlowGraph? cfg = null;
 
-        if (body is IStatementList)
-            projectRef.SemanticModel.AnalyzeControlFlow((IStatementList)body, out cfg);
+        if (body is IStatementList list)
+            projectRef.SemanticModel.AnalyzeControlFlow(list, out cfg);
 
         var traverser = new UnusedParameterTraverser(projectRef.SemanticModel, parameters, cfg);
         traverser.Traverse(body);
@@ -87,8 +87,8 @@ public class UnusedParameterAnalyzer : Analyzer
             issues.Add(
                 new Issue(
                     "unused-parameter",
-                    "This parameter isn't used, remove it or use it in the function.",
-                    unusedParameter.Location
+                    unusedParameter.Location,
+                    severity: GetSeverity()
                 )
             );
         }

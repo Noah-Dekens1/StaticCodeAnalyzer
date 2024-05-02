@@ -10,7 +10,6 @@
 *.userosscache
 *.sln.docstates
 .sonarqube/
-analyzer-config.json
 
 # SQLite databases
 *.db

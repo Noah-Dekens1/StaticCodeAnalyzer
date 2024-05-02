@@ -3,6 +3,7 @@ using System;
 using InfoSupport.StaticCodeAnalyzer.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240502105830_IssueSeverity")]
+    partial class IssueSeverity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
@@ -88,17 +91,11 @@ namespace InfoSupport.StaticCodeAnalyzer.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsSuccess")
-                        .HasColumnType("INTEGER");
-
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("RunAt")
                         .HasColumnType("datetime");
-
-                    b.Property<long>("SeverityScore")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

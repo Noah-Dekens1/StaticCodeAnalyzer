@@ -26,8 +26,8 @@ public class MethodParameterCountAnalyzer : Analyzer
         {
             issues.Add(new Issue(
                 code: "too-many-method-parameters",
-                description: "This method has too many parameters, consider passing them through a seperate data class or struct",
-                location: ((AstNode)method).Location
+                location: ((AstNode)method).Location,
+                severity: GetSeverity()
             ));
         }
 

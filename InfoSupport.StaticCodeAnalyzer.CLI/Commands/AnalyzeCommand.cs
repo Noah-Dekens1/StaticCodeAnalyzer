@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -97,7 +98,16 @@ internal class AnalyzeCommand : ICommandHandler
             }
         }
 
+
         Console.WriteLine($"Finished! Found {report.ProjectFiles.Sum(f => f.Issues.Count)} issues in {report.ProjectFiles.Count} files");
+        
+        if (!report.IsSuccess)
+        {
+            Console.WriteLine("Code Guard check did not pass!");
+            Console.WriteLine($"Severity score exceeded threshold: {report.SeverityScore}");
+
+            Environment.Exit(1);
+        }
     }
 
     private static string GetDirectoryName(string directory)
