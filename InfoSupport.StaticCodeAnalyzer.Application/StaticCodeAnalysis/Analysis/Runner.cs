@@ -45,10 +45,12 @@ public class Runner
 
         var configPath = Path.Join(project.Path, "analyzer-config.json");
 
+        Configuration? config = null;
+
         if (File.Exists(configPath))
         {
             var content = File.ReadAllText(configPath);
-            var config = JsonSerializer.Deserialize<Configuration>(content, GetOptions());
+            config = JsonSerializer.Deserialize<Configuration>(content, GetOptions());
             
             if (config is null || config.Analyzers.Count == 0)
             {
@@ -69,6 +71,13 @@ public class Runner
             {
                 analyzer.AnalyzersListConfig = emptyConfig;
             }
+
+            config = new Configuration()
+            {
+                Analyzers = [emptyConfig],
+                CodeGuard = new CodeGuardConfig(),
+                Severities = new SeverityConfig()
+            };
         }
 
         int successCount = 0;
@@ -129,11 +138,31 @@ public class Runner
             projectFiles.Add(projectFile);
         }
 
-        return new Report(project, projectFiles);
+        var severityScore = CalculateSeverityScore(config!.Severities, projectFiles.SelectMany(f => f.Issues).ToList());
+        bool success = !config.CodeGuard.FailOnReachSeverityScore
+            || severityScore <= config.CodeGuard.MaxAllowedSeverityScore;
+
+        return new Report(project, projectFiles, success, severityScore);
     }
 
     private static string[] GetFilesInProject(Project project)
     {
         return Directory.GetFiles(project.Path, "*.cs", SearchOption.AllDirectories);
+    }
+
+    private static uint GetScoreForSeverity(SeverityConfig config, AnalyzerSeverity severity)
+    {
+        return severity switch
+        {
+            AnalyzerSeverity.Suggestion => config.Suggestion,
+            AnalyzerSeverity.Warning => config.Warning,
+            AnalyzerSeverity.Important => config.Important,
+            _ => 0
+        };
+    }
+
+    private static long CalculateSeverityScore(SeverityConfig config, List<Issue> issues)
+    {
+        return issues.Sum(i => GetScoreForSeverity(config, i.AnalyzerSeverity));
     }
 }

@@ -13,6 +13,9 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis
 public class Configuration
 {
     public required List<AnalyzersListConfig> Analyzers { get; set; }
+
+    public required SeverityConfig Severities { get; set; }
+    public required CodeGuardConfig CodeGuard { get; set; }
 }
 
 public class AnalyzersListConfig
@@ -31,6 +34,19 @@ public class AnalyzersListConfig
     
     // Unused
     public AnalyzerConfig DuplicateCode { get; set; } = new();
+}
+
+public class SeverityConfig
+{
+    public uint Suggestion { get; set; } = 0;
+    public uint Warning { get; set; } = 1;
+    public uint Important { get; set; } = 5;
+}
+
+public class CodeGuardConfig
+{
+    public bool FailOnReachSeverityScore { get; set; } = true;
+    public uint MaxAllowedSeverityScore { get; set; } = 50;
 }
 
 public class AnalyzerConfig

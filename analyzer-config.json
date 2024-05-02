@@ -3,59 +3,50 @@
     {
       "class_parents": {
         "enabled": true,
-        "severity": "warning",
         "max_parents": 10
       },
       "large_methods": {
         "enabled": true,
-        "severity": "warning",
-        "max_statements": 30
+        "max_statements": 70
       },
       "if_else": {
         "enabled": true,
-        "severity": "warning",
         "max_elses": 7
       },
       "large_types": {
         "enabled": true,
-        "severity": "warning",
-        "max_members": 30
+        "max_members": 50
       },
       "magic_numbers": {
-        "enabled": true,
-        "severity": "suggestion"
+        "enabled": false
       },
       "method_parameter_count": {
         "enabled": true,
-        "severity": "warning",
         "max_parameters": 5
       },
       "nested_ternary": {
         "enabled": true,
-        "severity": "warning"
+        "severity": "important"
       },
       "partial_variable_assignment": {
-        "enabled": true,
-        "severity": "warning"
+        "enabled": true
       },
       "switch_cases": {
         "enabled": true,
-        "severity": "warning",
         "max_cases": 20
       },
       "test_assertions": {
         "enabled": true,
-        "severity": "warning",
         "any_name_including_assert": true,
-        "check_called_methods": true,
-        "use_custom_assertion_methods": false,
+        "check_called_methods": false,
+        "use_custom_assertion_methods": true,
         "assertion_methods": [
-          "Validate"
+          "ValidateTokens",
+          "ValidateTokenPositions"
         ]
       },
       "unused_parameters": {
         "enabled": true,
-        "severity": "warning",
         "ignore_when_implementing_types": [
 
         ]
@@ -65,7 +56,7 @@
   "severities": {
     "suggestion": 0,
     "warning": 1,
-    "important": 5
+    "important": 15
   },
   "code_guard": {
     "fail_on_reach_severity_score": true,
