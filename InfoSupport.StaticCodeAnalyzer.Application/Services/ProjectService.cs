@@ -59,7 +59,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         if (project.Path.EndsWith('/'))
             project.Path = project.Path.TrimEnd('/');
 
-        // Review: Instead of using AddRange you should use the non async Add variant
+        // Review: Instead of using AddAsync you should use the non async Add variant
         // AddAsync is only relevant if for a very specific (e.g. Hi/Lo id generator) reason you need to know the id of the entity before it is saved.
         // When executing the .Add method, only the change tracker of EF will be updated, no database call will be made until the SaveChangesAsync method is called.
         // There it is important the method has a CancellationToken passed, as it will be used to cancel the (potentially long running) operation if needed.
