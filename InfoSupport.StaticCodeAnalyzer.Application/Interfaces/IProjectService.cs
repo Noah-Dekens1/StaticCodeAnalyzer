@@ -10,7 +10,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.Interfaces;
 
 public interface IProjectService
 {
-    public Task<Project> CreateProject(Project project);
+    public Task<Project> CreateProject(Project project, CancellationToken cancellationToken);
     public Task<List<Project>> GetAllProjects();
     public Task<Project?> GetProjectById(Guid id);
     public Task<Project?> DeleteProject(Guid id);

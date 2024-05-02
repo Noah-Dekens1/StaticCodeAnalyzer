@@ -9,6 +9,8 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 
+// Review: Ideally your Application layer does not know about the CLI. 
+// You should treat the CLI as a another interface of your application, and not as part of the application itself.
 public class CodeDisplayCLI
 {
     private static bool HighlightEnabled = false;

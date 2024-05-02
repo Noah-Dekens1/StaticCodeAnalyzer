@@ -10,16 +10,18 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
 
 [DebuggerDisplay("{Name}")]
-public class NamespaceRepNode(string name)
+public record NamespaceRepNode
 {
-    public string Name { get; set; } = name;
-    public List<NamespaceRepNode> Namespaces { get; set; } = [];
-    public List<TypeDeclarationNode> TypeDeclarations { get; set; } = [];
+    // Review: Sometimes not using a primary ctor but using the required and init keyword is more readable
+    // This is subjective of course
+    public required string Name { get; init; }
+    public List<NamespaceRepNode> Namespaces { get; } = [];
+    public List<TypeDeclarationNode> TypeDeclarations { get; } = [];
 }
 
 public class TypeLookup
 {
-    public NamespaceRepNode Root { get; set; } = new("");
+    public NamespaceRepNode Root { get; set; } = new() { Name = "" };
 
     public void GenerateTypeMappings(ProjectRef projectRef)
     {
@@ -39,7 +41,7 @@ public class TypeLookup
         if (result is not null)
             return result;
 
-        result = new NamespaceRepNode(name);
+        result = new NamespaceRepNode { Name = name };
 
         ns.Namespaces.Add(result);
 

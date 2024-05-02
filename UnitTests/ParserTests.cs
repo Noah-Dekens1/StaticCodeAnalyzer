@@ -30,6 +30,7 @@ public class ParserTests
 
     private static void CheckNodesEmittedRecursive(AstNode node)
     {
+        // Review: Can you explain why the #if DEBUG preprocessor directive is used here?
 #if DEBUG
         Assert.IsTrue(node.ConstructedInEmit, $"Node of type {node.GetType().Name} was not cnstructed in an Emit() method, this will break code locations!");
 

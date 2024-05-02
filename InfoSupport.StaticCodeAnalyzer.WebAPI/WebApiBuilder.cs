@@ -43,9 +43,11 @@ public class WebApiBuilder
 
         var app = builder.Build();
 
-        using (var serviceScope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
+        // Review: Try to avoid using the ! operator, it can lead to NullReferenceExceptions.
+        // Instead, use GetRequiredService to throw an exception if the service is not found.
+        // In this case you already have access to the IServiceProvider. There is no need to first call: GetService<IServiceScopeFactory>()
+        using (var serviceScope = app.Services.CreateScope())
         {
-
             var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             context.Database.Migrate();
         }
@@ -58,8 +60,8 @@ public class WebApiBuilder
         app.MapGet("/api/projects", async (IProjectService projectService) =>
             await projectService.GetAllProjects());
 
-        app.MapPost("/api/project", async (IProjectService projectService, Project project) =>
-            await projectService.CreateProject(project));
+        app.MapPost("/api/project", async (IProjectService projectService, Project project, CancellationToken cancellationToken) =>
+            await projectService.CreateProject(project, cancellationToken));
 
         app.MapGet("/api/project/{id}", async (IProjectService projectService, Guid id) =>
             await projectService.GetProjectById(id));
@@ -70,6 +72,7 @@ public class WebApiBuilder
         app.MapPost("/api/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
             await projectService.StartAnalysis(id));
 
+        // Review: If projectId is not used, why not create a /api/report/{reportId} endpoint?
         app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
             await reportService.GetReportById(reportId));
 
@@ -78,7 +81,13 @@ public class WebApiBuilder
 
         app.MapPost("/api/project/{projectId}/config/open", async (IProjectService projectService, Guid projectId) =>
             await projectService.OpenConfiguration(projectId));
-
+        
+        // Suggestion for future projects: Use the Health Checks feature of dotnet core.
+        // This can even be used to monitor your infrastructure dependencies (e.g. database)
+        // And differentiate between readiness and liveness checks.
+        // - Readiness indicates if the app is running normally but isn't ready to receive requests.
+        // - Liveness indicates if an app has crashed and must be restarted.
+        // https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/health-checks?view=aspnetcore-8.0
         app.MapGet("/api/online", () => true);
 
         app.UseWebAssemblyDebugging();

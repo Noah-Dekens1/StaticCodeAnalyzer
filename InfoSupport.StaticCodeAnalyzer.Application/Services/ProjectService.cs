@@ -15,10 +15,10 @@ using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.Services;
 
+// Review: When using primary constructors there is no need to make a private field for the context.
+// https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/tutorials/primary-constructors
 public class ProjectService(ApplicationDbContext context) : IProjectService
 {
-    private readonly ApplicationDbContext _context = context;
-
     public static void CreateConfigFileInternal(string configFilePath)
     {
         if (!File.Exists(configFilePath))
@@ -38,7 +38,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
     public async Task<string?> CreateConfiguration(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await context.Projects.FindAsync(id);
 
         if (project is null)
             return null;
@@ -50,54 +50,60 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         return configFilePath;
     }
 
-    public async Task<Project> CreateProject(Project project)
+    // Review: Try to always use CancellationToken when writing async methods.
+    // Dotnet will give you access to the CancellationToken from the Minimal API and you can pass it to the method.
+    public async Task<Project> CreateProject(Project project, CancellationToken cancellationToken)
     {
         project.Path = project.Path.Replace('\\', '/');
 
         if (project.Path.EndsWith('/'))
             project.Path = project.Path.TrimEnd('/');
 
-        await _context.Projects.AddAsync(project);
-        await _context.SaveChangesAsync();
+        // Review: Instead of using AddAsync you should use the non async Add variant
+        // AddAsync is only relevant if for a very specific (e.g. Hi/Lo id generator) reason you need to know the id of the entity before it is saved.
+        // When executing the .Add method, only the change tracker of EF will be updated, no database call will be made until the SaveChangesAsync method is called.
+        // There it is important the method has a CancellationToken passed, as it will be used to cancel the (potentially long running) operation if needed.
+        context.Projects.Add(project);
+        await context.SaveChangesAsync(cancellationToken);
 
         return project;
     }
 
     public async Task<Report?> CreateReport(Guid projectId, Report report)
     {
-        var project = await _context.Projects.FindAsync(projectId);
+        var project = await context.Projects.FindAsync(projectId);
 
         if (project is null)
             return null;
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return report;
     }
 
     public async Task<Project?> DeleteProject(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await context.Projects.FindAsync(id);
 
         if (project is null)
             return null;
 
-        _context.Projects.Remove(project);
-        await _context.SaveChangesAsync();
+        context.Projects.Remove(project);
+        await context.SaveChangesAsync();
 
         return project;
     }
 
     public async Task<List<Project>> GetAllProjects()
     {
-        return await _context.Projects.ToListAsync();
+        return await context.Projects.ToListAsync();
     }
 
     public async Task<Project?> GetProjectById(Guid id)
     {
-        return await _context.Projects
+        return await context.Projects
             .Where(p => p.Id == id)
             .Include(p => p.Reports)
             .FirstOrDefaultAsync();
@@ -105,7 +111,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
     public async Task OpenConfiguration(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id) 
+        var project = await context.Projects.FindAsync(id) 
             ?? throw new ArgumentException("Project with id not found");
 
         var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
@@ -121,7 +127,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
     public async Task<Report?> StartAnalysis(Guid id)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await context.Projects.FindAsync(id);
 
         if (project is null)
             return null;
@@ -131,7 +137,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return report;
     }
@@ -143,8 +149,8 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
 
         project.Id = id;
 
-        _context.Update(project);
-        await _context.SaveChangesAsync();
+        context.Update(project);
+        await context.SaveChangesAsync();
 
         return project;
     } 
