@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace InfoSupport.StaticCodeAnalyzer.Domain;
 public class ProjectFile(string name, string path, string? content)
 {
-    private ProjectFile() : this(null!, null!, null!) { }  // only for EF Core
+    public ProjectFile() : this(null!, null!, null!) { }  // only for EF Core
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = name;

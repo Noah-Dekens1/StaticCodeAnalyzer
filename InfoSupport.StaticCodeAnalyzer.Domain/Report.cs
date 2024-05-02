@@ -9,7 +9,7 @@ namespace InfoSupport.StaticCodeAnalyzer.Domain;
 
 public class Report(Project project, List<ProjectFile> projectFiles, bool success, long severityscore)
 {
-    private Report() : this(null!, null!, false, 0) { }  // only for EF Core
+    public Report() : this(null!, null!, false, 0) { }  // only for EF Core
 
     public Guid Id { get; set; } = Guid.NewGuid();
 

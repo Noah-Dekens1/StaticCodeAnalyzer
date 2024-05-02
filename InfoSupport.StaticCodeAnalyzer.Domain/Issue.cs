@@ -16,7 +16,7 @@ public enum AnalyzerSeverity
 
 public class Issue(string code, CodeLocation location, AnalyzerSeverity severity)
 {
-    private Issue() : this(null!, null!, AnalyzerSeverity.Suggestion) { } // only for EF Core
+    public Issue() : this(null!, null!, AnalyzerSeverity.Suggestion) { } // only for EF Core
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Code { get; set; } = code;

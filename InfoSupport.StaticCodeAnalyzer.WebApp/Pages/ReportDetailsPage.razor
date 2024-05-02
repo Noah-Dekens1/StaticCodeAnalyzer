@@ -132,11 +132,12 @@ else
 
         foreach (var issue in issues)
         {
+            var meta = IssueDescriptionService.GetIssueData(issue);
             result.Add(new CodeMirrorDiagnostic {
                 From = ConvertPosition(code, issue.Location.Start),
                 To = ConvertPosition(code, issue.Location.End) + 1,
-                Severity = "error",
-                Message = "TODO",//issue.Description,
+                Severity = meta.Severity,
+                Message = meta.Description,
                 Source = "Static Code Analyzer"
             });
         }

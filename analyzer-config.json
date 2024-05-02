@@ -18,7 +18,8 @@
         "max_members": 50
       },
       "magic_numbers": {
-        "enabled": false
+        "enabled": false,
+        "severity": "suggestion"
       },
       "method_parameter_count": {
         "enabled": true,
@@ -56,7 +57,7 @@
   "severities": {
     "suggestion": 0,
     "warning": 1,
-    "important": 15
+    "important": 2
   },
   "code_guard": {
     "fail_on_reach_severity_score": true,
