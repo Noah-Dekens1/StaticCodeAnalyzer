@@ -43,7 +43,7 @@
           "Validate"
         ]
       },
-      "unused_parameter_analyzer": {
+      "unused_parameters": {
         "enabled": true,
         "ignore_when_implementing_types": [
 
