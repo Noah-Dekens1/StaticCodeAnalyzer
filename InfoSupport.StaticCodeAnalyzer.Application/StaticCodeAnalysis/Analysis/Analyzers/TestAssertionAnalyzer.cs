@@ -104,8 +104,8 @@ public class TestAssertionAnalyzer : Analyzer
                 issues.Add(
                     new Issue(
                         "test-method-without-assertion",
-                        "This test method doesn't contain an assertion resulting in nothing being tested",
-                        test.Location
+                        test.Location,
+                        severity: GetSeverity()
                     )
                 );
             }

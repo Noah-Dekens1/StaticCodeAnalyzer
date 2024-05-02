@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
+using InfoSupport.StaticCodeAnalyzer.Domain;
+
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 
 public class Configuration
@@ -31,18 +33,19 @@ public class AnalyzersListConfig
     public AnalyzerConfig DuplicateCode { get; set; } = new();
 }
 
-
-public enum AnalyzerSeverity
-{
-    Suggestion,
-    Warning,
-    Important,
-}
-
 public class AnalyzerConfig
 {
     public bool Enabled { get; set; } = true;
     public string Severity { get; set; } = "warning";
+
+    public AnalyzerSeverity AnalyzerSeverity
+        => Severity switch
+        {
+            "suggestion" => AnalyzerSeverity.Suggestion,
+            "warning" => AnalyzerSeverity.Warning,
+            "important" => AnalyzerSeverity.Important,
+            _ => AnalyzerSeverity.Invalid,
+        };
 }
 
 public class MaxParentsConfig : AnalyzerConfig

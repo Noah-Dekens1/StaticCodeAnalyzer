@@ -27,8 +27,8 @@ public class LargeMethodAnalyzer : Analyzer
             issues.Add(
                 new Issue(
                     "method-too-large",
-                    "Large methods can be difficult to read and may contain duplicated code, split up the method in smaller methods",
-                    ((AstNode)method).Location
+                    ((AstNode)method).Location,
+                    severity: GetSeverity()
                 )
             );
         }

@@ -27,8 +27,8 @@ public class LargeTypeAnalyzer : Analyzer
             issues.Add(
                 new Issue(
                     "class-too-large",
-                    "Large classes can be difficult to read and may contain duplicated code, considering splitting up the class by using inheritence or composition",
-                    type.Location
+                    type.Location,
+                    severity: GetSeverity()
                 )
             );
         }

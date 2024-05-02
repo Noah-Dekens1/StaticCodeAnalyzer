@@ -35,8 +35,8 @@ public class PartialVariableAssignmentAnalyzer : Analyzer
         {
             issues.Add(new Issue(
                 "partial-variable-assignment",
-                "If only a few variables are assigned in a single variable declaration with multiple declarators it can become unclear which variables are assigned to",
-                partialDeclarator.Location
+                partialDeclarator.Location, 
+                severity: GetSeverity()
             ));
         }
 

@@ -26,8 +26,8 @@ public class SwitchCasesAnalyzer : Analyzer
         {
             issues.Add(new Issue(
                 "switch-too-many-cases",
-                "Too many switch cases can become unreadable, try to split up the code more or use a lookup dictionary",
-                switchStatement.Location
+                switchStatement.Location, 
+                severity: GetSeverity()
             ));
         }
 

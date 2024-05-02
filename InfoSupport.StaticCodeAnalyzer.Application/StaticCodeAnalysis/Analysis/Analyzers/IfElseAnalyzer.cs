@@ -40,8 +40,8 @@ public class IfElseAnalyzer : Analyzer
         {
             issues.Add(new Issue(
                 "too-many-elses",
-                "This if statement has too many elses, try refactoring your code to make it more readable",
-                ifStatement.Location
+                ifStatement.Location,
+                severity: GetSeverity()
             ));
         }
 

@@ -22,7 +22,10 @@ public class NestedTernaryAnalyzer : Analyzer
             .ToList();
 
         issues.AddRange(ternaryExpressions
-            .Select(e => new Issue("nested-ternary", "Nested ternary expressions can be difficult to read and debug", e.Location))
+            .Select(e => new Issue(
+                "nested-ternary", 
+                e.Location, 
+                severity: GetSeverity()))
             .ToList()
         );
 
