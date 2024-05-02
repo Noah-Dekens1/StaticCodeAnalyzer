@@ -32,9 +32,17 @@ public class AnalyzersListConfig
 }
 
 
+public enum AnalyzerSeverity
+{
+    Suggestion,
+    Warning,
+    Important,
+}
+
 public class AnalyzerConfig
 {
     public bool Enabled { get; set; } = true;
+    public string Severity { get; set; } = "warning";
 }
 
 public class MaxParentsConfig : AnalyzerConfig

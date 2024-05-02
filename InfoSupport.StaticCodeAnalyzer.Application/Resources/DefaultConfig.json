@@ -3,39 +3,49 @@
     {
       "class_parents": {
         "enabled": true,
+        "severity": "warning",
         "max_parents": 10
       },
       "large_methods": {
         "enabled": true,
+        "severity": "warning",
         "max_statements": 30
       },
       "if_else": {
         "enabled": true,
+        "severity": "warning",
         "max_elses": 7
       },
       "large_types": {
         "enabled": true,
+        "severity": "warning",
         "max_members": 30
       },
       "magic_numbers": {
-        "enabled": true
+        "enabled": true,
+        "severity": "suggestion"
       },
       "method_parameter_count": {
         "enabled": true,
+        "severity": "warning",
         "max_parameters": 5
       },
       "nested_ternary": {
-        "enabled": true
+        "enabled": true,
+        "severity": "warning"
       },
       "partial_variable_assignment": {
-        "enabled": true
+        "enabled": true,
+        "severity": "warning"
       },
       "switch_cases": {
         "enabled": true,
+        "severity": "warning",
         "max_cases": 20
       },
       "test_assertions": {
         "enabled": true,
+        "severity": "warning",
         "any_name_including_assert": true,
         "check_called_methods": true,
         "use_custom_assertion_methods": false,
@@ -45,6 +55,7 @@
       },
       "unused_parameters": {
         "enabled": true,
+        "severity": "warning",
         "ignore_when_implementing_types": [
 
         ]
