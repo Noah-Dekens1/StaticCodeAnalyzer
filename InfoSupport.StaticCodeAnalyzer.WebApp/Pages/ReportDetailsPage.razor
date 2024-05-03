@@ -80,8 +80,7 @@ else
         Project = await HttpClient.GetFromJsonAsync<Project>($"project/{ProjectId}");
         UserReport = await HttpClient.GetFromJsonAsync<Report>($"project/{ProjectId}/report/{Id}");
 
-        NavBarState.PageTitle = $"Project {Project?.Name ?? "Invalid"}";
-        NavBarState.TitleRedirect = $"/project/{ProjectId}";
+        NavBarState.UpdateTitle($"Project {Project?.Name ?? "Invalid"}", $"/project/{ProjectId}");
         await InvokeAsync(StateHasChanged);
     }
 

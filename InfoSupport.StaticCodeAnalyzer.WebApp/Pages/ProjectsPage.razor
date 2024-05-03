@@ -126,8 +126,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        NavBarState.PageTitle = "Dashboard";
-        NavBarState.TitleRedirect = "/projects";
+        NavBarState.UpdateTitle("Dashboard", "/projects");
         await InvokeAsync(StateHasChanged);
 
         UserProjects = await HttpClient.GetFromJsonAsync<List<Project>>("projects");

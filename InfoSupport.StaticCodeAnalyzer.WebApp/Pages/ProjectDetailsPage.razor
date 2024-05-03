@@ -101,9 +101,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        NavBarState.PageTitle = $"Project {UserProject?.Name ?? "Invalid"}";
-        NavBarState.TitleRedirect = $"/project/{Id}";
-        await InvokeAsync(StateHasChanged);
 
         try
         {
@@ -114,6 +111,9 @@ else
         {
             Console.WriteLine(ex);
         }
+
+        NavBarState.UpdateTitle($"Project {UserProject?.Name ?? "Invalid"}", NavigationManager.Uri);
+        await InvokeAsync(StateHasChanged);
     }
 
     public void ViewReport(Report report)
