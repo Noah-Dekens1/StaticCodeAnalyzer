@@ -19,6 +19,17 @@
     </div>
 </dialog>
 
+<dialog id="delete_report_modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete Report</h3>
+        <p>Are you sure you want to delete this report?</p>
+        <div class="modal-action">
+            <button type="submit" class="btn btn-error" @onclick="HandleDeleteReport">Delete</button>
+            <button type="button" class="btn" onclick="document.getElementById('delete_report_modal').close()">Cancel</button>
+        </div>
+    </div>
+</dialog>
+
 <script>
     function closeModal(modalId) {
         var modal = document.getElementById(modalId);
@@ -49,6 +60,12 @@ else
         <button class="btn join-item" @onclick="EditConfig">Edit config</button>
     </div>
 
+    @if (UserProject.Reports.Count == 0)
+    {
+        <div class="p-8">
+            <p>No reports have been created yet, click on "Analyze" to create one.</p>
+        </div>
+    }
     <div class="grid grid-cols-4 gap-4 p-8">
         @foreach (var report in UserProject.Reports)
         {
@@ -56,6 +73,7 @@ else
                 <div class="card-body">
                     <h2 class="card-title">Report @@ @report.RunAt</h2>
                     <div class="card-actions justify-end">
+                        <button class="btn glass" @onclick="() => RequestDeleteReport(report)">Delete</button>
                         <button class="btn" @onclick="() => ViewReport(report)">View</button>
                     </div>
                 </div>
@@ -147,6 +165,35 @@ else
             ConfigModalDescription = "Failed to open config for editing! Does it exist?";
 
             await JSRuntime.InvokeVoidAsync("showModal", "config_created_modal");
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private Report? _reportDeleteRequestedFor = null;
+
+    private async void RequestDeleteReport(Report report)
+    {
+        _reportDeleteRequestedFor = report;
+        await JSRuntime.InvokeVoidAsync("showModal", "delete_report_modal");
+    }
+
+    private async void HandleDeleteReport()
+    {
+        await JSRuntime.InvokeVoidAsync("closeModal", "delete_report_modal");
+
+        if (_reportDeleteRequestedFor is not null)
+        {
+            var response = await HttpClient.DeleteAsync($"project/{UserProject!.Id}/report/{_reportDeleteRequestedFor.Id}");
+            _reportDeleteRequestedFor = null;
+            try
+            {
+                UserProject = await HttpClient.GetFromJsonAsync<Project>($"project/{Id}");
+                UserProject?.Reports.Reverse();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
             await InvokeAsync(StateHasChanged);
         }
     }
