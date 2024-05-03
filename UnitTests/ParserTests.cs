@@ -6210,4 +6210,43 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_StaticUsingDirective_ShouldReturnValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            using static System.Console;
+            global using static global::System.Runtime.CompilerServices;
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.UsingDirectives.AddRange([
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new IdentifierExpression("System"),
+                    identifier: new IdentifierExpression("Console")
+                ),
+                alias: null,
+                isStatic: true
+            ),
+            new UsingDirectiveNode(
+                ns: new QualifiedNameNode(
+                    lhs: new QualifiedNameNode(
+                        lhs: new IdentifierExpression("System"),
+                        identifier: new IdentifierExpression("Runtime")
+                    ),
+                    identifier: new IdentifierExpression("CompilerServices")
+                ),
+                alias: null,
+                isGlobal: true,
+                isNamespaceGlobal: true,
+                isStatic: true
+            )
+        ]);
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

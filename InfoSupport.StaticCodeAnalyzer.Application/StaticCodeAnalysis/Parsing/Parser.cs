@@ -2256,6 +2256,8 @@ public class Parser
 
         Expect(TokenKind.UsingKeyword);
 
+        var isStatic = ConsumeIfMatch(TokenKind.StaticKeyword);
+
         var hasAlias = PeekSafe().Kind == TokenKind.Equals;
         string? alias = null;
 
@@ -2298,13 +2300,13 @@ public class Parser
         {
             var type = ParseType();
             Expect(TokenKind.Semicolon);
-            return Emit(new UsingDirectiveNode(type, alias, isGlobal, isNamespaceGlobal), start);
+            return Emit(new UsingDirectiveNode(type, alias, isGlobal, isNamespaceGlobal, isStatic), start);
         }
 
         var ns = ParseQualifiedName();
         Expect(TokenKind.Semicolon);
 
-        return Emit(new UsingDirectiveNode(ns, alias, isGlobal, isNamespaceGlobal), start);
+        return Emit(new UsingDirectiveNode(ns, alias, isGlobal, isNamespaceGlobal, isStatic), start);
     }
 
     private ReturnStatementNode ParseReturnStatement()
@@ -2724,7 +2726,8 @@ public class Parser
         if (MatchesLexeme("global") && Matches(TokenKind.UsingKeyword, 1))
             return true;
 
-        if (Matches(TokenKind.UsingKeyword) && MatchesLexeme("global", peekOffset: 1))
+        if (Matches(TokenKind.UsingKeyword) && 
+            (MatchesLexeme("global", peekOffset: 1) || Matches(TokenKind.StaticKeyword, 1)))
             return true;
 
         bool isUsingDirective = true;
