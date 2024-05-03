@@ -6177,4 +6177,37 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_EventMember_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+            class Example
+            {
+                public event EventHandler ThresholdReached;
+            }
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.TypeDeclarations.Add(
+            new ClassDeclarationNode(
+                className: AstUtils.SimpleName("Example"),
+                members: [
+                    new FieldMemberNode(
+                        accessModifier: AccessModifier.Public,
+                        modifiers: [],
+                        fieldName: "ThresholdReached",
+                        fieldType: AstUtils.SimpleNameAsType("EventHandler"),
+                        value: null,
+                        isEvent: true
+                    )
+                ]
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }

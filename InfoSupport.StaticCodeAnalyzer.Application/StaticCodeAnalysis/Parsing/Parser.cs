@@ -3322,10 +3322,13 @@ public class Parser
         if (kind == TypeKind.Enum)
             return ParseEnumMember(attributes, start);
 
+
         var name = ResolveNameFromAstNode(typeName);
 
         ParseModifiers(out var accessModifier, out var modifiers);
         var isCtor = PeekCurrent().Lexeme == name && PeekSafe().Kind == TokenKind.OpenParen;
+        
+        var isEvent = ConsumeIfMatch(TokenKind.EventKeyword);
 
         if (isCtor)
             return ParseConstructor(accessModifier ?? AccessModifier.Private, attributes, start);
@@ -3341,7 +3344,7 @@ public class Parser
             var hasValue = ConsumeIfMatch(TokenKind.Equals);
             var value = hasValue ? ParseExpression() : null;
             Expect(TokenKind.Semicolon);
-            return Emit(new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, ResolveNameFromAstNode(identifier), type, value, attributes), start);
+            return Emit(new FieldMemberNode(accessModifier ?? AccessModifier.Private, modifiers, ResolveNameFromAstNode(identifier), type, value, attributes, isEvent), start);
         }
         else if (isProperty)
         {

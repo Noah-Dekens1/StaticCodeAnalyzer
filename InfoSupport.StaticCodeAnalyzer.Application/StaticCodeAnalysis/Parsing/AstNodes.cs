@@ -1038,13 +1038,14 @@ public abstract class MemberNode(List<AttributeNode>? attributes = null) : AstNo
 }
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifier> modifiers, string fieldName, TypeNode fieldType, ExpressionNode? value, List<AttributeNode>? attributes = null) : MemberNode(attributes)
+public class FieldMemberNode(AccessModifier accessModifier, List<OptionalModifier> modifiers, string fieldName, TypeNode fieldType, ExpressionNode? value, List<AttributeNode>? attributes = null, bool isEvent=false) : MemberNode(attributes)
 {
     public AccessModifier AccessModifier = accessModifier;
     public List<OptionalModifier> Modifiers = modifiers;
     public string FieldName { get; } = fieldName;
     public TypeNode FieldType { get; } = fieldType;
     public ExpressionNode? Value { get; } = value;
+    public bool IsEvent { get; } = isEvent;
 
     public override List<AstNode> Children => [..Attributes, ..Utils.ParamsToList<AstNode>(FieldType, Value)];
 
