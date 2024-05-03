@@ -1,7 +1,7 @@
 # Static Code Analyzer
 
 ## About
-This is an internship project to create a static code analyzer. A static code analyzer is a tool to find problems in your code without running it.
+This is an internship project to create a static code analyzer. A static code analyzer is a tool to find problems in code without running it.
 This is a learning project and not meant to compete with any existing static code analyzers.
 The analyzer contains a self-made C# lexer and parser. The analyzer supports a (large but incomplete) subset of the C# language.
 
@@ -38,7 +38,7 @@ Example step for github actions (see the [self analyze](https://github.com/Noah-
    run: dotnet tool install --global StaticCodeAnalysis.StaticCodeAnalyzer.CLI && analyzer analyze --output-console
 ```
 
-Whether the analyzer succeeds depends on the provided configuration. To view all the issues you can read the output log of the action, a separate report is not published.
+Whether the analyzer succeeds depends on the provided [configuration](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/wiki/Reference-Guide.md#configuration-options). To view all the issues you can read the output log of the action, a separate report is not published.
 
 ### Configuring the analyzer
 
@@ -58,4 +58,4 @@ To create a default variant of the config file, you can use either the command-l
 3) Use the "Create config" button followed by the "Edit config" to open the config file in your default editor
 
 #### Editing the config file
-The various options are present in the default config file. To see all the different options and descriptions of config items you can check out the wiki in this project for a full reference guide.
+The various options are present in the default config file. To see all the different options and descriptions of config items you can check out the wiki in this project for a full [reference guide](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/wiki/Reference-Guide.md).
