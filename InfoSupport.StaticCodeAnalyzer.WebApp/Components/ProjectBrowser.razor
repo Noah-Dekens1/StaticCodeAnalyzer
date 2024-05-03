@@ -2,8 +2,8 @@
 @using System.Diagnostics.CodeAnalysis
 @using InfoSupport.StaticCodeAnalyzer.WebApp.Services
 
-<div class="flex w-full h-full overflow-hidden">
-    <div class="w-2/5 h-full relative overflow-auto">
+<div class="flex h-full overflow-hidden">
+    <div class="w-80 h-full relative overflow-auto">
         <div class="form-control">
             <label class="label cursor-pointer">
                 <span class="label-text">Filter on files</span>
@@ -48,7 +48,7 @@
         
     </div>
     <div class="divider divider-horizontal"></div>
-    <div class="w-2/5 h-full relative overflow-auto">
+    <div class="w-80 h-full relative overflow-auto">
         @if (GetFilteredFiles().Sum(f => f.Issues.Count) == 0)
         {
             if (Report is not null && Report.ProjectFiles.Sum(f => f.Issues.Count) == 0)

@@ -1,6 +1,7 @@
 ﻿@using InfoSupport.StaticCodeAnalyzer.WebApp.Services
 
 @inject NavigationManager NavigationManager;
+@inject NavBarStateService NavBarStateService;
 
 <nav class="flex">
     <div class="navbar bg-base-100">
@@ -25,7 +26,12 @@
 
     protected override void OnInitialized()
     {
-
+        NavBarStateService.OnPageTitleUpdate += async (obj, args) =>
+        {
+            PageTitle = args.Title;
+            TitleRedirect = args.Redirect;
+            await InvokeAsync(StateHasChanged);
+        };
     }
 
     public void SetPageInfo(string pageTitle, string titleRedirect)

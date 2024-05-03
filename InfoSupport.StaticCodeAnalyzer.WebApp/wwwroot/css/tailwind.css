@@ -2390,8 +2390,12 @@ html {
   height: 100vh;
 }
 
-.w-2\/5 {
-  width: 40%;
+.w-80 {
+  width: 20rem;
+}
+
+.w-auto {
+  width: auto;
 }
 
 .w-full {
@@ -2400,6 +2404,14 @@ html {
 
 .flex-1 {
   flex: 1 1 0%;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 
 .-translate-x-1\/2 {
@@ -2418,10 +2430,6 @@ html {
 
 .cursor-pointer {
   cursor: pointer;
-}
-
-.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .grid-cols-4 {

@@ -15,6 +15,17 @@ public class ReportService(ApplicationDbContext context) : IReportService
 {
     private readonly ApplicationDbContext _context = context;
 
+    public async Task DeleteReportById(Guid id)
+    {
+        var report = await _context.Reports.FindAsync(id);
+
+        if (report is null)
+            return;
+
+        _context.Reports.Remove(report);
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<Report?> GetReportById(Guid id)
     {
         return await _context.Reports

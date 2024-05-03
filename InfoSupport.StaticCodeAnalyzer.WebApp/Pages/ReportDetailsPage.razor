@@ -23,33 +23,30 @@ else
     <p class="ml-8">This report contains @(UserReport.ProjectFiles.Sum(f => f.Issues.Count)) issues</p>
     *@
 
-    <div class="grid grid-cols-2 gap-4 p-8 h-full">
-        <div class="h-full relative overflow-hidden">
+    <div class="flex gap-4 p-8 h-full">
+        <div class="flex-none h-full relative overflow-hidden">
             <ProjectBrowser Report=@UserReport Project=@Project OnIssueSelected="HandleIssueSelected" />
         </div>
-        <div class="h-full relative overflow-auto">
-
+        <div class="flex-grow w-auto h-full relative overflow-auto">
             @if (!IsVisible)
             {
                 <p>Select an issue to get started!</p>
             }
-
-            <CodeMirror6Wrapper
-                IsWASM=true
-                ReadOnly=true
-                Editable=false
-                Language="CodeMirrorLanguage.Csharp"
-                Visible=@IsVisible
-                @bind-Doc=@CurrentFileContent
-                @bind-Selection=@SelectionRange
-                LintDocument=@LintDocument
-                FullScreen=false
-                MaxHeight="100%"
-                LineNumbers=true
-                @ref=_codeMirrorRef
-                />
+            <CodeMirror6Wrapper IsWASM=true
+                                ReadOnly=true
+                                Editable=false
+                                Language="CodeMirrorLanguage.Csharp"
+                                Visible=@IsVisible
+                                @bind-Doc=@CurrentFileContent
+                                @bind-Selection=@SelectionRange
+                                LintDocument=@LintDocument
+                                FullScreen=false
+                                MaxHeight="100%"
+                                LineNumbers=true
+                                @ref=_codeMirrorRef />
         </div>
     </div>
+
    
 }
 
@@ -83,8 +80,7 @@ else
         Project = await HttpClient.GetFromJsonAsync<Project>($"project/{ProjectId}");
         UserReport = await HttpClient.GetFromJsonAsync<Report>($"project/{ProjectId}/report/{Id}");
 
-        NavBarState.PageTitle = $"Project {Project?.Name ?? "Invalid"}";
-        NavBarState.TitleRedirect = $"/project/{ProjectId}";
+        NavBarState.UpdateTitle($"Project {Project?.Name ?? "Invalid"}", $"/project/{ProjectId}");
         await InvokeAsync(StateHasChanged);
     }
 
