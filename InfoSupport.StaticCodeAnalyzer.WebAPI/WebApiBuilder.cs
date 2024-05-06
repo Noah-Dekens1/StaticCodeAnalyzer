@@ -43,7 +43,7 @@ public class WebApiBuilder
 
         var app = builder.Build();
 
-        using (var serviceScope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
+        using (var serviceScope = app.Services.CreateScope())
         {
 
             var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
