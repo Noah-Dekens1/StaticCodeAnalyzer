@@ -57,7 +57,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         if (project.Path.EndsWith('/'))
             project.Path = project.Path.TrimEnd('/');
 
-        await _context.Projects.AddAsync(project);
+        _context.Projects.Add(project);
         await _context.SaveChangesAsync();
 
         return project;
