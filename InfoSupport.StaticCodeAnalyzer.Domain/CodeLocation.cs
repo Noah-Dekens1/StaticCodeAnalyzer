@@ -29,8 +29,8 @@ public class CodeLocation(Position start, Position end)
 {
     public CodeLocation() : this(new Position(), new Position()) { }
 
-    public Position Start { get; set; } = start;
-    public Position End { get; set; } = end;
+    public Position Start { get; init; } = start;
+    public Position End { get; init; } = end;
 
     public static CodeLocation From(CodeLocation original)
     {

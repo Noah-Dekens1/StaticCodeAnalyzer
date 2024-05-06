@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -9,8 +10,10 @@ namespace InfoSupport.StaticCodeAnalyzer.Domain;
 
 public class Report(Project project, List<ProjectFile> projectFiles, bool success, long severityscore)
 {
+    [ExcludeFromCodeCoverage]
     public Report() : this(null!, null!, false, 0) { }  // only for EF Core
 
+    [ExcludeFromCodeCoverage]
     public Guid Id { get; set; } = Guid.NewGuid();
 
     [JsonIgnore]
