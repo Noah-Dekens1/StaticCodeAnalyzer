@@ -43,7 +43,7 @@ public class WebApiBuilder
 
         var app = builder.Build();
 
-        using (var serviceScope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
+        using (var serviceScope = app.Services.CreateScope())
         {
 
             var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -55,32 +55,32 @@ public class WebApiBuilder
 
         // Configure the HTTP request pipeline.
 
-        app.MapGet("/api/projects", async (IProjectService projectService) =>
-            await projectService.GetAllProjects());
+        app.MapGet("/api/projects", async (IProjectService projectService, CancellationToken cancellationToken) =>
+            await projectService.GetAllProjects(cancellationToken));
 
-        app.MapPost("/api/project", async (IProjectService projectService, Project project) =>
-            await projectService.CreateProject(project));
+        app.MapPost("/api/project", async (IProjectService projectService, Project project, CancellationToken cancellationToken) =>
+            await projectService.CreateProject(project, cancellationToken));
 
-        app.MapGet("/api/project/{id}", async (IProjectService projectService, Guid id) =>
-            await projectService.GetProjectById(id));
+        app.MapGet("/api/project/{id}", async (IProjectService projectService, Guid id, CancellationToken cancellationToken) =>
+            await projectService.GetProjectById(id, cancellationToken));
 
-        app.MapDelete("/api/project/{id}", async (IProjectService projectService, Guid id) =>
-            await projectService.DeleteProject(id));
+        app.MapDelete("/api/project/{id}", async (IProjectService projectService, Guid id, CancellationToken cancellationToken) =>
+            await projectService.DeleteProject(id, cancellationToken));
 
-        app.MapPost("/api/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
-            await projectService.StartAnalysis(id));
+        app.MapPost("/api/project/{id}/analyze", async (IProjectService projectService, Guid id, CancellationToken cancellationToken) =>
+            await projectService.StartAnalysis(id, cancellationToken));
 
-        app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
-            await reportService.GetReportById(reportId));
+        app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId, CancellationToken cancellationToken) =>
+            await reportService.GetReportById(reportId, cancellationToken));
 
-        app.MapDelete("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
-            await reportService.DeleteReportById(reportId));
+        app.MapDelete("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId, CancellationToken cancellationToken) =>
+            await reportService.DeleteReportById(reportId, cancellationToken));
 
-        app.MapPost("/api/project/{projectId}/config", async (IProjectService projectService, Guid projectId) =>
-            await projectService.CreateConfiguration(projectId));
+        app.MapPost("/api/project/{projectId}/config", async (IProjectService projectService, Guid projectId, CancellationToken cancellationToken) =>
+            await projectService.CreateConfiguration(projectId, cancellationToken));
 
-        app.MapPost("/api/project/{projectId}/config/open", async (IProjectService projectService, Guid projectId) =>
-            await projectService.OpenConfiguration(projectId));
+        app.MapPost("/api/project/{projectId}/config/open", async (IProjectService projectService, Guid projectId, CancellationToken cancellationToken) =>
+            await projectService.OpenConfiguration(projectId, cancellationToken));
 
         app.MapGet("/api/online", () => true);
 

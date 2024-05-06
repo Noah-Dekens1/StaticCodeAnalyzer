@@ -13,6 +13,8 @@ using InfoSupport.StaticCodeAnalyzer.WebApp;
 namespace InfoSupport.StaticCodeAnalyzer.CLI.Utils;
 internal class FrontendUtil
 {
+    private static readonly HttpClient HttpClient = new();
+
     // Source: https://stackoverflow.com/questions/4580263/how-to-open-in-default-browser-in-c-sharp
     private static void OpenUrl(string url)
     {
@@ -84,9 +86,16 @@ internal class FrontendUtil
         Console.WriteLine("Starting server..");
         StartWebApp();
 
-        // Arbitrary time to give the web server some time to start up
-        // Maybe we could instead read the output stream of the server?
-        Thread.Sleep(1000 * 3);
+        // Wait until the server is ready
+        while (true)
+        {
+            await Task.Delay(100);
+            var response = await HttpClient.GetAsync("http://localhost:5000/api/online");
+            
+            if (response.IsSuccessStatusCode)
+                break;
+        }
+        
         OpenBrowser(openPath);
 
         // Wait indefinitely without wasting system resources

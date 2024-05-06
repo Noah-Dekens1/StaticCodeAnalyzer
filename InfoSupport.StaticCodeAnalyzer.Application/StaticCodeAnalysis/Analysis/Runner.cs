@@ -36,7 +36,7 @@ public class Runner
         };
     }
 
-    public static Report? RunAnalysis(Project project)
+    public static Report? RunAnalysis(Project project, CancellationToken cancellationToken)
     {
         var paths = GetFilesInProject(project);
 
@@ -46,6 +46,8 @@ public class Runner
         var configPath = Path.Join(project.Path, "analyzer-config.json");
 
         Configuration? config = null;
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (File.Exists(configPath))
         {
@@ -85,6 +87,7 @@ public class Runner
 
         foreach (var path in paths)
         {
+            cancellationToken.ThrowIfCancellationRequested();
 #if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
             try
             {

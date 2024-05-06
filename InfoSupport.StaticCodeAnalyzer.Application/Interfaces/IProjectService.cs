@@ -10,15 +10,15 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.Interfaces;
 
 public interface IProjectService
 {
-    public Task<Project> CreateProject(Project project);
-    public Task<List<Project>> GetAllProjects();
-    public Task<Project?> GetProjectById(Guid id);
-    public Task<Project?> DeleteProject(Guid id);
-    public Task<Project?> UpdateProject(Guid id, Project project);
+    public Task<Project> CreateProject(Project project, CancellationToken cancellationToken);
+    public Task<List<Project>> GetAllProjects(CancellationToken cancellationToken);
+    public Task<Project?> GetProjectById(Guid id, CancellationToken cancellationToken);
+    public Task<Project?> DeleteProject(Guid id, CancellationToken cancellationToken);
+    public Task<Project?> UpdateProject(Guid id, Project project, CancellationToken cancellationToken);
 
-    public Task<Report?> CreateReport(Guid projectId, Report report);
+    public Task<Report?> CreateReport(Guid projectId, Report report, CancellationToken cancellationToken);
 
-    public Task<Report?> StartAnalysis(Guid id);
-    public Task<string?> CreateConfiguration(Guid id);
-    public Task OpenConfiguration(Guid id);
+    public Task<Report?> StartAnalysis(Guid id, CancellationToken cancellationToken);
+    public Task<string?> CreateConfiguration(Guid id, CancellationToken cancellationToken);
+    public Task OpenConfiguration(Guid id, CancellationToken cancellationToken);
 }

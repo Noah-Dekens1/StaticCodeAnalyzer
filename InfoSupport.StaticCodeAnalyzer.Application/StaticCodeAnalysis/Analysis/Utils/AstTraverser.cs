@@ -18,6 +18,9 @@ public class AstTraverser
     {
         foreach (var child in node.Children)
         {
+            if (child is null)
+                continue;
+
             Visit(child);
 
             if (child is StatementNode statement && child is not BlockNode)

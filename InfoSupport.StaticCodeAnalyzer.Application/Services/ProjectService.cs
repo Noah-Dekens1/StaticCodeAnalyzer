@@ -36,9 +36,9 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         }
     }
 
-    public async Task<string?> CreateConfiguration(Guid id)
+    public async Task<string?> CreateConfiguration(Guid id, CancellationToken cancellationToken)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await _context.Projects.FindAsync([id], cancellationToken);
 
         if (project is null)
             return null;
@@ -50,62 +50,62 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         return configFilePath;
     }
 
-    public async Task<Project> CreateProject(Project project)
+    public async Task<Project> CreateProject(Project project, CancellationToken cancellationToken)
     {
         project.Path = project.Path.Replace('\\', '/');
 
         if (project.Path.EndsWith('/'))
             project.Path = project.Path.TrimEnd('/');
 
-        await _context.Projects.AddAsync(project);
-        await _context.SaveChangesAsync();
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync(cancellationToken);
 
         return project;
     }
 
-    public async Task<Report?> CreateReport(Guid projectId, Report report)
+    public async Task<Report?> CreateReport(Guid projectId, Report report, CancellationToken cancellationToken)
     {
-        var project = await _context.Projects.FindAsync(projectId);
+        var project = await _context.Projects.FindAsync([projectId], cancellationToken);
 
         if (project is null)
             return null;
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return report;
     }
 
-    public async Task<Project?> DeleteProject(Guid id)
+    public async Task<Project?> DeleteProject(Guid id, CancellationToken cancellationToken)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await _context.Projects.FindAsync([id], cancellationToken);
 
         if (project is null)
             return null;
 
         _context.Projects.Remove(project);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return project;
     }
 
-    public async Task<List<Project>> GetAllProjects()
+    public async Task<List<Project>> GetAllProjects(CancellationToken cancellationToken)
     {
-        return await _context.Projects.ToListAsync();
+        return await _context.Projects.ToListAsync(cancellationToken);
     }
 
-    public async Task<Project?> GetProjectById(Guid id)
+    public async Task<Project?> GetProjectById(Guid id, CancellationToken cancellationToken)
     {
         return await _context.Projects
             .Where(p => p.Id == id)
             .Include(p => p.Reports)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task OpenConfiguration(Guid id)
+    public async Task OpenConfiguration(Guid id, CancellationToken cancellationToken)
     {
-        var project = await _context.Projects.FindAsync(id) 
+        var project = await _context.Projects.FindAsync([id], cancellationToken) 
             ?? throw new ArgumentException("Project with id not found");
 
         var configFilePath = Path.Combine(project.Path, "analyzer-config.json");
@@ -119,24 +119,24 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         });
     }
 
-    public async Task<Report?> StartAnalysis(Guid id)
+    public async Task<Report?> StartAnalysis(Guid id, CancellationToken cancellationToken)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await _context.Projects.FindAsync([id], cancellationToken: cancellationToken);
 
         if (project is null)
             return null;
 
-        var report = Runner.RunAnalysis(project);
+        var report = Runner.RunAnalysis(project, cancellationToken);
         if (report is null) return null;
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return report;
     }
 
-    public async Task<Project?> UpdateProject(Guid id, Project project)
+    public async Task<Project?> UpdateProject(Guid id, Project project, CancellationToken cancellationToken)
     {
         if (project.Id != id)
             return null;
@@ -144,7 +144,7 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         project.Id = id;
 
         _context.Update(project);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return project;
     } 
