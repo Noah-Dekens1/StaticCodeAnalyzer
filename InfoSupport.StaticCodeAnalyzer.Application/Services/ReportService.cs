@@ -26,7 +26,7 @@ public class ReportService(ApplicationDbContext context) : IReportService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<Report?> GetReportById(Guid id)
+    public async Task<Report?> GetReportById(Guid id, CancellationToken cancellationToken)
     {
         return await _context.Reports
             .Where(r => r.Id == id)
@@ -34,6 +34,6 @@ public class ReportService(ApplicationDbContext context) : IReportService
             .ThenInclude(f => f.Issues)
             .AsNoTracking()
             .AsSplitQuery()
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

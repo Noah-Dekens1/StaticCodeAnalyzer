@@ -67,11 +67,11 @@ public class WebApiBuilder
         app.MapDelete("/api/project/{id}", async (IProjectService projectService, Guid id) =>
             await projectService.DeleteProject(id));
 
-        app.MapPost("/api/project/{id}/analyze", async (IProjectService projectService, Guid id) =>
-            await projectService.StartAnalysis(id));
+        app.MapPost("/api/project/{id}/analyze", async (IProjectService projectService, Guid id, CancellationToken cancellationToken) =>
+            await projectService.StartAnalysis(id, cancellationToken));
 
-        app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
-            await reportService.GetReportById(reportId));
+        app.MapGet("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId, CancellationToken cancellationToken) =>
+            await reportService.GetReportById(reportId, cancellationToken));
 
         app.MapDelete("/api/project/{projectId}/report/{reportId}", async (IReportService reportService, Guid projectId, Guid reportId) =>
             await reportService.DeleteReportById(reportId));

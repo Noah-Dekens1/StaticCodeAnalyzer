@@ -119,19 +119,19 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         });
     }
 
-    public async Task<Report?> StartAnalysis(Guid id)
+    public async Task<Report?> StartAnalysis(Guid id, CancellationToken cancellationToken)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await _context.Projects.FindAsync([id], cancellationToken: cancellationToken);
 
         if (project is null)
             return null;
 
-        var report = Runner.RunAnalysis(project);
+        var report = Runner.RunAnalysis(project, cancellationToken);
         if (report is null) return null;
 
         project.Reports.Add(report);
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return report;
     }

@@ -83,7 +83,7 @@ internal class AnalyzeCommand : ICommandHandler
     {
         Console.WriteLine($"- Starting analysis on \"{directory}\" -");
 
-        var report = Runner.RunAnalysis(new Project(GetDirectoryName(directory) ?? "Example", directory));
+        var report = Runner.RunAnalysis(new Project(GetDirectoryName(directory) ?? "Example", directory), CancellationToken.None);
 
         if (report is null)
             return;
