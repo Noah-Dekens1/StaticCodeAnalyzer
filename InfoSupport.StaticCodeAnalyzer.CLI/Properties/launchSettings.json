@@ -2,7 +2,7 @@
   "profiles": {
     "InfoSupport.StaticCodeAnalyzer.CLI": {
       "commandName": "Project",
-      "commandLineArgs": "analyze \"C:\\Users\\NoahD\\source\\repos\\Files\""
+      "commandLineArgs": "analyze \"C:\\Users\\NoahD\\source\\repos\\InfoSupport.StaticCodeAnalyzer\""
     }
   }
 }

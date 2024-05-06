@@ -126,7 +126,9 @@ public class ProjectService(ApplicationDbContext context) : IProjectService
         if (project is null)
             return null;
 
-        var report = Runner.RunAnalysis(project, cancellationToken);
+        var runner = new Runner();
+
+        var report = runner.RunAnalysis(project, cancellationToken);
         if (report is null) return null;
 
         project.Reports.Add(report);

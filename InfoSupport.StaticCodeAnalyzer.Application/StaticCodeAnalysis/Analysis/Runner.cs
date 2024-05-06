@@ -1,31 +1,26 @@
-﻿#define HANDLE_EXCEPTIONS_IN_DEBUG
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
+﻿using System.IO.Abstractions;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
+using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
-using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.SemanticAnalysis;
 using InfoSupport.StaticCodeAnalyzer.Domain;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 
-public class Runner
+public class Runner(IFileSystem fileSystem)
 {
     private static readonly Type AnalyzerType = typeof(Analyzer);
-    private static List<Analyzer> Analyzers { get; } = AppDomain.CurrentDomain.GetAssemblies()
+    private static readonly List<Analyzer> Analyzers = AppDomain.CurrentDomain.GetAssemblies()
         .SelectMany(s => s.GetTypes())
         .Where(AnalyzerType.IsAssignableFrom)
         .Where(p => !p.IsAbstract)
         .Select(s => (Analyzer)Activator.CreateInstance(s)!)
-        .Cast<Analyzer>()
         .ToList();
+
+    private readonly IFileSystem _fileSystem = fileSystem;
+
+    public Runner() : this(new FileSystem()) { }
 
     public static JsonSerializerOptions GetOptions()
     {
@@ -36,24 +31,32 @@ public class Runner
         };
     }
 
-    public static Report? RunAnalysis(Project project, CancellationToken cancellationToken)
+    public Report? RunAnalysis(Project project, CancellationToken cancellationToken)
     {
         var paths = GetFilesInProject(project);
 
         var projectFiles = new List<ProjectFile>();
         var projectRef = new ProjectRef();
 
-        var configPath = Path.Join(project.Path, "analyzer-config.json");
+        var configPath = _fileSystem.Path.Join(project.Path, "analyzer-config.json");
 
         Configuration? config = null;
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (File.Exists(configPath))
+        if (_fileSystem.File.Exists(configPath))
         {
-            var content = File.ReadAllText(configPath);
-            config = JsonSerializer.Deserialize<Configuration>(content, GetOptions());
-            
+            var content = _fileSystem.File.ReadAllText(configPath);
+            try
+            {
+                config = JsonSerializer.Deserialize<Configuration>(content, GetOptions());
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine("Failed deserializing config file");
+                Console.WriteLine(ex);
+            }
+
             if (config is null || config.Analyzers.Count == 0)
             {
                 Console.WriteLine("Found config file but it's invalid.. exiting");
@@ -74,7 +77,7 @@ public class Runner
                 analyzer.AnalyzersListConfig = emptyConfig;
             }
 
-            config = new Configuration()
+            config = new Configuration
             {
                 Analyzers = [emptyConfig],
                 CodeGuard = new CodeGuardConfig(),
@@ -92,14 +95,14 @@ public class Runner
             try
             {
 #endif
-                var file = File.ReadAllText(path);
-                var tokens = Lexer.Lex(file);
-                var ast = Parser.Parse(tokens);
+            var file = _fileSystem.File.ReadAllText(path);
+            var tokens = Lexer.Lex(file);
+            var ast = Parser.Parse(tokens);
 
-                projectRef.ProjectFiles.Add(path, ast);
-                projectRef.SemanticModel.ProcessFile(ast);
+            projectRef.ProjectFiles.Add(path, ast);
+            projectRef.SemanticModel.ProcessFile(ast);
 
-                successCount++;
+            successCount++;
 #if !DEBUG || HANDLE_EXCEPTIONS_IN_DEBUG
             }
             catch
@@ -118,7 +121,7 @@ public class Runner
         foreach (var fileInfo in projectRef.ProjectFiles)
         {
             var path = fileInfo.Key;
-            var projectFile = new ProjectFile(Path.GetFileName(path), path, null);
+            var projectFile = new ProjectFile(_fileSystem.Path.GetFileName(path), path, null);
 
             foreach (var analyzer in Analyzers)
             {
@@ -127,15 +130,13 @@ public class Runner
 
                 var fileIssues = new List<Issue>();
                 analyzer.Analyze(project, fileInfo.Value, projectRef, fileIssues);
-                // Copy issue locations because of the OwnsOne relation
                 fileIssues.ForEach(issue => issue.Location = CodeLocation.From(issue.Location));
                 projectFile.Issues.AddRange(fileIssues);
             }
 
-            // If any issues present store in projectFile so it can get saved to the db
             if (projectFile.Issues.Count > 0)
             {
-                projectFile.Content = File.ReadAllText(path);
+                projectFile.Content = _fileSystem.File.ReadAllText(path);
             }
 
             projectFiles.Add(projectFile);
@@ -148,9 +149,9 @@ public class Runner
         return new Report(project, projectFiles, success, severityScore);
     }
 
-    private static string[] GetFilesInProject(Project project)
+    private string[] GetFilesInProject(Project project)
     {
-        return Directory.GetFiles(project.Path, "*.cs", SearchOption.AllDirectories);
+        return _fileSystem.Directory.GetFiles(project.Path, "*.cs", SearchOption.AllDirectories);
     }
 
     private static uint GetScoreForSeverity(SeverityConfig config, AnalyzerSeverity severity)
