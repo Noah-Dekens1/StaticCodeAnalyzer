@@ -33,10 +33,10 @@ internal class AnalyzeCommand : ICommandHandler
             return;
         }
 
-        await RunAnalysis(directory);
+        await RunAnalysis(directory, CancellationToken.None);
     }
 
-    private static async Task RunAnalysis(string directory)
+    private static async Task RunAnalysis(string directory, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Analyzer running in directory: {directory}");
         var name = GetDirectoryName(directory);
@@ -47,7 +47,7 @@ internal class AnalyzeCommand : ICommandHandler
         dbContext.Database.Migrate();
         var projectService = new ProjectService(dbContext);
 
-        var projects = await projectService.GetAllProjects();
+        var projects = await projectService.GetAllProjects(cancellationToken);
 
         var project = projects.Find(x => x.Path == directory);
 
@@ -62,7 +62,7 @@ internal class AnalyzeCommand : ICommandHandler
             }
 
             project = new Project(name, directory);
-            project = await projectService.CreateProject(project);
+            project = await projectService.CreateProject(project, cancellationToken);
 
             Console.WriteLine($"Successfully created new project: {project.Name}");
         }
@@ -71,7 +71,7 @@ internal class AnalyzeCommand : ICommandHandler
             Console.WriteLine($"Starting analysis for existing project: {project.Name}");
         }
 
-        await projectService.StartAnalysis(project.Id);
+        await projectService.StartAnalysis(project.Id, cancellationToken);
 
         Console.WriteLine("Finished analysis");
         Console.WriteLine("Launching web application with results");

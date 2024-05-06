@@ -15,7 +15,7 @@ public class ReportService(ApplicationDbContext context) : IReportService
 {
     private readonly ApplicationDbContext _context = context;
 
-    public async Task DeleteReportById(Guid id)
+    public async Task DeleteReportById(Guid id, CancellationToken cancellationToken)
     {
         var report = await _context.Reports.FindAsync(id);
 
@@ -23,7 +23,7 @@ public class ReportService(ApplicationDbContext context) : IReportService
             return;
 
         _context.Reports.Remove(report);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<Report?> GetReportById(Guid id, CancellationToken cancellationToken)

@@ -10,5 +10,5 @@ namespace InfoSupport.StaticCodeAnalyzer.Application.Interfaces;
 public interface IReportService
 {
     public Task<Report?> GetReportById(Guid id, CancellationToken cancellationToken);
-    public Task DeleteReportById(Guid id);
+    public Task DeleteReportById(Guid id, CancellationToken cancellationToken);
 }
