@@ -38,7 +38,6 @@ public class WebApiBuilder
         builder.Services.AddScoped<IProjectService, ProjectService>();
         builder.Services.AddScoped<IReportService, ReportService>();
 
-
         // Add services to the container.
 
         var app = builder.Build();
