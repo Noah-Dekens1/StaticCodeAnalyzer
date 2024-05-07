@@ -98,7 +98,7 @@ public class Runner(IFileSystem fileSystem)
             var file = _fileSystem.File.ReadAllText(path);
 
             // Strip out potential 0xFEFF byte order mark
-            if (file.StartsWith('\ufeff'))
+            if (file.StartsWith((char)0xfeff))
                 file = file[1..];
 
             var tokens = Lexer.Lex(file);
