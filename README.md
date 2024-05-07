@@ -1,5 +1,7 @@
 # Static Code Analyzer
 
+[![codecov](https://codecov.io/gh/Noah-Dekens1/StaticCodeAnalyzer/graph/badge.svg?token=BZKYSXZT5R)](https://codecov.io/gh/Noah-Dekens1/StaticCodeAnalyzer)
+
 ## About
 This is an internship project to create a static code analyzer. A static code analyzer is a tool to find problems in code without running it.
 This is a learning project and not meant to compete with any existing static code analyzers.
