@@ -2601,7 +2601,9 @@ public class Parser
             if (ConsumeIfMatch(TokenKind.OpenParen))
             {
                 type = ParseType();
-                identifier = Consume().Lexeme;
+
+                if (!Matches(TokenKind.CloseParen))
+                    identifier = Consume().Lexeme;
 
                 Expect(TokenKind.CloseParen);
 
