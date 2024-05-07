@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -83,7 +84,8 @@ internal class AnalyzeCommand : ICommandHandler
     {
         Console.WriteLine($"- Starting analysis on \"{directory}\" -");
 
-        var report = Runner.RunAnalysis(new Project(GetDirectoryName(directory) ?? "Example", directory), CancellationToken.None);
+        var runner = new Runner();
+        var report = runner.RunAnalysis(new Project(GetDirectoryName(directory) ?? "Example", directory), CancellationToken.None);
 
         if (report is null)
             return;

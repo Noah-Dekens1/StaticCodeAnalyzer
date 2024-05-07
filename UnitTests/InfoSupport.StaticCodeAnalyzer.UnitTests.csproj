@@ -11,13 +11,16 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="21.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.Application\InfoSupport.StaticCodeAnalyzer.Application.csproj" />
+    <ProjectReference Include="..\InfoSupport.StaticCodeAnalyzer.WebAPI\InfoSupport.StaticCodeAnalyzer.WebAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
