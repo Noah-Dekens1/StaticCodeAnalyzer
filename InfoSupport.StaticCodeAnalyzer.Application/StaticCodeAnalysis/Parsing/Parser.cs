@@ -731,7 +731,7 @@ public class Parser
 
         var prev = members[^1];
 
-        var lhs = ResolveMemberAccess(members);
+        var lhs = ResolveMemberAccess(members, lhsExpr, lhsConditional);
 
         return prev.IsConditional
             ? EmitStatic(new ConditionalMemberAccessExpressionNode(lhs, identifier), lhs.Location.Start, identifier.Location.End)

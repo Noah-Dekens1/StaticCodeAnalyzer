@@ -6249,4 +6249,55 @@ public class ParserTests
 
         AssertStandardASTEquals(expected, actual);
     }
+
+    [TestMethod]
+    public void Parse_ComplexMemberAccess_ReturnsValidAST()
+    {
+        var tokens = Lexer.Lex("""
+             var host = new Uri(item).Host.Replace("www.", "");
+            """);
+
+        var actual = Parser.Parse(tokens);
+
+        var expected = AST.Build();
+
+        expected.Root.GlobalStatements.Add(
+            new GlobalStatementNode(
+                statement: new VariableDeclarationStatement(
+                    type: AstUtils.SimpleNameAsType("var"),
+                    declarators: [
+                        new VariableDeclaratorNode(
+                            identifier: "host",
+                            value: new InvocationExpressionNode(
+                                lhs: new MemberAccessExpressionNode(
+                                    lhs: new MemberAccessExpressionNode(
+                                        lhs: new ObjectCreationExpressionNode(
+                                            type: AstUtils.SimpleNameAsType("Uri"),
+                                            arguments: new ArgumentListNode([
+                                                new ArgumentNode(
+                                                    expression: new IdentifierExpression("item")
+                                                )
+                                            ])
+                                        ),
+                                        identifier: new IdentifierExpression("Host")
+                                    ),
+                                    identifier: new IdentifierExpression("Replace")
+                                ),
+                                arguments: new ArgumentListNode([
+                                    new ArgumentNode(
+                                        expression: new StringLiteralNode("www.")
+                                    ),
+                                    new ArgumentNode(
+                                        expression: new StringLiteralNode("")
+                                    )
+                                ])
+                            )
+                        )
+                    ]
+                )
+            )
+        );
+
+        AssertStandardASTEquals(expected, actual);
+    }
 }
