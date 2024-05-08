@@ -4,6 +4,7 @@ using InfoSupport.StaticCodeAnalyzer.Domain;
 using InfoSupport.StaticCodeAnalyzer.Infrastructure.Data;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 namespace InfoSupport.StaticCodeAnalyzer.WebAPI;
 
@@ -88,12 +89,15 @@ public class WebApiBuilder
 
         app.UseBlazorFrameworkFiles("/");
 
-        /*
-        var options = new StaticFileOptions();
-        options.FileProvider = new PhysicalFileProvider(@"C:\Users\NoahD\source\repos\InfoSupport.StaticCodeAnalyzer\InfoSupport.StaticCodeAnalyzer.WebApp\bin\Release\net8.0\publish\wwwroot\");
-        options.ServeUnknownFileTypes = true;
+
+        var options = new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(Path.Combine(root, "web\\wwwroot\\")),
+            ServeUnknownFileTypes = true
+        };
+
         app.UseStaticFiles(options);
-        */
+        
         app.UseStaticFiles();
 
         app.MapFallbackToFile("index.html");
