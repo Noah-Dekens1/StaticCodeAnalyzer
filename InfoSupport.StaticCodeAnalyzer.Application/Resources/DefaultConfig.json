@@ -22,7 +22,7 @@
         "max_members": 30
       },
       "magic_numbers": {
-        "enabled": false,
+        "enabled": true,
         "severity": "suggestion"
       },
       "method_parameter_count": {
