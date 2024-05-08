@@ -15,11 +15,12 @@ Please make sure that you have the .NET 8 runtime installed.
 You can analyze any directory containing *.cs files. However it's recommended to analyze a solution or project as your project directory will also be the place where your configuration will be stored.
 
 1) Install the [latest version of the NuGet package](https://www.nuget.org/packages/StaticCodeAnalysis.StaticCodeAnalyzer.CLI/) using the command listed in NuGet.
-2) Navigate to the root directory of a C# project of choice in your terminal.
-3) Run the following command `analyzer analyze`
-4) You will be asked to enter a project name. You can use the suggested one or type a new one.
-5) Wait for the analysis to complete and the web application to start up.
-6) Navigate to your project and open the latest report.
+2) Example: `dotnet tool install --global StaticCodeAnalysis.StaticCodeAnalyzer.CLI`
+3) Navigate to the root directory of a C# project of choice in your terminal.
+4) Run the following command `analyzer analyze`
+5) You will be asked to enter a project name. You can use the suggested one or type a new one.
+6) Wait for the analysis to complete and the web application to start up.
+7) Navigate to your project in the web application and open the latest report.
 
 You should now see 2 columns at the left side of your screen. The leftmost one will contain a list of directories and a toggle to include files as well. Clicking on one of the directories will open it and display its contents.
 In the following column, a list of issues is displayed. By default, only the issues in the currently selected directory (in the left column) are displayed. 
