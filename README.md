@@ -1,7 +1,9 @@
 # Static Code Analyzer
 
+[![codecov](https://codecov.io/gh/Noah-Dekens1/StaticCodeAnalyzer/graph/badge.svg?token=BZKYSXZT5R)](https://codecov.io/gh/Noah-Dekens1/StaticCodeAnalyzer)
+
 ## About
-This is an internship project to create a static code analyzer. A static code analyzer is a tool to find problems in your code without running it.
+This is an internship project to create a static code analyzer. A static code analyzer is a tool to find problems in code without running it.
 This is a learning project and not meant to compete with any existing static code analyzers.
 The analyzer contains a self-made C# lexer and parser. The analyzer supports a (large but incomplete) subset of the C# language.
 
@@ -10,10 +12,12 @@ The analyzer contains a self-made C# lexer and parser. The analyzer supports a (
 ### Running locally
 Please make sure that you have the .NET 8 runtime installed.
 
+You can analyze any directory containing *.cs files. However it's recommended to analyze a solution or project as your project directory will also be the place where your configuration will be stored.
+
 1) Install the [latest version of the NuGet package](https://www.nuget.org/packages/StaticCodeAnalysis.StaticCodeAnalyzer.CLI/) using the command listed in NuGet.
-2) Navigate to a C# project of choice in your terminal.
+2) Navigate to the root directory of a C# project of choice in your terminal.
 3) Run the following command `analyzer analyze`
-4) Use the suggested name or type a new one
+4) You will be asked to enter a project name. You can use the suggested one or type a new one.
 5) Wait for the analysis to complete and the web application to start up.
 6) Navigate to your project and open the latest report.
 
@@ -33,12 +37,18 @@ Running the analyzer in CI is very similar to running it locally, except it need
 2) Run the analyzer with `--output-console`
 
 Example step for github actions (see the [self analyze](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/blob/main/.github/workflows/self-analyze.yml) step for an example)
-```
+```yaml
  - name: Run Analyzer
    run: dotnet tool install --global StaticCodeAnalysis.StaticCodeAnalyzer.CLI && analyzer analyze --output-console
 ```
 
-Whether the analyzer succeeds depends on the provided configuration. To view all the issues you can read the output log of the action, a separate report is not published.
+Whether the analyzer succeeds depends on the provided [configuration](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/wiki/Reference-Guide.md#configuration-options). To view all the issues you can read the output log of the action, a separate report is not published.
+
+### Analyze vs Launch
+
+`analyzer analyze` will analyze the project and then start the web application.
+
+`analyzer launch` will launch the web application without performing an analysis.
 
 ### Configuring the analyzer
 
@@ -58,4 +68,4 @@ To create a default variant of the config file, you can use either the command-l
 3) Use the "Create config" button followed by the "Edit config" to open the config file in your default editor
 
 #### Editing the config file
-The various options are present in the default config file. To see all the different options and descriptions of config items you can check out the wiki in this project for a full reference guide.
+The various options are present in the default config file. To see all the different options and descriptions of config items you can check out the wiki in this project for a full [reference guide](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/wiki/Reference-Guide.md).
