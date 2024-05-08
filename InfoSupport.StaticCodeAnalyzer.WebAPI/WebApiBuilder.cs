@@ -20,8 +20,8 @@ public class WebApiBuilder
             ? WebApplication.CreateBuilder(new WebApplicationOptions())
             : WebApplication.CreateBuilder(new WebApplicationOptions 
                 { 
-                    ContentRootPath = Path.Combine(root, "web\\"),
-                    WebRootPath = Path.Combine(root, "web\\wwwroot\\")
+                    ContentRootPath = Path.Combine(root, "web/"),
+                    WebRootPath = Path.Combine(root, "web/wwwroot/")
                 }
             );
 
@@ -94,7 +94,7 @@ public class WebApiBuilder
         {
             var options = new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(Path.Combine(root, "web\\wwwroot\\")),
+                FileProvider = new PhysicalFileProvider(Path.Combine(root, "web/wwwroot/")),
                 ServeUnknownFileTypes = true
             };
 
