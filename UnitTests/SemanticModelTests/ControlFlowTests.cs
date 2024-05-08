@@ -318,4 +318,247 @@ public class ControlFlowTests
 
         Assert.IsFalse(_semanticModel.IsReachable(statementNode, cfg));
     }
+
+    [TestMethod]
+    public void Analyze_TryStatementBody_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+            Console.WriteLine("reachable");
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_TryStatementCatchClause_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("reachable");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_TryStatementEnd_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("reachable");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "end")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_TryStatementMultipleCatchClauses_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("reachable1");
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("reachable2");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachable1Node = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable1")
+            .FirstOrDefault();
+
+        var reachable2Node = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable2")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachable1Node);
+        Assert.IsTrue(_semanticModel.IsReachable(reachable1Node, cfg));
+        
+        Assert.IsNotNull(reachable2Node);
+        Assert.IsTrue(_semanticModel.IsReachable(reachable2Node, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_TryStatementFinallyWithCatch_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {   
+            Console.WriteLine("reachable");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_TryStatementFinallyWithoutCatch_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+        }
+        finally
+        {   
+            Console.WriteLine("reachable");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "reachable")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
+    }
+
+    [TestMethod]
+    public void Analyze_TryStatementFinallyEnd_IsReachable()
+    {
+        var ast = Parse("""
+        int i = 0;
+        try
+        {
+        }
+        finally
+        {   
+            Console.WriteLine("reachable");
+        }
+
+        Console.WriteLine("end");
+        """);
+
+        _semanticModel.AnalyzeControlFlow(ast.Root, out var cfg);
+
+        Assert.IsNotNull(cfg);
+
+        var reachableNode = ast.Root
+            .GetAllDescendantsOfType<ExpressionStatementNode>()
+            .Select(e => e.Expression)
+            .Where(e => e is InvocationExpressionNode)
+            .Cast<InvocationExpressionNode>()
+            .Where(e => e.GetAllDescendantsOfType<StringLiteralNode>().FirstOrDefault()?.Value == "end")
+            .FirstOrDefault();
+
+        Assert.IsNotNull(reachableNode);
+        Assert.IsTrue(_semanticModel.IsReachable(reachableNode, cfg));
+    }
 }

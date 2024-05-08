@@ -187,6 +187,56 @@ public class ControlFlowTraverser : AstTraverser
                         break;
                     }
 
+                case TryStatementNode tryStatement:
+                    {
+                        // Create a new block for the try statement body
+                        var tryBlock = NewBasicBlock();
+                        Visit(tryStatement.Block);
+
+                        var endOfTryBlock = _currentBasicBlock!;
+
+                        // Handle all catch clauses
+                        List<ControlFlowNode> catchBlocks = [];
+                        foreach (var catchClause in tryStatement.CatchClauses)
+                        {
+                            var catchBlock = NewBasicBlock();
+                            catchBlocks.Add(catchBlock);
+                            Visit(catchClause.Block);
+                        }
+
+                        // Handle finally clause if present
+                        ControlFlowNode? finallyBlock = null;
+                        if (tryStatement.FinallyClause is not null)
+                        {
+                            finallyBlock = NewBasicBlock();
+                            Visit(tryStatement.FinallyClause.Block);
+                        }
+
+                        // Create a merge block after the try-catch-finally construct
+                        var mergeBlock = NewBasicBlock();
+                        mergeBlock.IsMergeNode = true;
+
+                        // Add edges from try block and catch blocks to merge
+                        mergeBlock.Predecessors.Add(endOfTryBlock);
+                        endOfTryBlock.Successors.Add(mergeBlock);
+
+                        foreach (var catchBlock in catchBlocks)
+                        {
+                            mergeBlock.Predecessors.Add(catchBlock);
+                            catchBlock.Successors.Add(mergeBlock);
+                        }
+
+                        // Link the finally block to the merge block if it exists
+                        if (finallyBlock is not null)
+                        {
+                            mergeBlock.Predecessors.Add(finallyBlock);
+                            finallyBlock.Successors.Add(mergeBlock);
+                        }
+
+                        handled = true;
+                        break;
+                    }
+
                 case BreakStatementNode breakStatement:
                     {
                         var closestParent = breakStatement.GetFirstParent(n => n is SwitchStatementNode or IIterationNode);

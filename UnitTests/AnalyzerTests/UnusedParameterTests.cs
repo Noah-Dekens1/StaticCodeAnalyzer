@@ -485,4 +485,27 @@ public class UnusedParameterTests
 
         Assert.AreEqual(0, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_Try_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            async Task<IActionResult> UpdateFolders([FromBody] FolderInDto folderInDto)
+            {
+                try
+                {
+                    var email = HttpContext.User.Identity!.Name;
+                    await FolderService.UpdateFoldersAsync(email, folderInDto);
+                    return Ok();
+                }
+                catch (CommonErrorException e)
+                {
+                    Logger.LogWarning("{ErrorMessage}", e.Message);
+                    return StatusCode(e.Error.Status, e.Error);
+                }
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
 }
