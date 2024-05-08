@@ -524,4 +524,17 @@ public class UnusedParameterTests
 
         Assert.AreEqual(0, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_EventHandler_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+            {
+                Environment.Exit(1);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
 }

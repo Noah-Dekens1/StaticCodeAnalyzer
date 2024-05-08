@@ -30,6 +30,11 @@ public class UnusedParameterAnalyzer : Analyzer
             bool isParameterForced = method.Modifiers.Contains(OptionalModifier.Override);
             isParameterForced |= IsRequiredByInterface(projectRef, method, config);
 
+            foreach (var parameter in method.Parameters.Parameters)
+            {
+                isParameterForced |= parameter.Type.BaseType.AsLongIdentifier()?.EndsWith("EventArgs") ?? false;
+            }
+
             if (!isParameterForced)
                 ProcessFunction(projectRef, issues, method.Body, method.Parameters.Parameters);
         }
