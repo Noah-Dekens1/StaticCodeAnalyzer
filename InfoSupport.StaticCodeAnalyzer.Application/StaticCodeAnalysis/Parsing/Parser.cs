@@ -1387,7 +1387,7 @@ public class Parser
             possibleLHS = resolvedIdentifier;
         }
 
-        ExpressionNode? primaryExpression = resolvedIdentifier is null
+        ExpressionNode? primaryExpression = possibleLHS is null
             ? TryParsePrimaryExpression()
             : null;
 

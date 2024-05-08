@@ -508,4 +508,20 @@ public class UnusedParameterTests
 
         Assert.AreEqual(0, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_Index_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            bool IsLastMessage(dynamic jsonObj)
+            {
+                var firstChoice = jsonObj["choices"][0];
+
+                var finishReason = firstChoice["finish_reason"];
+                return finishReason != null;
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
 }
