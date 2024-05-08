@@ -90,13 +90,16 @@ public class WebApiBuilder
         app.UseBlazorFrameworkFiles("/");
 
 
-        var options = new StaticFileOptions
+        if (overrideContentPath)
         {
-            FileProvider = new PhysicalFileProvider(Path.Combine(root, "web\\wwwroot\\")),
-            ServeUnknownFileTypes = true
-        };
+            var options = new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(Path.Combine(root, "web\\wwwroot\\")),
+                ServeUnknownFileTypes = true
+            };
 
-        app.UseStaticFiles(options);
+            app.UseStaticFiles(options);
+        }
         
         app.UseStaticFiles();
 
