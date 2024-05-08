@@ -731,7 +731,7 @@ public class Parser
 
         var prev = members[^1];
 
-        var lhs = ResolveMemberAccess(members);
+        var lhs = ResolveMemberAccess(members, lhsExpr, lhsConditional);
 
         return prev.IsConditional
             ? EmitStatic(new ConditionalMemberAccessExpressionNode(lhs, identifier), lhs.Location.Start, identifier.Location.End)
@@ -1387,7 +1387,7 @@ public class Parser
             possibleLHS = resolvedIdentifier;
         }
 
-        ExpressionNode? primaryExpression = resolvedIdentifier is null
+        ExpressionNode? primaryExpression = possibleLHS is null
             ? TryParsePrimaryExpression()
             : null;
 
@@ -2601,7 +2601,9 @@ public class Parser
             if (ConsumeIfMatch(TokenKind.OpenParen))
             {
                 type = ParseType();
-                identifier = Consume().Lexeme;
+
+                if (!Matches(TokenKind.CloseParen))
+                    identifier = Consume().Lexeme;
 
                 Expect(TokenKind.CloseParen);
 

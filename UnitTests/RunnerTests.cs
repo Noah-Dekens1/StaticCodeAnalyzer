@@ -97,6 +97,29 @@ public class RunnerTests
     }
 
     [TestMethod]
+    public void Test_RunAnalysis_WithByteOrderMarkInFile()
+    {
+        // Arrange
+        var configContent = JsonSerializer.Serialize(GetDefaultConfig(), GetSerializationOptions());
+        var mockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+        {
+            { "/test/analyzer-config.json", new MockFileData(configContent) },
+            { "/test/test1.cs", new MockFileData($"{(char)0xfeff}class Test1 {{}}") }
+        });
+        var runner = new Runner(mockFileSystem);
+
+        var project = new Project { Path = "/test" };
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var report = runner.RunAnalysis(project, cancellationToken);
+
+        // Assert
+        Assert.IsNotNull(report);
+        Assert.AreEqual(1, report.ProjectFiles.Count);
+    }
+
+    [TestMethod]
     public void Test_RunAnalysis_InvalidAnalyzerConfig()
     {
         // Arrange

@@ -485,4 +485,56 @@ public class UnusedParameterTests
 
         Assert.AreEqual(0, issues.Count);
     }
+
+    [TestMethod]
+    public void Analyze_Try_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            async Task<IActionResult> UpdateFolders([FromBody] FolderInDto folderInDto)
+            {
+                try
+                {
+                    var email = HttpContext.User.Identity!.Name;
+                    await FolderService.UpdateFoldersAsync(email, folderInDto);
+                    return Ok();
+                }
+                catch (CommonErrorException e)
+                {
+                    Logger.LogWarning("{ErrorMessage}", e.Message);
+                    return StatusCode(e.Error.Status, e.Error);
+                }
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_Index_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            bool IsLastMessage(dynamic jsonObj)
+            {
+                var firstChoice = jsonObj["choices"][0];
+
+                var finishReason = firstChoice["finish_reason"];
+                return finishReason != null;
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
+    public void Analyze_EventHandler_ReturnsNoIssue()
+    {
+        var issues = AnalyzerUtils.Analyze("""
+            static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+            {
+                Environment.Exit(1);
+            }
+            """, new UnusedParameterAnalyzer());
+
+        Assert.AreEqual(0, issues.Count);
+    }
 }
