@@ -1,4 +1,6 @@
-﻿using System.IO.Abstractions;
+﻿#define HANDLE_EXCEPTIONS_IN_DEBUG
+
+using System.IO.Abstractions;
 using System.Text.Json;
 
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Utils;
