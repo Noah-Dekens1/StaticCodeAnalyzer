@@ -70,5 +70,10 @@
   "code_guard": {
     "fail_on_reach_severity_score": true,
     "max_allowed_severity_score": 50
+  },
+  "directories": {
+    "excluded": [
+      "/**/Migrations/*.cs"
+    ]
   }
 }

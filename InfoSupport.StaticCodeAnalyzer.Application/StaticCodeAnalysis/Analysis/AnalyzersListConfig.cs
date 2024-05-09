@@ -16,6 +16,12 @@ public class Configuration
 
     public required SeverityConfig Severities { get; set; }
     public required CodeGuardConfig CodeGuard { get; set; }
+    public DirectoriesConfig Directories { get; set; } = new();
+}
+
+public class DirectoriesConfig
+{
+    public List<string> Excluded { get; set; } = [];
 }
 
 public class AnalyzersListConfig
