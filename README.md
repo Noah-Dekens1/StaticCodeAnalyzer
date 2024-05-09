@@ -1,5 +1,6 @@
 # Static Code Analyzer
 
+[![.NET](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Noah-Dekens1/StaticCodeAnalyzer/actions/workflows/dotnet.yml)
 [![codecov](https://codecov.io/gh/Noah-Dekens1/StaticCodeAnalyzer/graph/badge.svg?token=BZKYSXZT5R)](https://codecov.io/gh/Noah-Dekens1/StaticCodeAnalyzer)
 
 ## About
