@@ -111,9 +111,10 @@ public class RunnerTests
         });
         var runner = new Runner(mockFileSystem);
 
-        var project = new Project { Path = "C:/test" };
-        var cancellationToken = CancellationToken.None;
+        var pathRoot = mockFileSystem.Path.GetPathRoot(Environment.SystemDirectory); ;
 
+        var project = new Project { Path = Path.Combine(pathRoot!, "test").Replace("\\", "/") };
+        var cancellationToken = CancellationToken.None;
         // Act
         var report = runner.RunAnalysis(project, cancellationToken);
 
