@@ -65,7 +65,8 @@
   },
   "directories": {
     "excluded": [
-      "/**/Migrations/*.cs"
+      "/**/Migrations/*.cs",
+      "/**/obj/**/*"
     ]
   }
 }
