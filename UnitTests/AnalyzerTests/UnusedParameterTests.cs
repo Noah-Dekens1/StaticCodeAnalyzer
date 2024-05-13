@@ -487,6 +487,29 @@ public class UnusedParameterTests
     }
 
     [TestMethod]
+    public void Analyze_VirtualAndAbstract_ReturnsNoIssue()
+    {
+        var config = new AnalyzersListConfig();
+        config.UnusedParameters.IgnoreWhenImplementingTypes.Add("SomeBase");
+
+        var issues = AnalyzerUtils.Analyze("""
+            class Example : SomeBase
+            {
+                public virtual void TestVirtual(int a)
+                {
+
+                }
+                public abstract void TestVirtual(int a)
+                {
+            
+                }
+            }
+            """, new UnusedParameterAnalyzer(), config);
+
+        Assert.AreEqual(0, issues.Count);
+    }
+
+    [TestMethod]
     public void Analyze_Try_ReturnsNoIssue()
     {
         var issues = AnalyzerUtils.Analyze("""

@@ -27,6 +27,25 @@ public class UnusedParameterAnalyzer : Analyzer
             if (method.Body is null)
                 continue;
 
+            List<OptionalModifier> forcedModifiers = [
+                OptionalModifier.Abstract,
+                OptionalModifier.Virtual
+            ];
+
+            if (method is MethodNode methodNode)
+            {
+                bool isForced = false;
+
+                foreach (var modifier in forcedModifiers)
+                {
+                    if (methodNode.Modifiers.Contains(modifier))
+                        isForced = true;
+                }
+
+                if (isForced)
+                    continue;
+            }
+
             bool isParameterForced = method.Modifiers.Contains(OptionalModifier.Override);
             isParameterForced |= IsRequiredByInterface(projectRef, method, config);
 
