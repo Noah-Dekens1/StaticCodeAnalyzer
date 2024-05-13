@@ -24,13 +24,13 @@
                         @if (IsFileSelected(path))
                         {
                             <button class="btn btn-block mb-1 p-1 btn-neutral" @onclick="() => OnPathEnter(path)">
-                                <p class="text-left w-full text-wrap break-all">@path</p>
+                                <p class="text-left w-full text-wrap break-all">@path <span class="text-gray-500">(@(GetFilteredFiles($"{_currentDirectory}/{path}", false).Sum(f => f.Issues.Count)))</span></p>
                             </button>
                         }
                         else
                         {
                             <button class="btn btn-block mb-1 p-1 btn-accent" @onclick="() => OnPathEnter(path)">
-                                <p class="text-left w-full text-wrap break-all">@path</p>
+                                <p class="text-left w-full text-wrap break-all">@path <span class="text-gray-500">(@(GetFilteredFiles($"{_currentDirectory}/{path}", false).Sum(f => f.Issues.Count)))</span></p>
                             </button>
                         }
 
@@ -38,7 +38,7 @@
                     else
                     {
                         <button class="btn btn-block mb-1 p-1" @onclick="() => OnPathEnter(path)">
-                            <p class="text-left w-full text-wrap break-all">@path</p>
+                            <p class="text-left w-full text-wrap break-all">@path <span class="text-gray-500">(@(GetFilteredFiles($"{_currentDirectory}/{path}", true).Sum(f => f.Issues.Count)))</span></p>
                         </button>
                     }
                 </li>
@@ -142,26 +142,27 @@
     }
     */
 
-    private List<ProjectFile> GetFilteredFiles()
+    private List<ProjectFile> GetFilteredFiles(string? directoryOrPath = null, bool ignoreFileFilter = false)
     {
         if (Report is null)
             return [];
 
         return Report.ProjectFiles
-            .Where(f => IsFileVisible(f.Path))
+            .Where(f => IsFileVisible(f.Path, directoryOrPath, ignoreFileFilter))
             .ToList();
     }
 
-    private bool IsFileVisible(string path)
+    private bool IsFileVisible(string path, string? directoryOrPath = null, bool ignoreFileFilter = false)
     {
+        directoryOrPath ??= !ignoreFileFilter && IsFilteringFiles ? _currentFile : _currentDirectory;
         var normalized = NormalizePath(path);
 
-        if (IsFilteringFiles)
+        if (IsFilteringFiles && !ignoreFileFilter)
         {
-            return normalized == _currentFile;
+            return normalized == directoryOrPath;
         }
 
-        return normalized.StartsWith(_currentDirectory);
+        return normalized.StartsWith(directoryOrPath);
     }
 
     private string NormalizePath(string path)
