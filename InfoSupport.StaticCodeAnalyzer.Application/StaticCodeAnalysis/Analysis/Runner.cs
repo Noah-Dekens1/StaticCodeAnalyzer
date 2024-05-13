@@ -7,6 +7,7 @@ using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis.Uti
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 using InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Parsing;
 using InfoSupport.StaticCodeAnalyzer.Domain;
+using DotNet.Globbing;
 
 namespace InfoSupport.StaticCodeAnalyzer.Application.StaticCodeAnalysis.Analysis;
 
@@ -31,6 +32,11 @@ public class Runner(IFileSystem fileSystem)
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
             DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower
         };
+    }
+
+    private static string NormalizePath(string path)
+    {
+        return path.Replace("\\", "/");
     }
 
     public Report? RunAnalysis(Project project, CancellationToken cancellationToken)
@@ -90,6 +96,9 @@ public class Runner(IFileSystem fileSystem)
         int successCount = 0;
         int errorCount = 0;
 
+        var excludedDirectories = config.Directories.Excluded;
+        var globs = excludedDirectories.Select(d => Glob.Parse(NormalizePath(d))).ToList();
+
         foreach (var path in paths)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -97,7 +106,11 @@ public class Runner(IFileSystem fileSystem)
             try
             {
 #endif
+            var relative = NormalizePath(path)[(project.Path.Length+0)..];
             var file = _fileSystem.File.ReadAllText(path);
+
+            if (globs.Any(g => g.IsMatch(relative)))
+                continue;
 
             // Strip out potential 0xFEFF byte order mark
             if (file.StartsWith((char)0xfeff))

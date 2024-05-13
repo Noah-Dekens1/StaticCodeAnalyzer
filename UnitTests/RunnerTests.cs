@@ -97,6 +97,35 @@ public class RunnerTests
     }
 
     [TestMethod]
+    public void Test_RunAnalysis_WithExcludedDirectoryGlobs()
+    {
+        // Arrange
+        var config = GetDefaultConfig();
+        config.Directories.Excluded.Add("/**/Migrations/*.cs");
+        var configContent = JsonSerializer.Serialize(config, GetSerializationOptions());
+        var mockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+        {
+            { "/test/analyzer-config.json", new MockFileData(configContent) },
+            { "/test/test1.cs", new MockFileData("class Test1 {}") },
+            { "/test/Migrations/test2.cs", new MockFileData("class Test2 {}") }
+        });
+        var runner = new Runner(mockFileSystem);
+
+        var path = Environment.OSVersion.Platform == PlatformID.Win32NT
+            ? "C:/test"
+            : "/test";
+
+        var project = new Project { Path = path };
+        var cancellationToken = CancellationToken.None;
+        // Act
+        var report = runner.RunAnalysis(project, cancellationToken);
+
+        // Assert
+        Assert.IsNotNull(report);
+        Assert.AreEqual(1, report.ProjectFiles.Count);
+    }
+
+    [TestMethod]
     public void Test_RunAnalysis_WithByteOrderMarkInFile()
     {
         // Arrange
