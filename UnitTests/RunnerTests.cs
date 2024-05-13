@@ -113,7 +113,7 @@ public class RunnerTests
 
         var path = Environment.OSVersion.Platform == PlatformID.Win32NT
             ? "C:/test"
-            : "/";
+            : "/test";
 
         var project = new Project { Path = path };
         var cancellationToken = CancellationToken.None;
